@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reparación de Telecom - Sintonización de Frecuencia Satelital</title>
+    <style>
+        :root {
+            --bg-hull: #0f141c;
+            --bg-panel: #141c26;
+            --border-panel: #273547;
+            --border-highlight: #38bdf8;
+            --crt-green: #00ff88;
+            --crt-amber: #f59e0b;
+            --crt-cyan: #38bdf8;
+            --crt-red: #ef4444;
+            --text-mono: 'Courier New', monospace;
+            --panel-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: #07090f;
+            color: #e2e8f0;
+            font-family: var(--text-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(16, 30, 24, 0.4) 0%, rgba(5, 8, 12, 0.95) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            z-index: 99;
+            opacity: 0.75;
+        }
+
+        header {
+            background: #111823;
+            border-bottom: 2px solid #334155;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .title-block { display: flex; align-items: center; gap: 12px; }
+
+        .badge-system {
+            background: #064e3b;
+            color: var(--crt-green);
+            border: 1px solid var(--crt-green);
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        h1 { font-size: 15px; letter-spacing: 2px; color: #f8fafc; }
+
+        .top-controls { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+
+        .select-diff {
+            background: #1e293b;
+            color: var(--crt-cyan);
+            border: 1px solid #475569;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-header {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f1f5f9;
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-header:hover { background: #334155; border-color: var(--crt-cyan); }
+
+        .workspace-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 50px);
+        }
+
+        .industrial-panel {
+            background: var(--bg-panel);
+            border: 3px solid #1e293b;
+            border-radius: 4px;
+            box-shadow: var(--panel-shadow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-bezel {
+            position: absolute;
+            top: 2px; left: 2px; right: 2px; bottom: 2px;
+            border: 1px solid #334155;
+            pointer-events: none;
+        }
+
+        .rivet {
+            position: absolute;
+            width: 5px; height: 5px;
+            background: #64748b;
+            border-radius: 50%;
+            border: 1px solid #1e293b;
+        }
+        .rivet-tl { top: 4px; left: 4px; }
+        .rivet-tr { top: 4px; right: 4px; }
+        .rivet-bl { bottom: 4px; left: 4px; }
+        .rivet-br { bottom: 4px; right: 4px; }
+
+        .panel-header {
+            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 2px solid #334155;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--crt-green);
+            letter-spacing: 1.5px;
+        }
+
+        .panel-body {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: #020408;
+            border: 1px solid #1e293b;
+            position: relative;
+        }
+
+        canvas { display: block; image-rendering: pixelated; }
+
+        .telemetry-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #263342;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .slider-telecom {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--crt-cyan);
+            margin: 4px 0;
+        }
+
+        .btn-action {
+            background: linear-gradient(180deg, #059669 0%, #047857 100%);
+            border: 1px solid #10b981;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .btn-action:hover {
+            background: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-card {
+            width: 600px; max-width: 90%;
+            background: #111827;
+            border: 2px solid var(--border-highlight);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.25);
+            padding: 24px;
+            display: flex; flex-direction: column; gap: 16px;
+            color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <header>
+        <div class="title-block">
+            <span class="badge-system">SISTEMAS // ANTENAS</span>
+            <h1>SINTONIZACIÓN Y ALINEACIÓN DE TELECOMUNICACIONES</h1>
+        </div>
+        <div class="top-controls">
+            <button class="btn-header" onclick="location.href='index.html'">⌂ HUB</button>
+            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
+                <option value="1">Nivel 1 - Señal Clara</option>
+                <option value="2" selected>Nivel 2 - Interferencia Estelar</option>
+                <option value="3">Nivel 3 - Espectro Caótico</option>
+            </select>
+            <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
+            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+        </div>
+    </header>
+
+    <div class="workspace-grid">
+        <!-- LEFT: Oscilloscope Waveform Canvas -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>OSCILOSCOPIO DE FRECUENCIA (ANÁLISIS DE ONDA)</span>
+                <span id="matchStatus" style="color:var(--crt-amber)">ESTADO: DESALINEADO</span>
+            </div>
+            <div class="panel-body" style="padding:0;">
+                <div class="canvas-container">
+                    <canvas id="scopeCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Sliders & Controls -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>CONTROLES DE SINTONÍA</span>
+                <span id="clockDisplay">00:00</span>
+            </div>
+            <div class="panel-body">
+                <div class="telemetry-block">
+                    <div class="control-row">
+                        <span>FRECUENCIA DE ONDA (Hz):</span>
+                        <b id="freqVal" style="color:var(--crt-cyan)">50 Hz</b>
+                    </div>
+                    <input type="range" class="slider-telecom" id="sliderFreq" min="10" max="100" value="50" oninput="updateSliders()">
+                </div>
+
+                <div class="telemetry-block">
+                    <div class="control-row">
+                        <span>AMPLITUD DE SEÑAL (Gain):</span>
+                        <b id="gainVal" style="color:var(--crt-green)">50 %</b>
+                    </div>
+                    <input type="range" class="slider-telecom" id="sliderGain" min="10" max="100" value="50" oninput="updateSliders()">
+                </div>
+
+                <div style="background:rgba(0,0,0,0.3); border:1px solid #263342; padding:10px; font-size:11px; line-height:1.5;">
+                    <b style="color:var(--crt-cyan)">MISIÓN:</b>
+                    <p style="color:#94a3b8; margin-top:4px;">Ajusta la frecuencia y la amplitud para que la onda generada coincida exactamente con la señal objetivo (línea punteada verde).</p>
+                </div>
+
+                <button class="btn-action" onclick="lockSignal()">
+                    ✔ SINTONIZAR Y SELLADO DE ENLACE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debriefing Modal -->
+    <div class="modal-overlay" id="debriefModal">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-highlight); padding-bottom:8px;">
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME DE TELECOMUNICACIONES</span>
+                <span class="badge-system" id="debBadge">ÉXITO</span>
+            </div>
+            <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-cyan)">1. ESTADO DE ENLACE SATELITAL:</b>
+                    <p id="debDesc">Frecuencia sincronizada con éxito sin pérdida de paquetes de telemetría.</p>
+                </div>
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE SEÑAL:</b>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+                        <div>Precisión de Onda: <b id="debAccuracy">-</b></div>
+                        <div>Ancho de Banda: <b id="debBandwidth">100 Mbps</b></div>
+                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
+                        <div>Calificación: <b id="debGrade">-</b></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
+                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playBeep(freq = 440, duration = 0.08) {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btnAudio').textContent = soundEnabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF';
+            if (soundEnabled) playBeep(880);
+        }
+
+        let difficulty = 2;
+        let isPaused = false;
+        let isMissionEnded = false;
+        let missionTime = 0;
+
+        // Target values to match
+        let targetFreq = 70;
+        let targetGain = 75;
+
+        // User values
+        let userFreq = 50;
+        let userGain = 50;
+
+        function setupScenario(lvl) {
+            difficulty = parseInt(lvl);
+            isMissionEnded = false;
+            isPaused = false;
+            missionTime = 0;
+
+            // Generar valores aleatorios objetivo según dificultad
+            targetFreq = Math.floor(30 + Math.random() * 60);
+            targetGain = Math.floor(30 + Math.random() * 60);
+
+            userFreq = 50;
+            userGain = 50;
+            document.getElementById('sliderFreq').value = userFreq;
+            document.getElementById('sliderGain').value = userGain;
+            updateSliders();
+        }
+
+        function changeDifficulty(val) { setupScenario(val); }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function resetMission() { setupScenario(difficulty); }
+
+        function updateSliders() {
+            userFreq = parseInt(document.getElementById('sliderFreq').value);
+            userGain = parseInt(document.getElementById('sliderGain').value);
+            document.getElementById('freqVal').textContent = `${userFreq} Hz`;
+            document.getElementById('gainVal').textContent = `${userGain} %`;
+            playBeep(200 + userFreq * 4, 0.04);
+        }
+
+        function lockSignal() {
+            if (isPaused || isMissionEnded) return;
+            const freqDiff = Math.abs(userFreq - targetFreq);
+            const gainDiff = Math.abs(userGain - targetGain);
+
+            const tolerance = difficulty === 1 ? 8 : (difficulty === 2 ? 5 : 3);
+
+            if (freqDiff <= tolerance && gainDiff <= tolerance) {
+                completeMission(freqDiff, gainDiff);
+            } else {
+                playBeep(150, 0.3);
+                alert("¡Señal desalineada! La onda no coincide con el objetivo satelital.");
+            }
+        }
+
+        function completeMission(fDiff, gDiff) {
+            isMissionEnded = true;
+            document.getElementById('debriefModal').style.display = 'flex';
+            const acc = Math.max(0, 100 - (fDiff + gDiff) * 3);
+            document.getElementById('debAccuracy').textContent = `${acc.toFixed(1)}%`;
+            document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
+            document.getElementById('debGrade').textContent = acc > 90 ? "A+ PERFECTO" : "B BUENO";
+        }
+
+        function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
+        function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
+
+        const canvas = document.getElementById('scopeCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+        window.addEventListener('resize', resizeCanvas);
+
+        let wavePhase = 0;
+
+        function render() {
+            if (!isPaused && !isMissionEnded) {
+                missionTime += 0.016;
+                wavePhase += 0.05;
+            }
+
+            ctx.fillStyle = '#020408';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Rejilla de osciloscopio
+            ctx.strokeStyle = '#0e2336';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 30) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 30) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            const cy = canvas.height / 2;
+
+            // 1. Dibujar Onda Objetivo (Verde punteada)
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x++) {
+                let y = cy + Math.sin(x * 0.02 * (targetFreq / 25) + wavePhase) * (targetGain * 0.8);
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 2. Dibujar Onda del Usuario (Celeste)
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x++) {
+                let y = cy + Math.sin(x * 0.02 * (userFreq / 25) + wavePhase) * (userGain * 0.8);
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Comprobar estado en tiempo real
+            const freqDiff = Math.abs(userFreq - targetFreq);
+            const gainDiff = Math.abs(userGain - targetGain);
+            const statusTag = document.getElementById('matchStatus');
+            if (freqDiff <= 5 && gainDiff <= 5) {
+                statusTag.textContent = "ESTADO: SEÑAL SINCRONIZADA OK";
+                statusTag.style.color = "var(--crt-green)";
+            } else {
+                statusTag.textContent = "ESTADO: DESALINEADO";
+                statusTag.style.color = "var(--crt-amber)";
+            }
+
+            const mins = String(Math.floor(missionTime / 60)).padStart(2, '0');
+            const secs = String(Math.floor(missionTime % 60)).padStart(2, '0');
+            document.getElementById('clockDisplay').textContent = `${mins}:${secs}`;
+
+            requestAnimationFrame(render);
+        }
+
+        window.onload = () => { resizeCanvas(); setupScenario(2); requestAnimationFrame(render); };
+    </script>
+</body>
+</html>

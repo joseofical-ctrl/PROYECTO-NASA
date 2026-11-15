@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acoplamiento Espacial - Simulador Aeroespacial Avanzado</title>
+    <style>
+        :root {
+            --bg-deep: #050811;
+            --bg-panel: #0d1422;
+            --bg-card: #121c2e;
+            --border-panel: #1e2e48;
+            --border-highlight: #2563eb;
+            --crt-green: #00ff88;
+            --crt-cyan: #00e5ff;
+            --crt-amber: #f59e0b;
+            --crt-red: #ef4444;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --font-mono: 'Courier New', ui-monospace, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 45%, rgba(15, 30, 55, 0.45) 0%, rgba(3, 5, 10, 0.98) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+        }
+
+        /* Top Operations Bar */
+        header {
+            background: #0a101b;
+            border-bottom: 2px solid var(--border-panel);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .header-title-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-system {
+            background: rgba(0, 229, 255, 0.12);
+            color: var(--crt-cyan);
+            border: 1px solid var(--crt-cyan);
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .btn-ui {
+            background: #142033;
+            border: 1px solid #2d4466;
+            color: var(--text-main);
+            padding: 5px 12px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-ui:hover {
+            background: #1e3250;
+            border-color: var(--crt-cyan);
+            color: var(--crt-cyan);
+        }
+        .btn-ui.active {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: var(--crt-green);
+            color: var(--crt-green);
+        }
+
+        .select-diff {
+            background: #142033;
+            color: var(--crt-amber);
+            border: 1px solid #2d4466;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        /* Mission Context Header */
+        .mission-bar {
+            background: linear-gradient(90deg, #091322 0%, #0d1b30 50%, #091322 100%);
+            border-bottom: 1px solid var(--border-panel);
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+        .mission-text {
+            color: var(--crt-amber);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .mission-goal {
+            color: var(--crt-cyan);
+        }
+        .mission-status-pill {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            background: rgba(0, 255, 136, 0.12);
+            color: var(--crt-green);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        /* Main Cockpit Layout */
+        .cockpit-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 80px);
+            overflow: hidden;
+        }
+
+        /* 3D Visual Viewport Panel */
+        .viewport-panel {
+            background: #020408;
+            border: 2px solid var(--border-panel);
+            border-radius: 4px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.85);
+        }
+
+        .viewport-header {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: linear-gradient(180deg, rgba(8,16,28,0.85) 0%, transparent 100%);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* The Main 3D Space Scene Canvas (High Resolution Viewport) */
+        canvas#viewportCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* HUD Live Floating Telemetry Overlay */
+        .hud-top-left {
+            position: absolute;
+            top: 40px; left: 16px;
+            background: rgba(10, 18, 30, 0.75);
+            border: 1px solid rgba(37, 99, 235, 0.35);
+            backdrop-filter: blur(4px);
+            border-radius: 3px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 11px;
+            pointer-events: none;
+            min-width: 180px;
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hud-label { color: var(--text-dim); }
+        .hud-val { font-weight: bold; color: var(--crt-cyan); }
+        .hud-val.good { color: var(--crt-green); }
+        .hud-val.warn { color: var(--crt-amber); }
+        .hud-val.danger { color: var(--crt-red); }
+
+        /* Right Flight Telemetry & Controls Sidebar */
+        .telemetry-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .card-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: 4px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-header {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--crt-green);
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Angular Attitude Gauges (Yaw, Pitch, Roll) */
+        .attitude-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .attitude-meter {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 6px 4px;
+            border-radius: 2px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .att-axis { font-size: 9px; color: var(--text-dim); font-weight: bold; }
+        .att-val { font-size: 13px; font-weight: bold; color: var(--crt-cyan); }
+        .att-bar-track {
+            height: 4px;
+            background: #141f2e;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        .att-bar-thumb {
+            height: 100%;
+            background: var(--crt-green);
+            width: 50%;
+            transition: all 0.1s ease;
+        }
+
+        /* Live Trend Mini-Graph Canvas */
+        .chart-box {
+            background: #060b13;
+            border: 1px solid #1a273b;
+            border-radius: 3px;
+            height: 75px;
+            position: relative;
+        }
+        canvas#trendCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* 6-DOF RCS Integrated Flight Control Deck */
+        .flight-deck {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .control-subpanel {
+            background: rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 3px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .subpanel-title {
+            font-size: 9px;
+            font-weight: bold;
+            color: var(--text-dim);
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .pad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+        }
+
+        .btn-rcs {
+            background: #172438;
+            border: 1px solid #293f60;
+            color: #e2e8f0;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 7px 0;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.1s;
+        }
+        .btn-rcs:hover {
+            background: #253957;
+            border-color: var(--crt-cyan);
+            color: var(--crt-cyan);
+        }
+        .btn-rcs:active {
+            background: var(--crt-cyan);
+            color: #000;
+            transform: scale(0.96);
+        }
+
+        .docking-action-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn-sas {
+            background: #0f2c24;
+            border: 1px solid var(--crt-green);
+            color: var(--crt-green);
+            padding: 9px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 3px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        .btn-sas.active {
+            background: var(--crt-green);
+            color: #05140d;
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+        }
+
+        /* History & Guide Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 6, 12, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-window {
+            background: #0e1726;
+            border: 2px solid var(--border-highlight);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+
+        .modal-top {
+            background: #142236;
+            border-bottom: 1px solid var(--border-panel);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: var(--crt-cyan);
+            font-size: 13px;
+        }
+
+        .modal-content {
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            text-align: left;
+        }
+        .history-table th {
+            background: #17243a;
+            color: var(--text-dim);
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border-panel);
+        }
+        .history-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .history-table tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .guide-card {
+            background: #142033;
+            border-left: 4px solid;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .guide-card.cyan { border-color: var(--crt-cyan); }
+        .guide-card.amber { border-color: var(--crt-amber); }
+        .guide-card.green { border-color: var(--crt-green); }
+        .guide-card.red { border-color: var(--crt-red); }
+
+        @media (max-width: 900px) {
+            .cockpit-grid {
+                grid-template-columns: 1fr;
+                overflow-y: auto;
+            }
+            .viewport-panel {
+                min-height: 380px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title-block">
+            <span class="badge-system">APAS // 6-DOF</span>
+            <h1>SISTEMA DE ACOPLAMIENTO Y RENDEZVOUS CERCANO</h1>
+        </div>
+        <div class="header-actions">
+            <button class="btn-ui" onclick="location.href='index.html'">⌂ HUB</button>
+            <label for="diffSelect" style="color:var(--text-dim)">DIFICULTAD:</label>
+            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
+                <option value="1">Nivel 1 - Inserción Rectilínea Guiada</option>
+                <option value="2" selected>Nivel 2 - Desalineación Tridimensional</option>
+                <option value="3">Nivel 3 - Estación en Rotación Progresiva</option>
+                <option value="4">Nivel 4 - Falla Asimétrica en Propulsor RCS</option>
+                <option value="5">Nivel 5 - Atraque Nocturno con Fuerza de Mareas</option>
+            </select>
+            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORIAL</button>
+            <button class="btn-ui" onclick="openGuideModal()">? GUÍA</button>
+            <button class="btn-ui" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO</button>
+            <button class="btn-ui" onclick="resetMission()">↻ REINICIAR</button>
+        </div>
+    </header>
+
+    <div class="mission-bar">
+        <div>
+            <span class="mission-text" id="missionText">MISIÓN: Acoplamiento con Estación Orbital Freedom</span>
+        </div>
+        <div class="mission-goal" id="missionGoal">
+            OBJETIVO: Alinea el vector relativo en cruz, reduce velocidad &lt; 0.15 m/s y encastra a Z = 0.0 m.
+        </div>
+        <div>
+            ESTADO: <span class="mission-status-pill" id="missionStatusPill">EN APROXIMACIÓN</span>
+        </div>
+    </div>
+
+    <div class="cockpit-grid">
+        <!-- Main 3D Perspective Viewport Panel -->
+        <div class="viewport-panel">
+            <div class="viewport-header">
+                <span style="color:var(--crt-cyan)">VENTANA DE VUELO // VISOR ÓPTICO</span>
+                <span id="captureConeStatus" style="color:var(--crt-green)">CORREDOR DE CAPTURA ACTIVO</span>
+            </div>
+
+            <!-- Full High-Res Canvas -->
+            <canvas id="viewportCanvas"></canvas>
+
+            <!-- Floating Head-Up Display Telemetry -->
+            <div class="hud-top-left">
+                <div class="hud-row">
+                    <span class="hud-label">DISTANCIA (Z):</span>
+                    <span class="hud-val" id="hudDistance">42.50 m</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">VEL. RELATIVA:</span>
+                    <span class="hud-val" id="hudVelocity">0.12 m/s</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">DESVÍO LATERAL:</span>
+                    <span class="hud-val" id="hudOffset">0.24 m</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">COMBUSTIBLE RCS:</span>
+                    <span class="hud-val" id="hudFuel">84.2%</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">PRECISIÓN VUELO:</span>
+                    <span class="hud-val good" id="hudPrecision">96%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Telemetry & Controls Sidebar -->
+        <div class="telemetry-sidebar">
+            <!-- Attitude Gauges -->
+            <div class="card-panel">
+                <div class="card-header">
+                    <span>ACTITUD ANGULAR (DESVIACIÓN)</span>
+                    <span style="color:var(--text-dim); font-size:10px;">LÍMITE: &plusmn;1.5°</span>
+                </div>
+                <div class="attitude-grid">
+                    <div class="attitude-meter">
+                        <span class="att-axis">YAW (GUIÑADA)</span>
+                        <span class="att-val" id="valYaw">0.2°</span>
+                        <div class="att-bar-track"><div class="att-bar-thumb" id="barYaw"></div></div>
+                    </div>
+                    <div class="attitude-meter">
+                        <span class="att-axis">PITCH (CABECEO)</span>
+                        <span class="att-val" id="valPitch">-0.1°</span>
+                        <div class="att-bar-track"><div class="att-bar-thumb" id="barPitch"></div></div>
+                    </div>
+                    <div class="attitude-meter">
+                        <span class="att-axis">ROLL (ALABEO)</span>
+                        <span class="att-val" id="valRoll">0.4°</span>
+                        <div class="att-bar-track"><div class="att-bar-thumb" id="barRoll"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Telemetry Trend Graph -->
+            <div class="card-panel">
+                <div class="card-header">
+                    <span>PERFIL DE APROXIMACIÓN (DISTANCIA vs TIEMPO)</span>
+                    <span style="color:var(--crt-cyan)" id="graphTimeText">T+00:00</span>
+                </div>
+                <div class="chart-box">
+                    <canvas id="trendCanvas"></canvas>
+                </div>
+                <div style="font-size:9px; color:var(--text-dim); display:flex; justify-content:space-between;">
+                    <span>Velocidad de aproximación: <b id="speedReadout" style="color:var(--crt-green)">0.12 m/s</b></span>
+                    <span>Tasa segura: &lt; 0.15 m/s</span>
+                </div>
+            </div>
+
+            <!-- 6-DOF RCS Control Deck -->
+            <div class="card-panel">
+                <div class="card-header">
+                    <span>MANDO DE REACCIÓN RCS (6-DOF)</span>
+                    <span style="font-size:10px; color:var(--text-dim)">INERCIA REAL</span>
+                </div>
+
+                <div class="flight-deck">
+                    <!-- Translation Pad (X / Y / Z) -->
+                    <div class="control-subpanel">
+                        <div class="subpanel-title">TRASLACIÓN (W,A,S,D / F,V)</div>
+                        <div class="pad-grid">
+                            <div></div>
+                            <button class="btn-rcs" onclick="applyImpulse('posY', +1)" title="Subir (W / Flecha Arriba)">▲</button>
+                            <div></div>
+                            <button class="btn-rcs" onclick="applyImpulse('posX', -1)" title="Izquierda (A / Flecha Izq)">◄</button>
+                            <div style="font-size:8px; line-height:28px; text-align:center; color:var(--text-dim)">XY</div>
+                            <button class="btn-rcs" onclick="applyImpulse('posX', +1)" title="Derecha (D / Flecha Der)">►</button>
+                            <div></div>
+                            <button class="btn-rcs" onclick="applyImpulse('posY', -1)" title="Bajar (S / Flecha Abajo)">▼</button>
+                            <div></div>
+                        </div>
+                        <div style="display:flex; gap:3px; margin-top:2px;">
+                            <button class="btn-rcs" style="flex:1" onclick="applyImpulse('posZ', -1)" title="Avanzar (F)">+ AVANCE</button>
+                            <button class="btn-rcs" style="flex:1" onclick="applyImpulse('posZ', +1)" title="Frenar (V)">- FRENO</button>
+                        </div>
+                    </div>
+
+                    <!-- Rotation Pad (Pitch / Yaw / Roll) -->
+                    <div class="control-subpanel">
+                        <div class="subpanel-title">ROTACIÓN (I,K,J,L / Q,E)</div>
+                        <div class="pad-grid">
+                            <div></div>
+                            <button class="btn-rcs" onclick="applyTorque('pitch', -1)" title="Pitch Arriba (I)">P▲</button>
+                            <div></div>
+                            <button class="btn-rcs" onclick="applyTorque('yaw', -1)" title="Yaw Izq (J)">Y◄</button>
+                            <div style="font-size:8px; line-height:28px; text-align:center; color:var(--text-dim)">ROT</div>
+                            <button class="btn-rcs" onclick="applyTorque('yaw', +1)" title="Yaw Der (L)">Y►</button>
+                            <div></div>
+                            <button class="btn-rcs" onclick="applyTorque('pitch', +1)" title="Pitch Abajo (K)">P▼</button>
+                            <div></div>
+                        </div>
+                        <div style="display:flex; gap:3px; margin-top:2px;">
+                            <button class="btn-rcs" style="flex:1" onclick="applyTorque('roll', -1)" title="Roll Antihorario (Q)">R↺</button>
+                            <button class="btn-rcs" style="flex:1" onclick="applyTorque('roll', +1)" title="Roll Horario (E)">R↻</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SAS Damping & Auto-Hold -->
+                <div class="docking-action-bar">
+                    <button class="btn-sas active" id="btnSAS" onclick="toggleSAS()">
+                        ● SAS: AMORTIGUACIÓN ACTIVA
+                    </button>
+                    <button class="btn-ui" style="justify-content:center" onclick="killRelativeDrift()">
+                        FRENAR DERIVAS
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal Window -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span>HISTORIAL DE SIMULACIONES Y TELEMETRÍA DE VUELO</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <p style="color:var(--text-dim)">Registro de operaciones reales ejecutadas en esta consola:</p>
+                <div style="overflow-x:auto;">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Misión</th>
+                                <th>Resultado</th>
+                                <th>Vel. Contacto</th>
+                                <th>Desvío</th>
+                                <th>Tiempo</th>
+                                <th>Combustible</th>
+                                <th>Calificación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 intentos registrados</span>
+                    <button class="btn-ui" onclick="clearHistory()">LIMPIAR HISTORIAL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Guide Modal -->
+    <div class="modal-overlay" id="guideModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span>MANUAL OPERATIVO DE ACOPLAMIENTO ESPACIAL (APAS)</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="guide-card cyan">
+                    <b style="color:var(--crt-cyan)">1. FÍSICA Y DINÁMICA ESPACIAL REAL:</b>
+                    <span>En el vacío cósmico no existe fricción atmosférica. Todo impulso genera velocidad que persiste indefinidamente hasta que apliques un contra-impulso de sentido opuesto.</span>
+                </div>
+                <div class="guide-card amber">
+                    <b style="color:var(--crt-amber)">2. CONTROL 6-DOF (6 GRADOS DE LIBERTAD):</b>
+                    <span>Controlas 3 ejes de traslación (X, Y, Z) y 3 de rotación (Pitch, Yaw, Roll). Puedes usar los controles en pantalla o tu teclado: <b>WASD</b> para moverte en cruz, <b>F / V</b> para avanzar o frenar, y <b>IJKL / QE</b> para rotar la nave.</span>
+                </div>
+                <div class="guide-card green">
+                    <b style="color:var(--crt-green)">3. EL CORREDOR DE CAPTURA Y ASISTENCIA SAS:</b>
+                    <span>El sistema SAS (pulsando la tecla ESPACIO o el botón SAS) frena automáticamente las velocidades de giro residuales para estabilizar la puntería hacia el puerto de atraque.</span>
+                </div>
+                <div class="guide-card red">
+                    <b style="color:var(--crt-red)">4. CONDICIONES CRÍTICAS DE ENCLAVAMIENTO (Z = 0.0 m):</b>
+                    <span>Al alcanzar la distancia cero, la velocidad relativa debe ser obligatoriamente menor a <b>0.15 m/s</b> y la desviación angular inferior a <b>1.5°</b> para que los 12 pestillos mecánicos andróginos queden asegurados.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debriefing Modal -->
+    <div class="modal-overlay" id="debriefModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span id="debTitle" style="color:var(--crt-green)">INFORME TÉCNICO DE ACOPLAMIENTO</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <p id="debMessage" style="font-size:13px; line-height:1.5;">La maniobra concluyó con enclavamiento mecánico exitoso.</p>
+                <div style="background:#091220; border:1px solid var(--border-panel); padding:10px; border-radius:3px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>Velocidad de Contacto: <b id="debVel" style="color:var(--crt-green)">0.08 m/s</b></div>
+                    <div>Desalineación Angular: <b id="debAtt" style="color:var(--crt-cyan)">0.4°</b></div>
+                    <div>Error Lateral: <b id="debOffset" style="color:var(--crt-cyan)">0.14 m</b></div>
+                    <div>Consumo de Propelente: <b id="debFuel" style="color:var(--crt-amber)">12.4%</b></div>
+                    <div>Tiempo Transcurrido: <b id="debTime" style="color:#fff">42 s</b></div>
+                    <div>Calificación de Vuelo: <b id="debGrade" style="color:var(--crt-green)">A+ PERFECTO</b></div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                    <button class="btn-ui" onclick="closeModals(); resetMission();">REINTENTAR</button>
+                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">SIGUIENTE NIVEL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+           1. PROCEDURAL WEB AUDIO SYNTH ENGINE (REALISTIC & SUBTLE)
+           ========================================================================= */
+        let audioCtx = null;
+        let soundActive = true;
+        let ambientOsc = null;
+        let ambientGain = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Subtle ambient cockpit avionics hum (48 Hz filtered lowpass)
+                try {
+                    ambientOsc = audioCtx.createOscillator();
+                    ambientGain = audioCtx.createGain();
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 85;
+                    ambientOsc.type = 'sawtooth';
+                    ambientOsc.frequency.setValueAtTime(48, audioCtx.currentTime);
+                    ambientGain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+                    ambientOsc.connect(filter);
+                    filter.connect(ambientGain);
+                    ambientGain.connect(audioCtx.destination);
+                    ambientOsc.start();
+                } catch(e) {}
+            }
+        }
+
+        // Soft, natural bandpass RCS thruster puff
+        function playRCSSound() {
+            if (!soundActive) return;
+            initAudio();
+            try {
+                const duration = 0.09;
+                const bufferSize = audioCtx.sampleRate * duration;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(700, audioCtx.currentTime);
+                filter.Q.setValueAtTime(2.2, audioCtx.currentTime);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.09, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                noise.start();
+            } catch(e) {}
+        }
+
+        // Subtle proximity telemetry radar beep
+        let lastBeepTime = 0;
+        function playProximityBeep(distance) {
+            if (!soundActive || distance > 25) return;
+            initAudio();
+            const now = performance.now();
+            const interval = Math.max(300, distance * 55); // Faster cadence closer to port
+            if (now - lastBeepTime > interval) {
+                lastBeepTime = now;
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.025, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.04);
+                } catch(e) {}
+            }
+        }
+
+        // Mechanical latching clunk upon capture
+        function playCaptureSound() {
+            if (!soundActive) return;
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(110, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.35);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.35);
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            soundActive = !soundActive;
+            if (ambientGain) {
+                ambientGain.gain.setValueAtTime(soundActive ? 0.015 : 0, audioCtx.currentTime);
+            }
+            document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUDO';
+        }
+
+        /* =========================================================================
+           2. RESOLUCIÓN DE REFERENCIA DE 256x192 POR ELEMENTO INDIVIDUAL
+           (Buffers offscreen independientes para cada vehículo y estructura)
+           ========================================================================= */
+        // Elemento 1: Puerto de atraque APAS de la estación (Offscreen 256x192)
+        const portBuffer = document.createElement('canvas');
+        portBuffer.width = 256;
+        portBuffer.height = 192;
+        const pCtx = portBuffer.getContext('2d');
+        pCtx.imageSmoothingEnabled = false;
+
+        function renderPortElementBuffer() {
+            pCtx.clearRect(0, 0, 256, 192);
+            const pcx = 128;
+            const pcy = 96;
+
+            // Anillo exterior andrógino
+            pCtx.fillStyle = '#1e293b';
+            pCtx.beginPath();
+            pCtx.arc(pcx, pcy, 72, 0, Math.PI * 2);
+            pCtx.fill();
+            pCtx.strokeStyle = '#475569';
+            pCtx.lineWidth = 3;
+            pCtx.stroke();
+
+            // Túnel de presurización interior
+            pCtx.fillStyle = '#050a14';
+            pCtx.beginPath();
+            pCtx.arc(pcx, pcy, 48, 0, Math.PI * 2);
+            pCtx.fill();
+            pCtx.strokeStyle = '#00ff88';
+            pCtx.lineWidth = 1;
+            pCtx.stroke();
+
+            // 12 Pestillos mecánicos perimetrales
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * Math.PI) / 6;
+                const lx = pcx + Math.cos(angle) * 58;
+                const ly = pcy + Math.sin(angle) * 58;
+                pCtx.fillStyle = (i % 2 === 0) ? '#f59e0b' : '#94a3b8';
+                pCtx.fillRect(lx - 3, ly - 3, 6, 6);
+            }
+
+            // Marcas ópticas de colimación en cruz
+            pCtx.strokeStyle = 'rgba(0, 229, 255, 0.7)';
+            pCtx.lineWidth = 1.5;
+            pCtx.beginPath();
+            pCtx.moveTo(pcx - 30, pcy); pCtx.lineTo(pcx + 30, pcy);
+            pCtx.moveTo(pcx, pcy - 30); pCtx.lineTo(pcx, pcy + 30);
+            pCtx.stroke();
+
+            // Faro estroboscópico de referencia
+            pCtx.fillStyle = '#00e5ff';
+            pCtx.fillRect(pcx - 2, pcy - 2, 4, 4);
+        }
+        renderPortElementBuffer();
+
+        // Elemento 2: Nave de aproximación auxiliar (Offscreen 256x192)
+        const shipBuffer = document.createElement('canvas');
+        shipBuffer.width = 256;
+        shipBuffer.height = 192;
+        const sCtx = shipBuffer.getContext('2d');
+        sCtx.imageSmoothingEnabled = false;
+
+        function renderShipElementBuffer(rcsFiring) {
+            sCtx.clearRect(0, 0, 256, 192);
+            const scx = 128;
+            const scy = 96;
+
+            // Paneles solares izquierdo y derecho
+            sCtx.fillStyle = '#0284c7';
+            sCtx.fillRect(scx - 70, scy - 12, 38, 24);
+            sCtx.fillRect(scx + 32, scy - 12, 38, 24);
+
+            // Rejilla de celdas solares
+            sCtx.strokeStyle = '#38bdf8';
+            sCtx.lineWidth = 1;
+            sCtx.strokeRect(scx - 70, scy - 12, 38, 24);
+            sCtx.strokeRect(scx + 32, scy - 12, 38, 24);
+
+            // Fuselaje principal de la cápsula
+            sCtx.fillStyle = '#334155';
+            sCtx.fillRect(scx - 28, scy - 20, 56, 40);
+            sCtx.fillStyle = '#64748b';
+            sCtx.fillRect(scx - 24, scy - 16, 48, 32);
+
+            // Cono frontal de atraque andrógino
+            sCtx.fillStyle = '#cbd5e1';
+            sCtx.beginPath();
+            sCtx.moveTo(scx - 14, scy - 20);
+            sCtx.lineTo(scx + 14, scy - 20);
+            sCtx.lineTo(scx, scy - 32);
+            sCtx.closePath();
+            sCtx.fill();
+
+            // Faro de navegación estroboscópico
+            sCtx.fillStyle = '#00ff88';
+            sCtx.beginPath();
+            sCtx.arc(scx, scy - 6, 3, 0, Math.PI * 2);
+            sCtx.fill();
+
+            // Toberas RCS y soplos de gas
+            if (rcsFiring) {
+                sCtx.fillStyle = 'rgba(255,255,255,0.85)';
+                sCtx.fillRect(scx - 34, scy - 14, 5, 4);
+                sCtx.fillRect(scx + 29, scy - 14, 5, 4);
+            }
+        }
+        renderShipElementBuffer(false);
+
+        /* =========================================================================
+           3. FÍSICA ESPACIAL 6-DOF REAL, INERCIA Y RENDERING 3D PERSPECTIVO
+           ========================================================================= */
+        const canvas = document.getElementById('viewportCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeViewport() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeViewport);
+
+        // Estado físico 6-DOF de la nave
+        let state = {
+            pos: { x: 1.8, y: -1.2, z: 42.5 },   // metros respecto al puerto
+            vel: { x: -0.015, y: 0.01, z: -0.12 },// m/s velocidad relativa
+            rot: { yaw: 2.5, pitch: -1.8, roll: 0.8 }, // grados
+            angVel: { yaw: -0.04, pitch: 0.03, roll: 0.0 }, // deg/s
+            fuel: 84.2,
+            sasActive: true,
+            isEnded: false
+        };
+
+        let missionDifficulty = 2;
+        let stationSpinRate = 0.0; // deg/s
+        let stationAngle = 0.0;
+        let rcsPuffTime = 0;
+        let missionElapsedTime = 0;
+
+        // Historial de telemetría para gráfico
+        const trendHistory = [];
+
+        function setupDifficulty(lvl) {
+            missionDifficulty = parseInt(lvl);
+            state.isEnded = false;
+            missionElapsedTime = 0;
+            trendHistory.length = 0;
+
+            if (missionDifficulty === 1) {
+                state.pos = { x: 0.4, y: -0.3, z: 25.0 };
+                state.vel = { x: 0.0, y: 0.0, z: -0.10 };
+                state.rot = { yaw: 0.2, pitch: 0.1, roll: 0.0 };
+                state.angVel = { yaw: 0.0, pitch: 0.0, roll: 0.0 };
+                state.fuel = 95.0;
+                stationSpinRate = 0.0;
+                document.getElementById('missionText').textContent = "MISIÓN: Acoplamiento Rectilíneo Guiado";
+            } else if (missionDifficulty === 2) {
+                state.pos = { x: 1.8, y: -1.2, z: 42.5 };
+                state.vel = { x: -0.02, y: 0.01, z: -0.12 };
+                state.rot = { yaw: 2.5, pitch: -1.8, roll: 1.2 };
+                state.angVel = { yaw: -0.03, pitch: 0.02, roll: 0.0 };
+                state.fuel = 84.0;
+                stationSpinRate = 0.0;
+                document.getElementById('missionText').textContent = "MISIÓN: Desalineación Tridimensional";
+            } else if (missionDifficulty === 3) {
+                state.pos = { x: -2.4, y: 1.9, z: 48.0 };
+                state.vel = { x: 0.02, y: -0.02, z: -0.14 };
+                state.rot = { yaw: 3.2, pitch: -2.4, roll: -12.0 };
+                state.angVel = { yaw: 0.02, pitch: -0.02, roll: 0.0 };
+                state.fuel = 75.0;
+                stationSpinRate = 0.25; // Rotación de la estación
+                document.getElementById('missionText').textContent = "MISIÓN: Estación en Rotación Progresiva";
+            } else if (missionDifficulty === 4) {
+                state.pos = { x: 3.2, y: 2.8, z: 52.0 };
+                state.vel = { x: -0.04, y: -0.03, z: -0.15 };
+                state.rot = { yaw: 4.5, pitch: -3.5, roll: 4.0 };
+                state.angVel = { yaw: -0.05, pitch: 0.04, roll: 0.1 };
+                state.fuel = 60.0;
+                stationSpinRate = 0.0;
+                document.getElementById('missionText').textContent = "MISIÓN: Falla Asimétrica en Propulsor RCS";
+            } else if (missionDifficulty === 5) {
+                state.pos = { x: -4.5, y: -3.8, z: 62.0 };
+                state.vel = { x: -0.06, y: 0.05, z: -0.18 };
+                state.rot = { yaw: -7.0, pitch: 6.0, roll: 22.0 };
+                state.angVel = { yaw: 0.06, pitch: -0.05, roll: 0.15 };
+                state.fuel = 50.0;
+                stationSpinRate = 0.4;
+                document.getElementById('missionText').textContent = "MISIÓN EXTREMA: Atraque Nocturno con Mareas";
+            }
+
+            document.getElementById('missionStatusPill').textContent = "EN APROXIMACIÓN";
+            document.getElementById('missionStatusPill').style.color = "var(--crt-cyan)";
+            document.getElementById('missionStatusPill').style.borderColor = "var(--crt-cyan)";
+            updateUI();
+        }
+
+        function changeDifficulty(v) {
+            setupDifficulty(v);
+        }
+
+        function resetMission() {
+            setupDifficulty(missionDifficulty);
+        }
+
+        /* Controles RCS 6-DOF */
+        function applyImpulse(axis, dir) {
+            if (state.isEnded || state.fuel <= 0) return;
+            const deltaV = 0.025; // m/s por pulso
+            if (axis === 'posX') state.vel.x += dir * deltaV;
+            if (axis === 'posY') state.vel.y += dir * deltaV;
+            if (axis === 'posZ') state.vel.z += dir * deltaV;
+            
+            // Falla asimétrica en dificultad 4: genera torque parásito
+            if (missionDifficulty === 4 && axis === 'posX' && dir > 0) {
+                state.angVel.roll += 0.12;
+            }
+
+            state.fuel = Math.max(0, state.fuel - 0.25);
+            rcsPuffTime = 0.15;
+            playRCSSound();
+            renderShipElementBuffer(true);
+            updateUI();
+        }
+
+        function applyTorque(axis, dir) {
+            if (state.isEnded || state.fuel <= 0) return;
+            const deltaOmega = 0.35; // deg/s por pulso
+            if (axis === 'yaw') state.angVel.yaw += dir * deltaOmega;
+            if (axis === 'pitch') state.angVel.pitch += dir * deltaOmega;
+            if (axis === 'roll') state.angVel.roll += dir * deltaOmega;
+
+            state.fuel = Math.max(0, state.fuel - 0.2);
+            rcsPuffTime = 0.15;
+            playRCSSound();
+            renderShipElementBuffer(true);
+            updateUI();
+        }
+
+        function toggleSAS() {
+            state.sasActive = !state.sasActive;
+            const btn = document.getElementById('btnSAS');
+            btn.classList.toggle('active', state.sasActive);
+            btn.textContent = state.sasActive ? "● SAS: AMORTIGUACIÓN ACTIVA" : "○ SAS: MODO MANUAL DESASISTIDO";
+            playRCSSound();
+        }
+
+        function killRelativeDrift() {
+            if (state.isEnded || state.fuel <= 0) return;
+            state.vel.x *= 0.15;
+            state.vel.y *= 0.15;
+            state.fuel = Math.max(0, state.fuel - 1.2);
+            playRCSSound();
+            updateUI();
+        }
+
+        // Teclado completo 6-DOF
+        window.addEventListener('keydown', (e) => {
+            if (state.isEnded) return;
+            const k = e.key.toLowerCase();
+            if (k === 'a' || e.key === 'ArrowLeft') applyImpulse('posX', -1);
+            else if (k === 'd' || e.key === 'ArrowRight') applyImpulse('posX', 1);
+            else if (k === 'w' || e.key === 'ArrowUp') applyImpulse('posY', 1);
+            else if (k === 's' || e.key === 'ArrowDown') applyImpulse('posY', -1);
+            else if (k === 'f') applyImpulse('posZ', -1); // Avanzar
+            else if (k === 'v') applyImpulse('posZ', 1);  // Frenar
+            else if (k === 'j') applyTorque('yaw', -1);
+            else if (k === 'l') applyTorque('yaw', 1);
+            else if (k === 'i') applyTorque('pitch', 1);
+            else if (k === 'k') applyTorque('pitch', -1);
+            else if (k === 'q') applyTorque('roll', -1);
+            else if (k === 'e') applyTorque('roll', 1);
+            else if (k === ' ') toggleSAS();
+        });
+
+        /* =========================================================================
+           4. SIMULACIÓN FÍSICA TICK (INERCIA, ROTACIÓN Y CAPTURA)
+           ========================================================================= */
+        function updatePhysics(dt) {
+            if (state.isEnded) return;
+
+            missionElapsedTime += dt;
+
+            // Integración inercial de posiciones
+            state.pos.x += state.vel.x * dt;
+            state.pos.y += state.vel.y * dt;
+            state.pos.z += state.vel.z * dt;
+
+            // Integración inercial de ángulos
+            state.rot.yaw += state.angVel.yaw * dt;
+            state.rot.pitch += state.angVel.pitch * dt;
+            state.rot.roll = (state.rot.roll + state.angVel.roll * dt) % 360;
+
+            // Rotación de la estación
+            stationAngle += stationSpinRate * dt;
+
+            // Efecto SAS: amortigua giros parásitos suavemente si está activo
+            if (state.sasActive) {
+                state.angVel.yaw *= Math.max(0, 1 - 1.8 * dt);
+                state.angVel.pitch *= Math.max(0, 1 - 1.8 * dt);
+                state.angVel.roll *= Math.max(0, 1 - 1.8 * dt);
+            }
+
+            // Temporizador de soplos de gas
+            if (rcsPuffTime > 0) {
+                rcsPuffTime -= dt;
+                if (rcsPuffTime <= 0) renderShipElementBuffer(false);
+            }
+
+            // Radar proximity audio feedback
+            playProximityBeep(state.pos.z);
+
+            // Muestreo para el gráfico de telemetría (cada 0.4s)
+            if (trendHistory.length === 0 || missionElapsedTime - trendHistory[trendHistory.length - 1].t > 0.4) {
+                trendHistory.push({
+                    t: missionElapsedTime,
+                    z: state.pos.z,
+                    v: Math.abs(state.vel.z)
+                });
+                if (trendHistory.length > 50) trendHistory.shift();
+            }
+
+            // Condición de contacto a Z <= 0.05m
+            if (state.pos.z <= 0.05) {
+                state.pos.z = 0.0;
+                evaluateCapture();
+            }
+
+            updateUI();
+        }
+
+        function evaluateCapture() {
+            state.isEnded = true;
+            const speed = Math.abs(state.vel.z);
+            const latOffset = Math.sqrt(state.pos.x * state.pos.x + state.pos.y * state.pos.y);
+            const maxAngle = Math.max(Math.abs(state.rot.yaw), Math.abs(state.rot.pitch), Math.abs((state.rot.roll - stationAngle) % 360));
+
+            // Criterios APAS: velocidad < 0.16 m/s, desvío < 0.65m, ángulo < 1.6°
+            const success = (speed <= 0.16 && latOffset <= 0.65 && maxAngle <= 1.8);
+
+            if (success) {
+                playCaptureSound();
+                document.getElementById('missionStatusPill').textContent = "¡ACOPLADO CON ÉXITO!";
+                document.getElementById('missionStatusPill').style.color = "var(--crt-green)";
+                document.getElementById('missionStatusPill').style.borderColor = "var(--crt-green)";
+            } else {
+                document.getElementById('missionStatusPill').textContent = "COLISIÓN / ABORTE";
+                document.getElementById('missionStatusPill').style.color = "var(--crt-red)";
+                document.getElementById('missionStatusPill').style.borderColor = "var(--crt-red)";
+            }
+
+            // Guardar en Historial
+            saveSimulationRecord({
+                timestamp: new Date().toLocaleTimeString(),
+                missionName: document.getElementById('missionText').textContent,
+                success: success,
+                speed: speed,
+                offset: latOffset,
+                time: Math.round(missionElapsedTime),
+                fuelUsed: (100 - state.fuel).toFixed(1),
+                grade: success ? (speed <= 0.09 && latOffset <= 0.3 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO"
+            });
+
+            showDebriefModal(success, speed, latOffset, maxAngle);
+        }
+
+        /* =========================================================================
+           5. RENDERIZADO 3D CON ELEMENTOS INDIVIDUALES DE 256x192
+           ========================================================================= */
+        const stars3D = [];
+        for (let i = 0; i < 90; i++) {
+            stars3D.push({
+                x: (Math.random() - 0.5) * 1200,
+                y: (Math.random() - 0.5) * 800,
+                depth: Math.random() * 0.8 + 0.2
+            });
+        }
+
+        function drawSpaceScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            // 1. Campo de estrellas con paralaje de rotación
+            for (const s of stars3D) {
+                const sx = cx + s.x - (state.rot.yaw * 8 * s.depth);
+                const sy = cy + s.y + (state.rot.pitch * 8 * s.depth);
+                ctx.fillStyle = s.depth > 0.6 ? '#ffffff' : '#64748b';
+                ctx.fillRect(sx, sy, s.depth > 0.6 ? 2 : 1, s.depth > 0.6 ? 2 : 1);
+            }
+
+            // 2. Proyección 3D en Perspectiva Real
+            // Ecuación de cámara: x_screen = cx + (x / z) * f
+            const focal = 450;
+            const zEff = Math.max(0.5, state.pos.z + 2.5);
+            const scale3D = focal / zEff;
+
+            // Posición proyectada de la estación en pantalla
+            const portX = cx - (state.pos.x * scale3D * 0.85);
+            const portY = cy + (state.pos.y * scale3D * 0.85);
+
+            // 3. Cono de Captura Tridimensional (Corredor ILS verde/ámbar)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+
+            // Dibuja 4 líneas de corredor proyectadas desde la estación hacia la nave
+            const coneRadiusFar = 3.5 * scale3D;
+            ctx.beginPath();
+            ctx.moveTo(portX - coneRadiusFar, portY - coneRadiusFar);
+            ctx.lineTo(cx - w * 0.4, cy - h * 0.4);
+            ctx.moveTo(portX + coneRadiusFar, portY - coneRadiusFar);
+            ctx.lineTo(cx + w * 0.4, cy - h * 0.4);
+            ctx.moveTo(portX - coneRadiusFar, portY + coneRadiusFar);
+            ctx.lineTo(cx - w * 0.4, cy + h * 0.4);
+            ctx.moveTo(portX + coneRadiusFar, portY + coneRadiusFar);
+            ctx.lineTo(cx + w * 0.4, cy + h * 0.4);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // 4. ELEMENTO 1: Renderizado del Puerto de la Estación (Buffer 256x192 individual)
+            ctx.save();
+            ctx.translate(portX, portY);
+            ctx.rotate((stationAngle * Math.PI) / 180);
+
+            // Escala del elemento individual según distancia
+            const portW = Math.max(25, 256 * (scale3D / 550));
+            const portH = Math.max(18, 192 * (scale3D / 550));
+            ctx.drawImage(portBuffer, -portW / 2, -portH / 2, portW, portH);
+            ctx.restore();
+
+            // 5. Retícula Vectorial de Vuelo (Horizonte Artificial y Flight Path Marker)
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate((-state.rot.roll * Math.PI) / 180);
+
+            // Horizonte artificial colimador
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-60, state.rot.pitch * 3);
+            ctx.lineTo(-20, state.rot.pitch * 3);
+            ctx.moveTo(20, state.rot.pitch * 3);
+            ctx.lineTo(60, state.rot.pitch * 3);
+            ctx.stroke();
+
+            // Centro del visor de cabina
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.6)';
+            ctx.strokeRect(-8, -8, 16, 16);
+            ctx.restore();
+
+            // 6. ELEMENTO 2: Nave de aproximación en primer plano / vista de proa (Buffer 256x192)
+            // Se proyecta abajo en perspectiva de cabina o vista de persecución
+            const shipScale = Math.min(220, Math.max(110, w * 0.22));
+            const shipW = shipScale;
+            const shipH = (shipScale * 192) / 256;
+            ctx.drawImage(shipBuffer, cx - shipW / 2, h - shipH * 0.85, shipW, shipH);
+        }
+
+        /* Gráfico de tendencia dinámico en tiempo real */
+        const trendCanvas = document.getElementById('trendCanvas');
+        const tCtx = trendCanvas.getContext('2d');
+
+        function drawTrendChart() {
+            trendCanvas.width = trendCanvas.parentElement.clientWidth;
+            trendCanvas.height = trendCanvas.parentElement.clientHeight;
+            const tw = trendCanvas.width;
+            const th = trendCanvas.height;
+
+            tCtx.fillStyle = '#060b13';
+            tCtx.fillRect(0, 0, tw, th);
+
+            // Cuadrícula sutil
+            tCtx.strokeStyle = '#142033';
+            tCtx.lineWidth = 1;
+            tCtx.beginPath();
+            tCtx.moveTo(0, th * 0.5); tCtx.lineTo(tw, th * 0.5);
+            tCtx.moveTo(tw * 0.5, 0); tCtx.lineTo(tw * 0.5, th);
+            tCtx.stroke();
+
+            if (trendHistory.length < 2) return;
+
+            // Curva de distancia (Cian)
+            tCtx.strokeStyle = '#00e5ff';
+            tCtx.lineWidth = 1.5;
+            tCtx.beginPath();
+            for (let i = 0; i < trendHistory.length; i++) {
+                const x = (i / (trendHistory.length - 1)) * tw;
+                const y = Math.max(5, Math.min(th - 5, (trendHistory[i].z / 65) * th));
+                if (i === 0) tCtx.moveTo(x, y);
+                else tCtx.lineTo(x, y);
+            }
+            tCtx.stroke();
+
+            // Curva de velocidad (Verde / Ámbar)
+            tCtx.strokeStyle = Math.abs(state.vel.z) < 0.15 ? '#00ff88' : '#f59e0b';
+            tCtx.beginPath();
+            for (let i = 0; i < trendHistory.length; i++) {
+                const x = (i / (trendHistory.length - 1)) * tw;
+                const y = th - Math.max(5, Math.min(th - 5, (trendHistory[i].v / 0.35) * th));
+                if (i === 0) tCtx.moveTo(x, y);
+                else tCtx.lineTo(x, y);
+            }
+            tCtx.stroke();
+        }
+
+        /* =========================================================================
+           6. HISTORIAL DE SIMULACIONES Y TELEMETRÍA (PERSISTENCIA REAL)
+           ========================================================================= */
+        const STORAGE_KEY = 'space_sim_docking_history';
+
+        function getStoredHistory() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch(e) { return []; }
+        }
+
+        function saveSimulationRecord(record) {
+            const list = getStoredHistory();
+            list.unshift(record);
+            if (list.length > 30) list.pop();
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+        }
+
+        function clearHistory() {
+            try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+            renderHistoryTable();
+        }
+
+        function openHistoryModal() {
+            renderHistoryTable();
+            document.getElementById('historyModal').style.display = 'flex';
+        }
+
+        function openGuideModal() {
+            document.getElementById('guideModal').style.display = 'flex';
+        }
+
+        function closeModals() {
+            document.getElementById('historyModal').style.display = 'none';
+            document.getElementById('guideModal').style.display = 'none';
+            document.getElementById('debriefModal').style.display = 'none';
+        }
+
+        function renderHistoryTable() {
+            const list = getStoredHistory();
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No hay simulaciones registradas aún. ¡Completa tu primer acoplamiento!</td></tr>';
+                document.getElementById('historyStatsSummary').textContent = "0 intentos registrados";
+                return;
+            }
+
+            let successes = 0;
+            list.forEach(r => {
+                if (r.success) successes++;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.timestamp}</td>
+                    <td>${r.missionName.replace('MISIÓN: ', '')}</td>
+                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'ÉXITO' : 'FALLO'}</td>
+                    <td>${r.speed.toFixed(2)} m/s</td>
+                    <td>${r.offset.toFixed(2)} m</td>
+                    <td>${r.time} s</td>
+                    <td>${r.fuelUsed}%</td>
+                    <td><b>${r.grade}</b></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const winRate = Math.round((successes / list.length) * 100);
+            document.getElementById('historyStatsSummary').textContent = `${list.length} vuelos registrados | Tasa de éxito: ${winRate}%`;
+        }
+
+        function showDebriefModal(success, speed, latOffset, maxAngle) {
+            const modal = document.getElementById('debriefModal');
+            modal.style.display = 'flex';
+
+            document.getElementById('debTitle').textContent = success ? "¡ACOPLAMIENTO EXITOSO!" : "COLISIÓN O DESALINEACIÓN";
+            document.getElementById('debTitle').style.color = success ? "var(--crt-green)" : "var(--crt-red)";
+
+            document.getElementById('debMessage').textContent = success ?
+                "Los 12 pestillos mecánicos andróginos bloquearon el túnel de atraque con absorción inercial nominal." :
+                (speed > 0.16 ? "Velocidad de contacto excesiva (> 0.15 m/s). El collar andrógino resultó fracturado." : "Error angular o desvío lateral fuera del corredor de captura.");
+
+            document.getElementById('debVel').textContent = `${speed.toFixed(2)} m/s`;
+            document.getElementById('debVel').style.color = speed <= 0.15 ? "var(--crt-green)" : "var(--crt-red)";
+            document.getElementById('debAtt').textContent = `${maxAngle.toFixed(1)}°`;
+            document.getElementById('debOffset').textContent = `${latOffset.toFixed(2)} m`;
+            document.getElementById('debFuel').textContent = `${(100 - state.fuel).toFixed(1)}%`;
+            document.getElementById('debTime').textContent = `${Math.round(missionElapsedTime)} s`;
+            document.getElementById('debGrade').textContent = success ? (speed <= 0.09 && latOffset <= 0.3 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO";
+        }
+
+        function nextLevel() {
+            closeModals();
+            if (missionDifficulty < 5) {
+                document.getElementById('diffSelect').value = missionDifficulty + 1;
+                setupDifficulty(missionDifficulty + 1);
+            } else {
+                alert("¡Has completado todos los niveles de Acoplamiento Espacial!");
+                setupDifficulty(1);
+            }
+        }
+
+        /* =========================================================================
+           7. ACTUALIZACIÓN DE INTERFAZ Y MÉTRICAS
+           ========================================================================= */
+        function updateUI() {
+            document.getElementById('hudDistance').textContent = `${Math.max(0, state.pos.z).toFixed(2)} m`;
+            
+            const spd = Math.abs(state.vel.z);
+            const elVel = document.getElementById('hudVelocity');
+            elVel.textContent = `${spd.toFixed(2)} m/s`;
+            elVel.className = spd <= 0.15 ? "hud-val good" : "hud-val danger";
+            document.getElementById('speedReadout').textContent = `${spd.toFixed(2)} m/s`;
+            document.getElementById('speedReadout').style.color = spd <= 0.15 ? "var(--crt-green)" : "var(--crt-red)";
+
+            const offset = Math.sqrt(state.pos.x * state.pos.x + state.pos.y * state.pos.y);
+            document.getElementById('hudOffset').textContent = `${offset.toFixed(2)} m`;
+
+            document.getElementById('hudFuel').textContent = `${state.fuel.toFixed(1)}%`;
+
+            // Precisión en vivo
+            const prec = Math.max(0, Math.round(100 - offset * 18 - Math.max(0, spd - 0.15) * 150));
+            document.getElementById('hudPrecision').textContent = `${prec}%`;
+
+            // Medidores angulares
+            document.getElementById('valYaw').textContent = `${state.rot.yaw.toFixed(1)}°`;
+            document.getElementById('valPitch').textContent = `${state.rot.pitch.toFixed(1)}°`;
+            document.getElementById('valRoll').textContent = `${(state.rot.roll % 360).toFixed(1)}°`;
+
+            document.getElementById('barYaw').style.width = `${Math.min(100, Math.abs(state.rot.yaw) * 15)}%`;
+            document.getElementById('barPitch').style.width = `${Math.min(100, Math.abs(state.rot.pitch) * 15)}%`;
+            document.getElementById('barRoll').style.width = `${Math.min(100, Math.abs(state.rot.roll % 360) * 8)}%`;
+
+            const mins = String(Math.floor(missionElapsedTime / 60)).padStart(2, '0');
+            const secs = String(Math.floor(missionElapsedTime % 60)).padStart(2, '0');
+            document.getElementById('graphTimeText').textContent = `T+${mins}:${secs}`;
+        }
+
+        /* =========================================================================
+           LOOP PRINCIPAL DE SIMULACIÓN
+           ========================================================================= */
+        let lastTime = performance.now();
+
+        function mainLoop(now) {
+            const dt = Math.min(0.1, (now - lastTime) / 1000);
+            lastTime = now;
+
+            updatePhysics(dt);
+            drawSpaceScene();
+            drawTrendChart();
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        window.onload = () => {
+            resizeViewport();
+            setupDifficulty(2);
+            requestAnimationFrame(mainLoop);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciberdefensa Satelital - Firewall de Red y Contramedidas</title>
+    <style>
+        :root {
+            --bg-hull: #0a0f18;
+            --bg-panel: #111a27;
+            --border-panel: #1e293b;
+            --border-highlight: #38bdf8;
+            --crt-green: #00ff88;
+            --crt-amber: #f59e0b;
+            --crt-cyan: #38bdf8;
+            --crt-red: #ef4444;
+            --text-mono: 'Courier New', monospace;
+            --panel-shadow: inset 0 0 15px rgba(0, 0, 0, 0.85), 0 4px 12px rgba(0, 0, 0, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #05080f;
+            color: #e2e8f0;
+            font-family: var(--text-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(14, 30, 48, 0.4) 0%, rgba(4, 6, 12, 0.95) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.3) 2px, rgba(0, 0, 0, 0.3) 4px);
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            z-index: 99;
+            opacity: 0.75;
+        }
+
+        header {
+            background: #0f172a;
+            border-bottom: 2px solid #334155;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .title-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-system {
+            background: #064e3b;
+            color: var(--crt-green);
+            border: 1px solid var(--crt-green);
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-size: 15px;
+            letter-spacing: 2px;
+            color: #f8fafc;
+        }
+
+        .top-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+        }
+
+        .select-diff {
+            background: #1e293b;
+            color: var(--crt-cyan);
+            border: 1px solid #475569;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-header {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f1f5f9;
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-header:hover {
+            background: #334155;
+            border-color: var(--crt-cyan);
+        }
+
+        .workspace-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 50px);
+        }
+
+        .industrial-panel {
+            background: var(--bg-panel);
+            border: 3px solid #1e293b;
+            border-radius: 4px;
+            box-shadow: var(--panel-shadow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-bezel {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid #334155;
+            pointer-events: none;
+        }
+
+        .rivet {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #64748b;
+            border-radius: 50%;
+            border: 1px solid #1e293b;
+        }
+
+        .rivet-tl {
+            top: 4px;
+            left: 4px;
+        }
+
+        .rivet-tr {
+            top: 4px;
+            right: 4px;
+        }
+
+        .rivet-bl {
+            bottom: 4px;
+            left: 4px;
+        }
+
+        .rivet-br {
+            bottom: 4px;
+            right: 4px;
+        }
+
+        .panel-header {
+            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 2px solid #334155;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--crt-green);
+            letter-spacing: 1.5px;
+        }
+
+        .panel-body {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: #020408;
+            border: 1px solid #1e293b;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .log-box {
+            background: #030712;
+            border: 1px solid #1e293b;
+            padding: 8px;
+            font-size: 11px;
+            color: #38bdf8;
+            height: 110px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .packet-btn {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f1f5f9;
+            font-family: inherit;
+            font-size: 12px;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.1s;
+        }
+
+        .packet-btn:hover {
+            background: #334155;
+            border-color: var(--crt-cyan);
+            color: var(--crt-cyan);
+        }
+
+        .packet-btn:active {
+            transform: scale(0.98);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-card {
+            width: 600px;
+            max-width: 90%;
+            background: #111827;
+            border: 2px solid var(--crt-cyan);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.25);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scanlines"></div>
+
+    <header>
+        <div class="title-block">
+            <span class="badge-system">CIBERSEGURIDAD // FIREWALL</span>
+            <h1>DEFENSA DE RED Y FILTRADO DE PAQUETES MALICIOSOS</h1>
+        </div>
+        <div class="top-controls">
+            <button class="btn-header" onclick="location.href='index.html'">⌂ HUB</button>
+            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
+                <option value="1">Nivel 1 - Básico (Tráfico Lento)</option>
+                <option value="2" selected>Nivel 2 - Intermedio (Ataque DDoS)</option>
+                <option value="3">Nivel 3 - Avanzado (Inyección de Malware)</option>
+                <option value="4">Nivel 4 - Experto (Spoofing de IP)</option>
+                <option value="5">Nivel 5 - Simulación Extrema (Zero-Day Inminente)</option>
+            </select>
+            <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
+            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+        </div>
+    </header>
+
+    <div class="workspace-grid">
+        <!-- LEFT: Radar & Firewall Node Matrix -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div>
+            <div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div>
+            <div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>MATRIZ DE FILTRADO DE PACKETS (PUERTO 8080)</span>
+                <span id="shieldStatus" style="color:var(--crt-green)">ESCUDO INTACTO: 100%</span>
+            </div>
+            <div class="panel-body" style="padding:0;">
+                <div class="canvas-container">
+                    <canvas id="firewallCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Packet Inspector & Log Terminal -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div>
+            <div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div>
+            <div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>INSPECTOR DE PAQUETES</span>
+                <span id="clockDisplay">00:00</span>
+            </div>
+            <div class="panel-body" style="gap: 16px;">
+
+                <!-- 📖 GUÍA DE AMENAZAS (Más grande y legible) -->
+                <div
+                    style="background:rgba(0,0,0,0.7); border:2px solid #38bdf8; padding: 14px; font-size: 13px; line-height: 1.6; border-radius: 6px;">
+                    <b style="color:var(--crt-cyan); font-size: 14px; letter-spacing: 1px;">📖 GUÍA DE AMENAZAS
+                        (TERRA-NET):</b><br>
+                    <div style="color:#00ff88; margin-top: 8px;">✔ <b>BUENO:</b> /telemetry, SYNC, PING, status, nominal
+                    </div>
+                    <div style="color:#ef4444; margin-top: 6px;">✖ <b>MALO:</b> SQLi, OVERFLOW, DDOS, OVERRIDE, EXFIL
+                    </div>
+                </div>
+
+                <!-- 📡 PAQUETE EN EVALUACIÓN (Caja y letra más grandes) -->
+                <div
+                    style="background:rgba(0,0,0,0.7); border:2px solid #475569; padding: 14px; display:flex; flex-direction:column; gap: 10px; border-radius: 6px;">
+                    <div style="font-size: 13px; color:#94a3b8; font-weight: bold; letter-spacing: 1px;">PAQUETE EN
+                        EVALUACIÓN:</div>
+                    <div id="packetPayload"
+                        style="font-size: 15px; color:var(--crt-cyan); font-weight:bold; min-height: 55px; line-height: 1.4; word-break: break-all;">
+                        Esperando transmisión entrante...</div>
+                </div>
+
+                <!-- Botones de Acción (Ampliados para mayor comodidad) -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <button class="packet-btn"
+                        style="border-color:var(--crt-green); color:var(--crt-green); font-size: 14px; padding: 12px;"
+                        onclick="filterAction('allow')">✔ PERMITIR</button>
+                    <button class="packet-btn"
+                        style="border-color:var(--crt-red); color:var(--crt-red); font-size: 14px; padding: 12px;"
+                        onclick="filterAction('block')">✖ BLOQUEAR</button>
+                </div>
+
+                <div style="font-size:11px; color:#94a3b8; margin-top:4px; letter-spacing: 1px;">REGISTRO DE CONSOLA
+                    (LOGS):</div>
+                <div class="log-box" id="terminalLog" style="height: 130px; font-size: 12px;">
+                    <div>[SYS] Inicializando interceptor de tramas...</div>
+                    <div>[NET] Puerto seguro abierto en 192.168.10.1</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Debrief Modal -->
+    <div class="modal-overlay" id="debriefModal">
+        <div class="modal-card">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--crt-cyan); padding-bottom:8px;">
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME DE CIBERDEFENSA</span>
+                <span class="badge-system" id="debBadge">ÉXITO</span>
+            </div>
+            <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-cyan)">1. ESTADO DE INTEGRIDAD DE RED:</b>
+                    <p id="debDesc">El perímetro de seguridad resistió el intento de exfiltración de telemetría.</p>
+                </div>
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE TRÁFICO:</b>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+                        <div>Paquetes Inspeccionados: <b id="debPackets">-</b></div>
+                        <div>Precisión de Filtrado: <b id="debAccuracy">-</b></div>
+                        <div>Integridad del Núcleo: <b id="debShield">-</b></div>
+                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
+                <button class="btn-header" style="background:#0284c7; color:#fff;"
+                    onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let soundEnabled = true;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playTone(freq = 800, duration = 0.08) {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch (e) { }
+        }
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btnAudio').textContent = soundEnabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF';
+            if (soundEnabled) playTone(900);
+        }
+
+        let difficulty = 2;
+        let isPaused = false;
+        let isMissionEnded = false;
+        let missionTime = 0;
+        let shieldIntegrity = 100;
+        let packetsChecked = 0;
+        let currentPacket = null;
+        let packetsQueue = [];
+
+        const mockPayloads = [
+            { text: "[Tierra -> Estación] GET /telemetry/status HTTP/1.1", malicious: false },
+            { text: "[Tierra -> Estación] SYNC orbital_clock.bin OK", malicious: false },
+            { text: "[Tierra -> Estación] PING health_check_node_4", malicious: false },
+            { text: "[Alerta Orbital] POST /auth/root-override --payload=SQLi_INJECT", malicious: true },
+            { text: "[Alerta Orbital] OVERFLOW_BUFFER 0x90909090 MALWARE_EXEC", malicious: true },
+            { text: "[Alerta Orbital] DDOS_SYN_FLOOD_STREAM --target=core_bus", malicious: true },
+            { text: "[Tierra -> Estación] TRANSMISIÓN DE RUTINA: Carga solar nominal", malicious: false },
+            { text: "[Alerta Orbital] EXFILTRATION_PROTOCOL_ACTIVATE /passwords.db", malicious: true },
+            { text: "[Tierra -> Estación] UPDATE ephemeris_data_v2.par", malicious: false },
+            { text: "[Alerta Orbital] ROOT_SHELL_REMOTE_EXECUTION port 31337", malicious: true }
+        ];
+
+        function setupScenario(lvl) {
+            difficulty = parseInt(lvl);
+            isMissionEnded = false;
+            isPaused = false;
+            missionTime = 0;
+            shieldIntegrity = 100;
+            packetsChecked = 0;
+            nextPacket();
+            updateUI();
+        }
+
+        function changeDifficulty(val) { setupScenario(val); }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function resetMission() { setupScenario(difficulty); }
+
+        function nextPacket() {
+            const payloadEl = document.getElementById('packetPayload');
+            payloadEl.textContent = "📡 [Centro de Control Tierra]: Recibiendo paquete...";
+            payloadEl.style.color = "var(--crt-amber)";
+
+            // Simula un breve retardo de llegada de la señal espacial (1 segundo)
+            setTimeout(() => {
+                currentPacket = mockPayloads[Math.floor(Math.random() * mockPayloads.length)];
+                payloadEl.textContent = currentPacket.text;
+                payloadEl.style.color = "var(--crt-cyan)";
+            }, 800);
+        }
+
+        function filterAction(action) {
+            if (isPaused || isMissionEnded) return;
+            packetsChecked++;
+            const isMal = currentPacket.malicious;
+            const log = document.getElementById('terminalLog');
+
+            if ((action === 'block' && isMal) || (action === 'allow' && !isMal)) {
+                playTone(1050);
+                log.innerHTML += `<div style="color:var(--crt-green)">[OK] Tramas filtradas correctamente.</div>`;
+            } else {
+                playTone(300);
+                shieldIntegrity -= 20;
+                log.innerHTML += `<div style="color:var(--crt-red)">[ALERTA] Brecha en cortafuegos! Integridad -20%</div>`;
+                if (shieldIntegrity <= 0) {
+                    failMission("INTRUSIÓN EXITOSA: El código malicioso logró comprometer el núcleo de la estación.");
+                    return;
+                }
+            }
+            log.scrollTop = log.scrollHeight;
+            updateUI();
+            if (packetsChecked >= 10 + difficulty * 5) {
+                completeMission();
+            } else {
+                nextPacket();
+            }
+        }
+
+        function completeMission() {
+            isMissionEnded = true;
+            document.getElementById('debriefModal').style.display = 'flex';
+            document.getElementById('debPackets').textContent = packetsChecked;
+            document.getElementById('debAccuracy').textContent = "96.5%";
+            document.getElementById('debShield').textContent = `${shieldIntegrity}%`;
+            document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
+        }
+
+        function failMission(reason) {
+            isMissionEnded = true;
+            document.getElementById('debriefModal').style.display = 'flex';
+            document.getElementById('debTitle').textContent = "BRECHA DE SEGURIDAD";
+            document.getElementById('debDesc').textContent = reason;
+        }
+
+        function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
+        function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(5, difficulty + 1)); }
+
+        function updateUI() {
+            document.getElementById('shieldStatus').textContent = `ESCUDO INTACTO: ${shieldIntegrity}%`;
+            const mins = String(Math.floor(missionTime / 60)).padStart(2, '0');
+            const secs = String(Math.floor(missionTime % 60)).padStart(2, '0');
+            document.getElementById('clockDisplay').textContent = `${mins}:${secs}`;
+        }
+
+        const canvas = document.getElementById('firewallCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+        window.addEventListener('resize', resizeCanvases = resizeCanvas);
+
+        let gridOffset = 0;
+        function render() {
+            if (!isPaused && !isMissionEnded) missionTime += 0.016;
+            gridOffset = (gridOffset + 1) % 20;
+
+            ctx.fillStyle = '#020408';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Matrix style grid lines
+            ctx.strokeStyle = '#0e2336';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 20) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = gridOffset; y < canvas.height; y += 20) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Central core node representation
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            ctx.strokeStyle = shieldIntegrity > 50 ? '#00ff88' : '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cx - 50, cy - 40, 100, 80);
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(cx - 48, cy - 38, 96, 76);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = '11px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText("CORE SEGURO", cx, cy - 5);
+            ctx.fillStyle = shieldIntegrity > 50 ? '#00ff88' : '#ef4444';
+            ctx.fillText(`${shieldIntegrity}% INT`, cx, cy + 15);
+
+            requestAnimationFrame(render);
+        }
+
+        window.onload = () => { resizeCanvas(); setupScenario(2); requestAnimationFrame(render); };
+    </script>
+</body>
+
+</html>

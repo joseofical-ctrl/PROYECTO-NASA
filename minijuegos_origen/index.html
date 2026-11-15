@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consola Central - Simulador Aeroespacial Avanzado</title>
+    <style>
+        :root {
+            --bg-deep: #050811;
+            --bg-panel: #0d1422;
+            --bg-card: #121c2e;
+            --border-panel: #1e2e48;
+            --border-highlight: #2563eb;
+            --crt-green: #00ff88;
+            --crt-cyan: #00e5ff;
+            --crt-amber: #f59e0b;
+            --crt-red: #ef4444;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --font-mono: 'Courier New', ui-monospace, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 45%, rgba(15, 30, 55, 0.45) 0%, rgba(3, 5, 10, 0.98) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+        }
+
+        header {
+            background: #0a101b;
+            border-bottom: 2px solid var(--border-panel);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .header-title-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-system {
+            background: rgba(0, 229, 255, 0.12);
+            color: var(--crt-cyan);
+            border: 1px solid var(--crt-cyan);
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .btn-ui {
+            background: #142033;
+            border: 1px solid #2d4466;
+            color: var(--text-main);
+            padding: 5px 12px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-ui:hover {
+            background: #1e3250;
+            border-color: var(--crt-cyan);
+            color: var(--crt-cyan);
+        }
+
+        /* Hub Layout */
+        .hub-container {
+            flex: 1;
+            display: grid;
+            grid-template-rows: 80px 1fr;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 55px);
+            max-width: 1280px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .top-row-grid {
+            display: grid;
+            grid-template-columns: 1fr 50px 1.4fr;
+            gap: 12px;
+        }
+
+        .card-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: 4px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pwr-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            background: #090e18;
+            border: 1px solid var(--border-panel);
+            border-radius: 4px;
+        }
+        .pwr-bar {
+            width: 14px; height: 50px; background: #070b12; border: 1px solid #1a273b;
+            display: flex; flex-direction: column-reverse; padding: 1px; gap: 1px;
+        }
+        .pwr-seg { height: 8px; width: 100%; background: var(--crt-green); border-radius: 1px; }
+        .pwr-seg.top { background: var(--crt-amber); }
+
+        .globe-status-box {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Missions Grid + Sidebar */
+        .bottom-row-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 310px;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .missions-grid-quad {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .mission-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: 110px 1fr;
+            padding: 12px;
+            gap: 12px;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .mission-card:hover {
+            border-color: var(--crt-cyan);
+            box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-thumb-canvas {
+            width: 105px;
+            height: 105px;
+            background: #03060a;
+            border: 1px solid #1e2e48;
+            border-radius: 3px;
+        }
+
+        .card-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--crt-amber);
+            letter-spacing: 1px;
+        }
+
+        .card-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        .btn-launch {
+            background: #0f243a;
+            border: 1px solid var(--crt-cyan);
+            color: var(--crt-cyan);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 8px 12px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 2px;
+            transition: all 0.15s;
+        }
+        .btn-launch:hover {
+            background: var(--crt-cyan);
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+        }
+
+        /* Sidebar */
+        .info-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: 4px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .info-header {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--crt-green);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 4px;
+        }
+
+        /* History Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 6, 12, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-window {
+            background: #0e1726;
+            border: 2px solid var(--border-highlight);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 680px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+        .modal-top {
+            background: #142236;
+            border-bottom: 1px solid var(--border-panel);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: var(--crt-cyan);
+            font-size: 13px;
+        }
+        .modal-content {
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+        .history-table th { background: #17243a; color: var(--text-dim); padding: 6px 8px; border-bottom: 1px solid var(--border-panel); }
+        .history-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        @media (max-width: 950px) {
+            .hub-container { overflow-y: auto; height: auto; }
+            .bottom-row-grid { grid-template-columns: 1fr; }
+            .missions-grid-quad { grid-column: span 1; grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title-block">
+            <span class="badge-system">AGY // FLIGHT SIM</span>
+            <h1>CONSOLA CENTRAL DE OPERACIONES ESPACIALES</h1>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn-ui" onclick="openGlobalHistoryModal()">📊 HISTORIAL GLOBAL</button>
+            <button class="btn-ui" onclick="location.reload()">↻ ACTUALIZAR</button>
+        </div>
+    </header>
+
+    <div class="hub-container">
+        <!-- Top HUD Row -->
+        <div class="top-row-grid">
+            <div class="card-panel">
+                <span style="font-size:15px; font-weight:bold; color:var(--crt-green); letter-spacing:1px;">SUITE DE SIMULACIÓN AEROESPACIAL</span>
+                <span style="font-size:11px; color:var(--crt-cyan); margin-top:2px;">
+                    &gt; Módulos independientes con física 6-DOF, astrodinámica y buffers de 256x192 por elemento.
+                </span>
+            </div>
+
+            <div class="pwr-box">
+                <div class="pwr-bar">
+                    <div class="pwr-seg"></div>
+                    <div class="pwr-seg"></div>
+                    <div class="pwr-seg"></div>
+                    <div class="pwr-seg"></div>
+                    <div class="pwr-seg top"></div>
+                </div>
+                <span style="font-size:9px; font-weight:bold; color:var(--crt-amber); margin-top:2px;">PWR</span>
+            </div>
+
+            <div class="card-panel">
+                <div class="globe-status-box">
+                    <canvas id="wireGlobe" width="55" height="55"></canvas>
+                    <div style="font-size:11px; line-height:1.5;">
+                        <div>ESTADO SISTEMAS: <b style="color:var(--crt-green)">ÓPTIMO ●</b></div>
+                        <div>RESOLUCIÓN GRÁFICA: <b style="color:var(--crt-cyan)">256 x 192 px por elemento</b></div>
+                        <div>DINÁMICA ESPACIAL: <b style="color:var(--crt-amber)">INERCIA REAL 6-DOF</b></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Grid: 4 Missions + Info Sidebar -->
+        <div class="bottom-row-grid">
+            <div class="missions-grid-quad">
+                <!-- 1. Acoplamiento Espacial -->
+                <div class="mission-card">
+                    <canvas id="thumbDock" class="card-thumb-canvas" width="105" height="105"></canvas>
+                    <div class="card-details">
+                        <div class="card-title">ACOPLAMIENTO ESPACIAL</div>
+                        <div class="card-desc">Física espacial 6-DOF completa: inercia, velocidad relativa, rotación en 3 ejes, asistencia SAS y cono de captura ILS.</div>
+                        <a href="acoplamiento_espacial.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                    </div>
+                </div>
+
+                <!-- 2. Navegación Orbital -->
+                <div class="mission-card">
+                    <canvas id="thumbNav" class="card-thumb-canvas" width="105" height="105"></canvas>
+                    <div class="card-details">
+                        <div class="card-title">NAVEGACIÓN ORBITAL</div>
+                        <div class="card-desc">Mecánica orbital vis-viva, transferencia elíptica de Hohmann, vector de impulso &Delta;v y tobera de plasma reactiva.</div>
+                        <a href="navegacion_orbital.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                    </div>
+                </div>
+
+                <!-- 3. Distribución Eléctrica -->
+                <div class="mission-card">
+                    <canvas id="thumbPwr" class="card-thumb-canvas" width="105" height="105"></canvas>
+                    <div class="card-details">
+                        <div class="card-title">DISTRIBUCIÓN ELÉCTRICA</div>
+                        <div class="card-desc">Matriz EPS: gestión de reactor nuclear, celdas fotovoltaicas durante eclipses, acumuladores MWh y disyuntores.</div>
+                        <a href="distribucion_electrica.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                    </div>
+                </div>
+
+                <!-- 4. Soporte Vital -->
+                <div class="mission-card">
+                    <canvas id="thumbLife" class="card-thumb-canvas" width="105" height="105"></canvas>
+                    <div class="card-details">
+                        <div class="card-title">SOPORTE VITAL (ECLSS)</div>
+                        <div class="card-desc">Cinética de gases en cabina: balance de O2 y CO2, filtros LiOH, estanqueidad de esclusa y control barométrico.</div>
+                        <a href="soporte_vital.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="info-panel">
+                <div class="info-header">ESPECIFICACIONES DE LA SUITE</div>
+                <p>Simulador técnico de ingeniería espacial con registro persistente de telemetría y audio procedural Web Audio API.</p>
+
+                <div style="background:#09101a; border:1px solid var(--border-panel); padding:8px; border-radius:3px; display:flex; flex-direction:column; gap:4px;">
+                    <b style="color:var(--crt-amber)">ARQUITECTURA VISUAL:</b>
+                    <span style="font-size:10px; color:var(--text-dim); line-height:1.4;">
+                        - Cada vehículo, estructura y puerto cuenta con su propio buffer de 256x192 píxeles.<br>
+                        - Escenario de alta definición con perspectiva tridimensional.<br>
+                        - Historial de intentos guardado en memoria local.<br>
+                        - Sin saturación visual: datos en tiempo real.
+                    </span>
+                </div>
+
+                <div style="margin-top:auto; font-size:10px; color:var(--text-dim); text-align:center;">
+                    GOOGLE DEEPMIND // AEROSPACE SIMULATION SUITE
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span>HISTORIAL GLOBAL DE VUELOS Y OPERACIONES</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Módulo</th>
+                            <th>Misión</th>
+                            <th>Resultado</th>
+                            <th>Calificación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="globalHistoryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openGlobalHistoryModal() {
+            const tbody = document.getElementById('globalHistoryBody');
+            tbody.innerHTML = '';
+
+            const dockList = JSON.parse(localStorage.getItem('space_sim_docking_history') || '[]');
+            const orbitList = JSON.parse(localStorage.getItem('space_sim_orbit_history') || '[]');
+            const powerList = JSON.parse(localStorage.getItem('space_sim_power_history') || '[]');
+            const eclssList = JSON.parse(localStorage.getItem('space_sim_eclss_history') || '[]');
+
+            const all = [];
+            dockList.forEach(r => all.push({ time: r.timestamp, mod: 'Acoplamiento', name: r.missionName, ok: r.success, grade: r.grade }));
+            orbitList.forEach(r => all.push({ time: r.timestamp, mod: 'Navegación', name: r.missionName, ok: r.success, grade: r.grade }));
+            powerList.forEach(r => all.push({ time: r.timestamp, mod: 'Potencia', name: r.missionName, ok: r.success, grade: r.grade }));
+            eclssList.forEach(r => all.push({ time: r.timestamp, mod: 'Soporte Vital', name: r.missionName, ok: r.success, grade: r.grade }));
+
+            if (all.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:16px;">No hay vuelos registrados en la suite aún.</td></tr>';
+            } else {
+                all.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${r.time}</td>
+                        <td style="color:var(--crt-cyan); font-weight:bold;">${r.mod}</td>
+                        <td>${r.name.replace('MISIÓN: ', '')}</td>
+                        <td style="color:${r.ok ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.ok ? 'ÉXITO' : 'FALLO'}</td>
+                        <td><b>${r.grade}</b></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('historyModal').style.display = 'flex';
+        }
+
+        function closeModals() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        /* Thumbnails Rendering */
+        const gCanvas = document.getElementById('wireGlobe');
+        const gCtx = gCanvas.getContext('2d');
+        const dCanvas = document.getElementById('thumbDock');
+        const dCtx = dCanvas.getContext('2d');
+        const nCanvas = document.getElementById('thumbNav');
+        const nCtx = nCanvas.getContext('2d');
+        const pCanvas = document.getElementById('thumbPwr');
+        const pCtx = pCanvas.getContext('2d');
+        const lCanvas = document.getElementById('thumbLife');
+        const lCtx = lCanvas.getContext('2d');
+
+        let anim = 0;
+        function drawThumbnails() {
+            anim += 0.03;
+
+            // Globe
+            gCtx.fillStyle = '#060a14';
+            gCtx.fillRect(0, 0, 55, 55);
+            gCtx.strokeStyle = '#00ff88';
+            gCtx.lineWidth = 1;
+            gCtx.beginPath(); gCtx.arc(27, 27, 20, 0, Math.PI * 2); gCtx.stroke();
+            const lonW = Math.abs(Math.cos(anim * 0.8)) * 20;
+            gCtx.beginPath(); gCtx.ellipse(27, 27, lonW, 20, 0, 0, Math.PI * 2); gCtx.stroke();
+
+            // Dock
+            dCtx.fillStyle = '#060a14'; dCtx.fillRect(0, 0, 105, 105);
+            dCtx.strokeStyle = '#00ff88'; dCtx.strokeRect(38, 38, 30, 30);
+            dCtx.beginPath(); dCtx.arc(53, 53, 35, 0, Math.PI*2); dCtx.stroke();
+            dCtx.fillStyle = '#f59e0b'; dCtx.fillRect(49, 49, 8, 8);
+
+            // Nav
+            nCtx.fillStyle = '#060a14'; nCtx.fillRect(0, 0, 105, 105);
+            nCtx.fillStyle = '#0a3258'; nCtx.beginPath(); nCtx.arc(25, 80, 40, 0, Math.PI*2); nCtx.fill();
+            nCtx.strokeStyle = '#00ff88'; nCtx.setLineDash([3, 3]);
+            nCtx.beginPath(); nCtx.arc(25, 80, 65, 0, Math.PI*2); nCtx.stroke();
+            nCtx.setLineDash([]);
+            nCtx.fillStyle = '#f59e0b'; nCtx.fillRect(70, 30, 6, 6);
+
+            // Power
+            pCtx.fillStyle = '#060a14'; pCtx.fillRect(0, 0, 105, 105);
+            pCtx.strokeStyle = '#00e5ff'; pCtx.strokeRect(30, 25, 45, 55);
+            pCtx.fillStyle = '#f59e0b';
+            pCtx.beginPath();
+            pCtx.moveTo(55, 32); pCtx.lineTo(44, 52); pCtx.lineTo(54, 52); pCtx.lineTo(48, 72); pCtx.lineTo(62, 48); pCtx.lineTo(52, 48);
+            pCtx.closePath(); pCtx.fill();
+
+            // Life
+            lCtx.fillStyle = '#060a14'; lCtx.fillRect(0, 0, 105, 105);
+            lCtx.fillStyle = '#111d2e'; lCtx.beginPath(); lCtx.arc(52, 52, 38, 0, Math.PI*2); lCtx.fill();
+            lCtx.strokeStyle = '#00ff88'; lCtx.lineWidth = 2; lCtx.stroke();
+            lCtx.fillStyle = '#00e5ff'; lCtx.fillRect(48, 48, 8, 8);
+
+            requestAnimationFrame(drawThumbnails);
+        }
+
+        window.onload = () => {
+            drawThumbnails();
+        };
+    </script>
+</body>
+</html>

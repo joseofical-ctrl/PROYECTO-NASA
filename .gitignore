@@ -1,0 +1,53 @@
+# Dependencias
+node_modules/
+vendor/
+venv/
+.venv/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE y editores
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# Archivos compilados
+dist/
+build/
+out/
+coverage/
+
+# Caché
+.cache/
+.parcel-cache/
+.npm/
+.yarn/cache/
+
+# Archivos de configuración local
+*.local
+
+# Git
+*.orig
+
+# Archivos de respaldo
+*.old
+*.backup

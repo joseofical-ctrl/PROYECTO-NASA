@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soporte Vital - Control Ambiental ECLSS</title>
+    <style>
+        :root {
+            --bg-deep: #050811;
+            --bg-panel: #0d1422;
+            --bg-card: #121c2e;
+            --border-panel: #1e2e48;
+            --border-highlight: #2563eb;
+            --crt-green: #00ff88;
+            --crt-cyan: #00e5ff;
+            --crt-amber: #f59e0b;
+            --crt-red: #ef4444;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --font-mono: 'Courier New', ui-monospace, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 45%, rgba(15, 30, 55, 0.45) 0%, rgba(3, 5, 10, 0.98) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+        }
+
+        header {
+            background: #0a101b;
+            border-bottom: 2px solid var(--border-panel);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .header-title-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-system {
+            background: rgba(0, 229, 255, 0.12);
+            color: var(--crt-cyan);
+            border: 1px solid var(--crt-cyan);
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .btn-ui {
+            background: #142033;
+            border: 1px solid #2d4466;
+            color: var(--text-main);
+            padding: 5px 12px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-ui:hover {
+            background: #1e3250;
+            border-color: var(--crt-cyan);
+            color: var(--crt-cyan);
+        }
+
+        .select-diff {
+            background: #142033;
+            color: var(--crt-amber);
+            border: 1px solid #2d4466;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .mission-bar {
+            background: linear-gradient(90deg, #091322 0%, #0d1b30 50%, #091322 100%);
+            border-bottom: 1px solid var(--border-panel);
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+        .mission-text { color: var(--crt-amber); font-weight: bold; }
+        .mission-goal { color: var(--crt-cyan); }
+        .mission-status-pill {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            background: rgba(0, 255, 136, 0.12);
+            color: var(--crt-green);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        /* Workspace Grid */
+        .cockpit-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr 310px;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 80px);
+            overflow: hidden;
+        }
+
+        .card-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: 4px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-header {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--crt-green);
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sensor-box {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 3px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sensor-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+
+        .bar-container {
+            width: 100%; height: 8px; background: #070b12; border: 1px solid #1a273b; border-radius: 2px; overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%; background: linear-gradient(90deg, #10b981 0%, #00ff88 100%); transition: width 0.2s;
+        }
+
+        /* Center Hatch Viewport */
+        .viewport-panel {
+            background: #020408;
+            border: 2px solid var(--border-panel);
+            border-radius: 4px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.85);
+        }
+
+        canvas#hatchCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Trend Graph */
+        .chart-box {
+            background: #060b13;
+            border: 1px solid #1a273b;
+            border-radius: 3px;
+            height: 75px;
+            position: relative;
+        }
+        canvas#trendCanvas { width: 100%; height: 100%; display: block; }
+
+        /* Actuator Controls */
+        .control-unit {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 3px;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .slider-eclss { width: 100%; cursor: pointer; accent-color: var(--crt-cyan); }
+
+        .btn-group { display: flex; gap: 4px; margin-top: 2px; }
+        .btn-mode {
+            flex: 1;
+            background: #142033;
+            border: 1px solid #2d4466;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 6px 2px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        .btn-mode.active {
+            background: #0284c7;
+            border-color: var(--crt-cyan);
+            color: #fff;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 6, 12, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-window {
+            background: #0e1726;
+            border: 2px solid var(--border-highlight);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+        .modal-top {
+            background: #142236;
+            border-bottom: 1px solid var(--border-panel);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: var(--crt-cyan);
+            font-size: 13px;
+        }
+        .modal-content {
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+        .history-table th { background: #17243a; color: var(--text-dim); padding: 6px 8px; border-bottom: 1px solid var(--border-panel); }
+        .history-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        @media (max-width: 920px) {
+            .cockpit-grid { grid-template-columns: 1fr; overflow-y: auto; }
+            .viewport-panel { min-height: 350px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title-block">
+            <span class="badge-system">ECLSS // SOPORTE VITAL</span>
+            <h1>SOPORTE VITAL ECLSS Y TANQUES O2 · ALPACA-1</h1>
+        </div>
+        <div class="header-actions">
+            <label for="diffSelect" style="color:var(--text-dim)">DIFICULTAD:</label>
+            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
+                <option value="1">Nivel 1 - Calibración Térmica y Oxígeno</option>
+                <option value="2" selected>Nivel 2 - Saturación de Filtro LiOH (CO2)</option>
+                <option value="3">Nivel 3 - Micro-Fuga de Casco y Presurización</option>
+                <option value="4">Nivel 4 - Contención de Hiperoxia e Incendio</option>
+                <option value="5">Nivel 5 - Descompresión Explosiva Extrema</option>
+            </select>
+            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORIAL</button>
+            <button class="btn-ui" onclick="openGuideModal()">? GUÍA</button>
+            <button class="btn-ui" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO</button>
+            <button class="btn-ui" onclick="resetMission()">↻ REINICIAR</button>
+        </div>
+    </header>
+
+    <div class="mission-bar">
+        <div>
+            <span class="mission-text" id="missionText">MISIÓN: Reciclado Atmosférico de Cabina ECLSS</span>
+        </div>
+        <div class="mission-goal" id="missionGoal">
+            OBJETIVO: Mantén el O2 entre 19.5% y 23.5%, y rota los filtros de CO2 antes de que alcancen 0.80%.
+        </div>
+        <div>
+            ESTADO: <span class="mission-status-pill" id="missionStatusPill">ATMÓSFERA NOMINAL</span>
+        </div>
+    </div>
+
+    <div class="cockpit-grid">
+        <!-- Left: Sensors -->
+        <div class="card-panel">
+            <div class="card-header">
+                <span>SENSORES DE CABINA</span>
+                <span style="color:var(--crt-green)">NORMAL</span>
+            </div>
+
+            <!-- Oxygen -->
+            <div class="sensor-box">
+                <div class="sensor-row">
+                    <span>FRACCIÓN DE OXÍGENO (O2)</span>
+                    <b id="valO2" style="color:var(--crt-green); font-size:13px;">21.0%</b>
+                </div>
+                <div class="bar-container"><div class="bar-fill" id="barO2" style="width:70%;"></div></div>
+                <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
+                    <span>Nominal: 19.5% - 23.5%</span>
+                    <span id="stO2" style="color:var(--crt-green)">SEGURO</span>
+                </div>
+            </div>
+
+            <!-- Carbon Dioxide -->
+            <div class="sensor-box">
+                <div class="sensor-row">
+                    <span>DIÓXIDO DE CARBONO (CO2)</span>
+                    <b id="valCO2" style="color:var(--crt-green); font-size:13px;">0.04%</b>
+                </div>
+                <div class="bar-container"><div class="bar-fill" id="barCO2" style="width:15%;"></div></div>
+                <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
+                    <span>Límite: &lt; 0.80%</span>
+                    <span id="stCO2" style="color:var(--crt-green)">BAJO</span>
+                </div>
+            </div>
+
+            <!-- Pressure -->
+            <div class="sensor-box">
+                <div class="sensor-row">
+                    <span>PRESIÓN BAROMÉTRICA</span>
+                    <b id="valPress" style="color:var(--crt-cyan); font-size:13px;">101.3 kPa</b>
+                </div>
+                <div class="bar-container"><div class="bar-fill" id="barPress" style="width:80%;"></div></div>
+                <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
+                    <span>Normobárica: 101.3 kPa</span>
+                    <span id="stPress" style="color:var(--crt-green)">NORMAL</span>
+                </div>
+            </div>
+
+            <!-- Temp -->
+            <div class="sensor-box">
+                <div class="sensor-row">
+                    <span>TEMPERATURA INTERNA</span>
+                    <b id="valTemp" style="color:var(--crt-cyan); font-size:13px;">21.5°C</b>
+                </div>
+                <div class="bar-container"><div class="bar-fill" id="barTemp" style="width:60%;"></div></div>
+                <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
+                    <span>Margen: 18°C - 24°C</span>
+                    <span>ÓPTIMO</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Gas Trend Graph -->
+            <div class="card-header" style="margin-top:auto">
+                <span>EVOLUCIÓN DE GASES EN VIVO</span>
+            </div>
+            <div class="chart-box">
+                <canvas id="trendCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Center: Hatch Viewport -->
+        <div class="viewport-panel">
+            <canvas id="hatchCanvas"></canvas>
+        </div>
+
+        <!-- Right: Actuators -->
+        <div class="card-panel">
+            <div class="card-header">
+                <span>ACTUADORES Y CONTROLES</span>
+                <span id="airlockTag" style="color:var(--crt-cyan)">ESCLUSA SELLADA</span>
+            </div>
+
+            <div class="control-unit">
+                <div class="sensor-row">
+                    <span>INYECCIÓN OXÍGENO (O2):</span>
+                    <b id="txtO2Flow" style="color:var(--crt-cyan)">95%</b>
+                </div>
+                <input type="range" class="slider-eclss" id="slO2" min="0" max="150" value="95" oninput="updatePreview()">
+            </div>
+
+            <div class="control-unit">
+                <div class="sensor-row">
+                    <span>INYECCIÓN AMORTIGUADOR N2:</span>
+                    <b id="txtN2Flow" style="color:var(--crt-green)">20%</b>
+                </div>
+                <input type="range" class="slider-eclss" id="slN2" min="0" max="100" value="20" oninput="updatePreview()">
+            </div>
+
+            <div class="control-unit">
+                <div class="sensor-row">
+                    <span>DEPURADOR LiOH (CO2):</span>
+                    <b id="txtScrub" style="color:var(--crt-amber)">Canister A (45% Sat.)</b>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-mode active" id="btnScrubA" onclick="setScrubber(0)">CANISTER A</button>
+                    <button class="btn-mode" id="btnScrubB" onclick="setScrubber(1)">CANISTER B</button>
+                    <button class="btn-mode" id="btnScrubReg" onclick="setScrubber(2)">PURGA VACÍO</button>
+                </div>
+            </div>
+
+            <div class="control-unit">
+                <div class="sensor-row">
+                    <span>RECIRCULACIÓN TURBINA:</span>
+                    <b id="txtVent" style="color:var(--crt-cyan)">AUTO</b>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-mode active" id="btnVAuto" onclick="setVent('auto')">AUTO</button>
+                    <button class="btn-mode" id="btnVMax" onclick="setVent('max')">MÁX</button>
+                    <button class="btn-mode" id="btnVPurge" onclick="setVent('purge')">PURGA</button>
+                </div>
+            </div>
+
+            <div class="control-unit">
+                <div class="sensor-row">
+                    <span>CLIMATIZADOR:</span>
+                    <b id="txtTemp" style="color:var(--crt-cyan)">21.0°C</b>
+                </div>
+                <input type="range" class="slider-eclss" id="slTemp" min="14" max="30" value="21" oninput="updatePreview()">
+            </div>
+
+            <div style="margin-top:auto; display:flex; flex-direction:column; gap:6px;">
+                <button class="btn-ui" style="background:#0284c7; color:#fff; justify-content:center; padding:9px;" onclick="applySettings()">
+                    APLICAR PARÁMETROS
+                </button>
+                <button class="btn-ui" style="border-color:var(--crt-red); color:#fca5a5; justify-content:center; padding:9px;" id="btnSeal" onclick="toggleSeal()">
+                    CERRAR / SELLAR ESCLUSA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span>HISTORIAL DE SOPORTE VITAL (ECLSS)</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Misión</th>
+                            <th>Resultado</th>
+                            <th>O2 Final</th>
+                            <th>CO2 Final</th>
+                            <th>Presión</th>
+                            <th>Tiempo</th>
+                            <th>Calificación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 registros</span>
+                    <button class="btn-ui" onclick="clearHistory()">LIMPIAR HISTORIAL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Modal -->
+    <div class="modal-overlay" id="guideModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span>MANUAL TÉCNICO DE SOPORTE VITAL (ECLSS)</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <p><b>1. Parámetros Fisiológicos:</b> El oxígeno debe mantenerse entre 19.5% y 23.5%. Niveles inferiores al 16% provocan hipoxia grave; niveles superiores al 28% causan riesgo de incendio espontáneo.</p>
+                <p><b>2. Saturación de LiOH:</b> El CO2 debe ser menor a 0.80%. Cuando el Canister A se sature (>80%), conmuta al Canister B para no intoxicar a la tripulación.</p>
+                <p><b>3. Despresurización:</b> Si la presión cae por micro-fugas, eleva el buffer de nitrógeno (N2) y pulsa CERRAR ESCLUSA.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debrief Modal -->
+    <div class="modal-overlay" id="debriefModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span id="debTitle" style="color:var(--crt-green)">INFORME DE CABINA ECLSS</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <p id="debMessage">La atmósfera se mantuvo en condiciones seguras.</p>
+                <div style="background:#091220; border:1px solid var(--border-panel); padding:10px; border-radius:3px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>Oxígeno Final: <b id="debO2" style="color:var(--crt-green)">21.1%</b></div>
+                    <div>CO2 Final: <b id="debCO2" style="color:var(--crt-cyan)">0.05%</b></div>
+                    <div>Presión: <b id="debPress" style="color:var(--crt-green)">101.2 kPa</b></div>
+                    <div>Calificación: <b id="debGrade" style="color:var(--crt-green)">A+ EXCELENTE</b></div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                    <button class="btn-ui" onclick="closeModals(); resetMission();">REINTENTAR</button>
+                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">SIGUIENTE NIVEL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+           1. BUFFER DE 256x192 POR ELEMENTO (ESCOTILLA Y TURBINA DE CABINA)
+           ========================================================================= */
+        const hatchBuffer = document.createElement('canvas');
+        hatchBuffer.width = 256; hatchBuffer.height = 192;
+        const hbCtx = hatchBuffer.getContext('2d');
+        hbCtx.imageSmoothingEnabled = false;
+
+        let fanAngle = 0;
+        const starsCosmos = [];
+        for (let i = 0; i < 28; i++) {
+            starsCosmos.push({ x: 96 + ((i * 37) % 64), y: 64 + ((i * 49) % 64) });
+        }
+
+        function renderHatchBuffer(speed, sealed) {
+            hbCtx.clearRect(0, 0, 256, 192);
+            const cx = 128; const cy = 96;
+
+            // Anillo exterior de la esclusa
+            hbCtx.fillStyle = '#111d2e';
+            hbCtx.beginPath(); hbCtx.arc(cx, cy, 68, 0, Math.PI * 2); hbCtx.fill();
+            hbCtx.strokeStyle = '#273b50'; hbCtx.lineWidth = 4; hbCtx.stroke();
+
+            // Pernos de sellado
+            for (let i = 0; i < 8; i++) {
+                const a = (i * Math.PI) / 4;
+                const bx = Math.round(cx + Math.cos(a) * 60);
+                const by = Math.round(cy + Math.sin(a) * 60);
+                hbCtx.fillStyle = '#64748b'; hbCtx.fillRect(bx - 2, by - 2, 4, 4);
+            }
+
+            // Ventana al espacio exterior
+            hbCtx.fillStyle = '#030814';
+            hbCtx.beginPath(); hbCtx.arc(cx, cy, 46, 0, Math.PI * 2); hbCtx.fill();
+
+            // Estrellas en el ojo de buey
+            hbCtx.fillStyle = '#ffffff';
+            for (const s of starsCosmos) hbCtx.fillRect(s.x, s.y, 1, 1);
+
+            // Turbina de recirculación de aire giratoria
+            hbCtx.save();
+            hbCtx.translate(cx, cy);
+            hbCtx.rotate(fanAngle);
+            for (let b = 0; b < 4; b++) {
+                hbCtx.rotate(Math.PI / 2);
+                hbCtx.fillStyle = 'rgba(0, 229, 255, 0.45)';
+                hbCtx.beginPath();
+                hbCtx.moveTo(0, 0); hbCtx.lineTo(-8, -38); hbCtx.lineTo(8, -38); hbCtx.closePath();
+                hbCtx.fill();
+            }
+            hbCtx.fillStyle = '#1e293b';
+            hbCtx.beginPath(); hbCtx.arc(0, 0, 10, 0, Math.PI * 2); hbCtx.fill();
+            hbCtx.strokeStyle = '#00ff88'; hbCtx.lineWidth = 1; hbCtx.stroke();
+            hbCtx.restore();
+
+            // Anillo de estanqueidad
+            hbCtx.strokeStyle = sealed ? '#00ff88' : '#f59e0b';
+            hbCtx.lineWidth = 2;
+            hbCtx.beginPath(); hbCtx.arc(cx, cy, 47, 0, Math.PI * 2); hbCtx.stroke();
+        }
+
+        /* =========================================================================
+           2. CINÉTICA DE GASES Y SIMULACIÓN
+           ========================================================================= */
+        let difficulty = 2;
+        let isEnded = false;
+        let missionTime = 0;
+
+        let o2Val = 21.0;
+        let co2Val = 0.04;
+        let pressVal = 101.3;
+        let tempVal = 21.5;
+
+        let o2Flow = 95;
+        let n2Flow = 20;
+        let activeScrub = 0;
+        let ventMode = 'auto';
+        let targetTemp = 21.0;
+        let isSealed = true;
+
+        let scrubA = 45.0;
+        let scrubB = 10.0;
+        let leakRate = 0.0;
+
+        const trendGases = [];
+
+        function setupDifficulty(lvl) {
+            difficulty = parseInt(lvl);
+            isEnded = false;
+            missionTime = 0;
+            trendGases.length = 0;
+
+            o2Val = 21.0; co2Val = 0.04; pressVal = 101.3; tempVal = 21.5;
+            o2Flow = 95; n2Flow = 20; activeScrub = 0; ventMode = 'auto';
+            isSealed = true; leakRate = 0.0;
+
+            if (difficulty === 1) {
+                tempVal = 25.5; scrubA = 20.0; scrubB = 5.0;
+            } else if (difficulty === 2) {
+                scrubA = 88.0; scrubB = 12.0; co2Val = 0.35;
+            } else if (difficulty === 3) {
+                leakRate = 0.55; scrubA = 45.0;
+            } else if (difficulty === 4) {
+                o2Val = 26.2; tempVal = 26.8; scrubA = 70.0;
+            } else if (difficulty === 5) {
+                leakRate = 1.1; scrubA = 95.0; scrubB = 85.0;
+            }
+
+            document.getElementById('slO2').value = o2Flow;
+            document.getElementById('slN2').value = n2Flow;
+            document.getElementById('slTemp').value = targetTemp;
+            setScrubber(activeScrub);
+            setVent(ventMode);
+            updatePreview();
+            updateUI();
+        }
+
+        function changeDifficulty(v) { setupDifficulty(v); }
+        function resetMission() { setupDifficulty(difficulty); }
+
+        function updatePreview() {
+            o2Flow = parseInt(document.getElementById('slO2').value);
+            n2Flow = parseInt(document.getElementById('slN2').value);
+            targetTemp = parseInt(document.getElementById('slTemp').value);
+            document.getElementById('txtO2Flow').textContent = `${o2Flow}%`;
+            document.getElementById('txtN2Flow').textContent = `${n2Flow}%`;
+            document.getElementById('txtTemp').textContent = `${targetTemp.toFixed(1)}°C`;
+        }
+
+        function setScrubber(i) {
+            activeScrub = i;
+            document.getElementById('btnScrubA').classList.toggle('active', i === 0);
+            document.getElementById('btnScrubB').classList.toggle('active', i === 1);
+            document.getElementById('btnScrubReg').classList.toggle('active', i === 2);
+            updateUI();
+        }
+
+        function setVent(m) {
+            ventMode = m;
+            document.getElementById('btnVAuto').classList.toggle('active', m === 'auto');
+            document.getElementById('btnVMax').classList.toggle('active', m === 'max');
+            document.getElementById('btnVPurge').classList.toggle('active', m === 'purge');
+            document.getElementById('txtVent').textContent = m.toUpperCase();
+        }
+
+        function applySettings() {
+            updatePreview();
+            playAirSound();
+        }
+
+        function toggleSeal() {
+            isSealed = !isSealed;
+            if (isSealed) {
+                leakRate = Math.max(0, leakRate - 0.5);
+                document.getElementById('airlockTag').textContent = "ESCLUSA SELLADA";
+                document.getElementById('airlockTag').style.color = "var(--crt-cyan)";
+                document.getElementById('btnSeal').textContent = "ABRIR ESCLUSA";
+                playAirSound();
+            } else {
+                document.getElementById('airlockTag').textContent = "ESCLUSA ABIERTA";
+                document.getElementById('airlockTag').style.color = "var(--crt-amber)";
+                document.getElementById('btnSeal').textContent = "CERRAR / SELLAR ESCLUSA";
+            }
+        }
+
+        /* Audio procedural */
+        let audioCtx = null;
+        let soundActive = true;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playAirSound() {
+            if (!soundActive) return;
+            initAudio();
+            try {
+                const bufferSize = audioCtx.sampleRate * 0.25;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 1200;
+                const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                noise.start();
+            } catch(e) {}
+        }
+        function toggleAudio() { soundActive = !soundActive; document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUDO'; }
+
+        /* Simulación Tick */
+        function updatePhysics(dt) {
+            if (isEnded) return;
+
+            missionTime += dt;
+            const fanSpeed = ventMode === 'purge' ? 0.35 : ventMode === 'max' ? 0.22 : 0.08;
+            fanAngle += fanSpeed;
+
+            // Cinética metabólica
+            const o2Consume = 0.08 * dt;
+            const o2Supply = (o2Flow / 100) * 0.10 * dt;
+            o2Val = o2Val - o2Consume + o2Supply;
+
+            let curSat = 100;
+            if (activeScrub === 0) { scrubA = Math.min(100, scrubA + 0.4 * dt); curSat = scrubA; }
+            else if (activeScrub === 1) { scrubB = Math.min(100, scrubB + 0.4 * dt); curSat = scrubB; }
+            else { scrubA = Math.max(0, scrubA - 1.4 * dt); scrubB = Math.max(0, scrubB - 1.4 * dt); curSat = 100; }
+
+            const scrubEff = Math.max(0, 1 - (curSat / 100));
+            co2Val = Math.max(0.02, co2Val + 0.04 * dt - scrubEff * 0.12 * dt);
+
+            pressVal = Math.max(20, pressVal - (leakRate * dt) + (n2Flow / 100) * 0.8 * dt);
+            tempVal += (targetTemp - tempVal) * 0.15 * dt;
+
+            // Historial de gráficos
+            if (trendGases.length === 0 || missionTime - trendGases[trendGases.length - 1].t > 0.4) {
+                trendGases.push({ t: missionTime, o2: o2Val, co2: co2Val * 15 });
+                if (trendGases.length > 50) trendGases.shift();
+            }
+
+            // Chequeos de seguridad
+            if (o2Val < 16.0) { isEnded = true; showDebriefModal(false, "Hipoxia severa por caída de oxígeno."); }
+            else if (o2Val > 28.0) { isEnded = true; showDebriefModal(false, "Riesgo crítico de fuego por hiperoxia."); }
+            else if (co2Val > 1.2) { isEnded = true; showDebriefModal(false, "Intoxicación letal por hipercapnia."); }
+            else if (pressVal < 70) { isEnded = true; showDebriefModal(false, "Descompresión crítica de cabina."); }
+
+            const targetTime = difficulty === 1 ? 25 : difficulty === 2 ? 35 : 45;
+            if (missionTime >= targetTime) {
+                isEnded = true;
+                showDebriefModal(true);
+            }
+
+            renderHatchBuffer(fanSpeed, isSealed);
+            updateUI();
+        }
+
+        /* Historial y modales */
+        const STORAGE_KEY = 'space_sim_eclss_history';
+        function getHistory() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; } }
+        function saveRecord(rec) {
+            const list = getHistory(); list.unshift(rec);
+            if (list.length > 30) list.pop();
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+        }
+        function clearHistory() { try { localStorage.removeItem(STORAGE_KEY); } catch(e) {} renderHistoryTable(); }
+        function openHistoryModal() { renderHistoryTable(); document.getElementById('historyModal').style.display = 'flex'; }
+        function openGuideModal() { document.getElementById('guideModal').style.display = 'flex'; }
+        function closeModals() {
+            document.getElementById('historyModal').style.display = 'none';
+            document.getElementById('guideModal').style.display = 'none';
+            document.getElementById('debriefModal').style.display = 'none';
+        }
+
+        function renderHistoryTable() {
+            const list = getHistory();
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No hay registros de soporte vital aún.</td></tr>';
+                return;
+            }
+            list.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.timestamp}</td>
+                    <td>${r.missionName.replace('MISIÓN: ', '')}</td>
+                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'ÉXITO' : 'FALLO'}</td>
+                    <td>${r.o2}%</td>
+                    <td>${r.co2}%</td>
+                    <td>${r.press} kPa</td>
+                    <td>${r.time} s</td>
+                    <td><b>${r.grade}</b></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('historyStatsSummary').textContent = `${list.length} registros`;
+        }
+
+        function showDebriefModal(success, reason = "") {
+            const modal = document.getElementById('debriefModal');
+            modal.style.display = 'flex';
+            document.getElementById('debTitle').textContent = success ? "¡CABINA ESTABILIZADA CON ÉXITO!" : "COLAPSO AMBIENTAL";
+            document.getElementById('debTitle').style.color = success ? "var(--crt-green)" : "var(--crt-red)";
+            document.getElementById('debMessage').textContent = success ? "La atmósfera de cabina se mantuvo en condiciones normobáricas seguras." : reason;
+            document.getElementById('debO2').textContent = `${o2Val.toFixed(1)}%`;
+            document.getElementById('debCO2').textContent = `${co2Val.toFixed(2)}%`;
+            document.getElementById('debPress').textContent = `${pressVal.toFixed(1)} kPa`;
+            document.getElementById('debGrade').textContent = success ? "A+ EXCELENTE" : "F REPROBADO";
+
+            saveRecord({
+                timestamp: new Date().toLocaleTimeString(),
+                missionName: document.getElementById('missionText').textContent,
+                success: success,
+                o2: o2Val.toFixed(1),
+                co2: co2Val.toFixed(2),
+                press: pressVal.toFixed(1),
+                time: Math.round(missionTime),
+                grade: success ? "A+ EXCELENTE" : "F REPROBADO"
+            });
+        }
+
+        function nextLevel() {
+            closeModals();
+            if (difficulty < 5) {
+                document.getElementById('diffSelect').value = difficulty + 1;
+                setupDifficulty(difficulty + 1);
+            } else {
+                alert("¡Has completado todos los escenarios de Soporte Vital!");
+                setupDifficulty(1);
+            }
+        }
+
+        /* Viewport Canvas */
+        const canvas = document.getElementById('hatchCanvas');
+        const ctx = canvas.getContext('2d');
+        const trendCanvas = document.getElementById('trendCanvas');
+        const tCtx = trendCanvas.getContext('2d');
+
+        function resizeViewport() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeViewport);
+
+        function drawHatchScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const w = canvas.width; const h = canvas.height;
+            // Dibuja el elemento de escotilla (Buffer 256x192 escalado)
+            const hw = Math.min(w * 0.9, (h * 256) / 192);
+            const hh = (hw * 192) / 256;
+            ctx.drawImage(hatchBuffer, (w - hw)/2, (h - hh)/2, hw, hh);
+        }
+
+        function drawTrendChart() {
+            trendCanvas.width = trendCanvas.parentElement.clientWidth;
+            trendCanvas.height = trendCanvas.parentElement.clientHeight;
+            const tw = trendCanvas.width; const th = trendCanvas.height;
+
+            tCtx.fillStyle = '#060b13'; tCtx.fillRect(0, 0, tw, th);
+            if (trendGases.length < 2) return;
+
+            // O2 curve (Verde)
+            tCtx.strokeStyle = '#00ff88';
+            tCtx.lineWidth = 1.5;
+            tCtx.beginPath();
+            for (let i = 0; i < trendGases.length; i++) {
+                const x = (i / (trendGases.length - 1)) * tw;
+                const y = th - Math.max(5, Math.min(th - 5, ((trendGases[i].o2 - 15) / 15) * th));
+                if (i === 0) tCtx.moveTo(x, y); else tCtx.lineTo(x, y);
+            }
+            tCtx.stroke();
+
+            // CO2 curve (Cian)
+            tCtx.strokeStyle = '#00e5ff';
+            tCtx.beginPath();
+            for (let i = 0; i < trendGases.length; i++) {
+                const x = (i / (trendGases.length - 1)) * tw;
+                const y = th - Math.max(5, Math.min(th - 5, (trendGases[i].co2 / 15) * th));
+                if (i === 0) tCtx.moveTo(x, y); else tCtx.lineTo(x, y);
+            }
+            tCtx.stroke();
+        }
+
+        function updateUI() {
+            document.getElementById('valO2').textContent = `${o2Val.toFixed(1)}%`;
+            document.getElementById('barO2').style.width = `${Math.min(100, (o2Val / 30) * 100)}%`;
+            document.getElementById('valCO2').textContent = `${co2Val.toFixed(2)}%`;
+            document.getElementById('barCO2').style.width = `${Math.min(100, (co2Val / 1.2) * 100)}%`;
+            document.getElementById('valPress').textContent = `${pressVal.toFixed(1)} kPa`;
+            document.getElementById('barPress').style.width = `${Math.min(100, (pressVal / 120) * 100)}%`;
+            document.getElementById('valTemp').textContent = `${tempVal.toFixed(1)}°C`;
+            document.getElementById('barTemp').style.width = `${Math.min(100, (tempVal / 35) * 100)}%`;
+
+            let scrubTxt = activeScrub === 0 ? `Canister A (${Math.round(scrubA)}% Sat.)` :
+                           activeScrub === 1 ? `Canister B (${Math.round(scrubB)}% Sat.)` : "Purga Vacío";
+            document.getElementById('txtScrub').textContent = scrubTxt;
+        }
+
+        let lastT = performance.now();
+        function loop(now) {
+            const dt = Math.min(0.1, (now - lastT) / 1000);
+            lastT = now;
+            updatePhysics(dt);
+            drawHatchScene();
+            drawTrendChart();
+            requestAnimationFrame(loop);
+        }
+
+        window.onload = () => {
+            resizeViewport();
+            setupDifficulty(2);
+            requestAnimationFrame(loop);
+        };
+    </script>
+
+<script>
+/* === Puente con la Estación Espacial (iframe -> React) === */
+(function () {
+  var victorySent = false;
+  function notifyVictory() {
+    if (victorySent) return;
+    victorySent = true;
+    var payload = { type: 'MINIGAME_COMPLETE', game: 'eclss', success: true };
+    try { window.parent.postMessage(payload, '*'); } catch (e) {}
+    try { window.parent.postMessage({ type: 'minigame-complete', game: 'eclss', success: true }, '*'); } catch (e) {}
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      try { window.parent.postMessage({ type: 'minigame-close', game: 'eclss' }, '*'); } catch (err) {}
+    }
+  });
+
+  // 1) Minijuegos nuevos: completeMission(...)
+  var origComplete = window.completeMission;
+  if (typeof origComplete === 'function') {
+    window.completeMission = function (arg0) {
+      var r = origComplete.apply(this, arguments);
+      if (arg0 !== false) notifyVictory();
+      return r;
+    };
+  }
+
+  // 2) Minijuegos v2: showDebriefModal(success, ...)
+  var origDebrief = window.showDebriefModal;
+  if (typeof origDebrief === 'function') {
+    window.showDebriefModal = function (success) {
+      var r = origDebrief.apply(this, arguments);
+      if (success === true) notifyVictory();
+      return r;
+    };
+  }
+
+  // Permitir reintento limpio si el jugador repite dentro del modal
+  ['resetMission', 'setupScenario', 'setupDifficulty', 'closeModalAndRetry'].forEach(function (fnName) {
+    var origFn = window[fnName];
+    if (typeof origFn === 'function') {
+      window[fnName] = function () {
+        victorySent = false;
+        return origFn.apply(this, arguments);
+      };
+    }
+  });
+
+  window.addEventListener('load', function () { try { window.focus(); } catch (e) {} });
+})();
+</script>
+</body>
+</html>

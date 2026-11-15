@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navegación Orbital - Astrodinámica y Mecánica Celeste</title>
+    <style>
+        :root {
+            --bg-deep: #050811;
+            --bg-panel: #0d1422;
+            --bg-card: #121c2e;
+            --border-panel: #1e2e48;
+            --border-highlight: #2563eb;
+            --crt-green: #00ff88;
+            --crt-cyan: #00e5ff;
+            --crt-amber: #f59e0b;
+            --crt-red: #ef4444;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --font-mono: 'Courier New', ui-monospace, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 45%, rgba(15, 30, 55, 0.45) 0%, rgba(3, 5, 10, 0.98) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+        }
+
+        /* Top Header */
+        header {
+            background: #0a101b;
+            border-bottom: 2px solid var(--border-panel);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .header-title-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-system {
+            background: rgba(0, 229, 255, 0.12);
+            color: var(--crt-cyan);
+            border: 1px solid var(--crt-cyan);
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .btn-ui {
+            background: #142033;
+            border: 1px solid #2d4466;
+            color: var(--text-main);
+            padding: 5px 12px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-ui:hover {
+            background: #1e3250;
+            border-color: var(--crt-cyan);
+            color: var(--crt-cyan);
+        }
+
+        .select-diff {
+            background: #142033;
+            color: var(--crt-amber);
+            border: 1px solid #2d4466;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        /* Mission Context Header */
+        .mission-bar {
+            background: linear-gradient(90deg, #091322 0%, #0d1b30 50%, #091322 100%);
+            border-bottom: 1px solid var(--border-panel);
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+        .mission-text {
+            color: var(--crt-amber);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .mission-goal {
+            color: var(--crt-cyan);
+        }
+        .mission-status-pill {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            background: rgba(0, 255, 136, 0.12);
+            color: var(--crt-green);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        /* Main Workspace Layout */
+        .cockpit-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 80px);
+            overflow: hidden;
+        }
+
+        /* Orbit Viewport Panel */
+        .viewport-panel {
+            background: #020408;
+            border: 2px solid var(--border-panel);
+            border-radius: 4px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.85);
+        }
+
+        .viewport-header {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: linear-gradient(180deg, rgba(8,16,28,0.85) 0%, transparent 100%);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        canvas#orbitCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Floating HUD Telemetry */
+        .hud-top-left {
+            position: absolute;
+            top: 40px; left: 16px;
+            background: rgba(10, 18, 30, 0.75);
+            border: 1px solid rgba(37, 99, 235, 0.35);
+            backdrop-filter: blur(4px);
+            border-radius: 3px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 11px;
+            pointer-events: none;
+            min-width: 190px;
+        }
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .hud-label { color: var(--text-dim); }
+        .hud-val { font-weight: bold; color: var(--crt-cyan); }
+
+        /* Right Sidebar */
+        .telemetry-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .card-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-panel);
+            border-radius: 4px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-header {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--crt-green);
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Maneuver Steppers */
+        .maneuver-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .vector-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-vector {
+            background: #142033;
+            border: 1px solid #2d4466;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 8px 4px;
+            cursor: pointer;
+            border-radius: 2px;
+            text-align: center;
+            transition: all 0.1s;
+        }
+        .btn-vector.active {
+            background: #0284c7;
+            border-color: var(--crt-cyan);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+
+        .stepper-row {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-step {
+            flex: 1;
+            background: #172438;
+            border: 1px solid #293f60;
+            color: #e2e8f0;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 8px 0;
+            cursor: pointer;
+            border-radius: 2px;
+            text-align: center;
+        }
+        .btn-step:hover {
+            background: #253957;
+            border-color: var(--crt-cyan);
+            color: var(--crt-cyan);
+        }
+
+        /* Live Thrust Curve Graph */
+        .chart-box {
+            background: #060b13;
+            border: 1px solid #1a273b;
+            border-radius: 3px;
+            height: 75px;
+            position: relative;
+        }
+        canvas#trendCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .btn-burn {
+            background: linear-gradient(180deg, #ff9900 0%, #d97706 100%);
+            border: 2px solid #fbbf24;
+            color: #0b0f14;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 3px;
+            box-shadow: 0 0 15px rgba(255, 153, 0, 0.4);
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .btn-burn:hover {
+            background: linear-gradient(180deg, #ffb700 0%, #f59e0b 100%);
+            box-shadow: 0 0 25px rgba(255, 183, 0, 0.7);
+            color: #000;
+        }
+        .btn-burn:disabled {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: #718096;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 6, 12, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-window {
+            background: #0e1726;
+            border: 2px solid var(--border-highlight);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+
+        .modal-top {
+            background: #142236;
+            border-bottom: 1px solid var(--border-panel);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: var(--crt-cyan);
+            font-size: 13px;
+        }
+
+        .modal-content {
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            text-align: left;
+        }
+        .history-table th {
+            background: #17243a;
+            color: var(--text-dim);
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border-panel);
+        }
+        .history-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        @media (max-width: 900px) {
+            .cockpit-grid {
+                grid-template-columns: 1fr;
+                overflow-y: auto;
+            }
+            .viewport-panel { min-height: 380px; }
+        }
+    
+        .dual-monitors { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .sat-mon { background:#060b13; border:1px solid #1e2e48; border-radius:3px; padding:6px; display:flex; flex-direction:column; gap:4px; cursor:pointer; }
+        .sat-mon.active { border-color:var(--crt-green); box-shadow:0 0 10px rgba(0,255,136,0.28); }
+        .sat-mon-title { font-size:9px; font-weight:bold; color:#ffb703; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .sat-mon.s2 .sat-mon-title { color:#7dd3fc; }
+        .sat-mon canvas { width:100%; height:48px; background:#030711; border:1px solid #1a273b; image-rendering:pixelated; display:block; }
+        .sat-mon-meta { font-size:9px; color:var(--text-dim); display:flex; justify-content:space-between; }
+        .btn-sel { background:#142033; border:1px solid #2d4466; color:#e2e8f0; font-family:inherit; font-size:9px; font-weight:bold; padding:4px; cursor:pointer; border-radius:2px; }
+        .btn-sel.active { background:#022c22; color:var(--crt-green); border-color:var(--crt-green); }
+        .btn-sel:hover { border-color:var(--crt-cyan); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title-block">
+            <span class="badge-system">ASTRODINÁMICA // HOHMANN</span>
+            <h1>NAVEGACIÓN ORBITAL HOHMANN DUAL · SAT-01 AMARU-COMMS / SAT-02 INTI-SCIENCE</h1>
+        </div>
+        <div class="header-actions">
+            <label for="diffSelect" style="color:var(--text-dim)">DIFICULTAD:</label>
+            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
+                <option value="1">Nivel 1 - Elevación Orbital LEO Básica</option>
+                <option value="2" selected>Nivel 2 - Transferencia a Estación Alpha</option>
+                <option value="3">Nivel 3 - Inyección en Órbita Elíptica</option>
+                <option value="4">Nivel 4 - Rendezvous con Desfase Angular</option>
+                <option value="5">Nivel 5 - Simulación Extrema Translunar (TLI)</option>
+            </select>
+            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORIAL</button>
+            <button class="btn-ui" onclick="openGuideModal()">? GUÍA</button>
+            <button class="btn-ui" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO</button>
+            <button class="btn-ui" onclick="resetMission()">↻ REINICIAR</button>
+        </div>
+    </header>
+
+    <div class="mission-bar">
+        <div>
+            <span class="mission-text" id="missionText">MISIÓN: Transferencia a Estación Orbital Alpha</span>
+        </div>
+        <div class="mission-goal" id="missionGoal">
+            OBJETIVO: Iguala la altitud meta (+Δv progrado) y ejecuta el encendido del motor.
+        </div>
+        <div>
+            ESTADO: <span class="mission-status-pill" id="missionStatusPill">ÓRBITA ESTABLE</span>
+        </div>
+    </div>
+
+    <div class="cockpit-grid">
+        <!-- Viewport -->
+        <div class="viewport-panel">
+            <div class="viewport-header">
+                <span style="color:var(--crt-cyan)">RADAR ORBITAL TERRESTRE // SISTEMA INERCIAL</span>
+                <span id="orbitStatusTag" style="color:var(--crt-green)">LEO CIRCULAR NOMINAL</span>
+            </div>
+
+            <canvas id="orbitCanvas"></canvas>
+
+            <div class="hud-top-left">
+                <div class="hud-row">
+                    <span class="hud-label">ALTITUD ACTUAL (h):</span>
+                    <span class="hud-val" id="hudAlt">412.0 km</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">ALTITUD META:</span>
+                    <span class="hud-val" id="hudTargetAlt" style="color:var(--crt-green)">550.0 km</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">VELOCIDAD (vis-viva):</span>
+                    <span class="hud-val" id="hudVel">7.68 km/s</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">PERÍODO ORBITAL:</span>
+                    <span class="hud-val" id="hudPeriod">92.8 min</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">COMBUSTIBLE:</span>
+                    <span class="hud-val" id="hudFuel">85.0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="telemetry-sidebar">
+            <div class="card-panel">
+                <div class="card-header">
+                    <span>SATÉLITES EN ÓRBITA (180°)</span>
+                    <span id="dualSatTag" style="color:var(--crt-cyan)">0/2 LISTOS</span>
+                </div>
+                <div class="dual-monitors">
+                    <div class="sat-mon active" id="mon1" onclick="selectSat(0)">
+                        <div class="sat-mon-title">SAT-01 AMARU-COMMS</div>
+                        <canvas id="satCanvas1" width="128" height="48"></canvas>
+                        <div class="sat-mon-meta"><span id="alt1">412 km</span><span id="tgt1">550 km</span></div>
+                        <button type="button" class="btn-sel active" id="btnSel1" onclick="event.stopPropagation(); selectSat(0)">CONTROLAR SAT-01</button>
+                    </div>
+                    <div class="sat-mon s2" id="mon2" onclick="selectSat(1)">
+                        <div class="sat-mon-title">SAT-02 INTI-SCIENCE</div>
+                        <canvas id="satCanvas2" width="128" height="48"></canvas>
+                        <div class="sat-mon-meta"><span id="alt2">436 km</span><span id="tgt2">495 km</span></div>
+                        <button type="button" class="btn-sel" id="btnSel2" onclick="event.stopPropagation(); selectSat(1)">CONTROLAR SAT-02</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-panel">
+                <div class="card-header">
+                    <span>PLANIFICADOR DE IMPULSO (&Delta;v)</span>
+                    <span style="color:var(--crt-amber)" id="maneuverReadout">+138 m/s</span>
+                </div>
+                <div class="maneuver-grid">
+                    <span style="font-size:10px; color:var(--text-dim)">ORIENTACIÓN DEL VECTOR:</span>
+                    <div class="vector-selector">
+                        <button class="btn-vector active" id="btnProg" onclick="setVector('prograde')">PROGRADO ▲ (SUBIR)</button>
+                        <button class="btn-vector" id="btnRetro" onclick="setVector('retrograde')">RETRÓGRADO ▼ (BAJAR)</button>
+                    </div>
+
+                    <span style="font-size:10px; color:var(--text-dim)">MAGNITUD DEL IMPULSO:</span>
+                    <div class="stepper-row">
+                        <button class="btn-step" onclick="adjustDeltaV(-25)">-25</button>
+                        <button class="btn-step" onclick="adjustDeltaV(-5)">-5</button>
+                        <button class="btn-step" onclick="adjustDeltaV(+5)">+5</button>
+                        <button class="btn-step" onclick="adjustDeltaV(+25)">+25</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Chart -->
+            <div class="card-panel">
+                <div class="card-header">
+                    <span>PERFIL DE ALTITUD EN TIEMPO REAL</span>
+                    <span style="color:var(--crt-cyan)" id="graphTimeText">T+00:00</span>
+                </div>
+                <div class="chart-box">
+                    <canvas id="trendCanvas"></canvas>
+                </div>
+                <div style="font-size:9px; color:var(--text-dim); display:flex; justify-content:space-between;">
+                    <span>Apoapsis: <b id="valApo" style="color:var(--crt-green)">412 km</b></span>
+                    <span>Periapsis: <b id="valPeri" style="color:var(--crt-cyan)">412 km</b></span>
+                </div>
+            </div>
+
+            <!-- Ignition & Thruster -->
+            <div class="card-panel">
+                <div class="card-header">
+                    <span>PROPULSIÓN IÓNICA / QUÍMICA</span>
+                    <span id="engineStatusTag" style="color:var(--crt-green)">LISTO</span>
+                </div>
+                <button class="btn-burn" id="btnExecuteBurn" onclick="executeBurn()">
+                    ▶ EJECUTAR MANIOBRA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span>HISTORIAL DE MANIOBRAS ORBITALES</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Misión</th>
+                            <th>Resultado</th>
+                            <th>Altitud Final</th>
+                            <th>Error</th>
+                            <th>Delta-V</th>
+                            <th>Combustible</th>
+                            <th>Calificación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 maniobras registradas</span>
+                    <button class="btn-ui" onclick="clearHistory()">LIMPIAR HISTORIAL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Modal -->
+    <div class="modal-overlay" id="guideModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span>GUÍA DE ASTRODINÁMICA ORBITAL</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <p><b>1. Ecuación de Vis-Viva y Transferencia de Hohmann:</b> Para elevar la altitud de una órbita circular, acelera en dirección PROGRADO. Esto creará una elipse de transferencia cuyo punto más alto (apoapsis) alcanzará la órbita deseada.</p>
+                <p><b>2. Proyección en tiempo real:</b> La línea naranja punteada en el radar orbital te muestra exactamente hacia dónde se desplazará tu nave tras el impulso.</p>
+                <p><b>3. Ejecución precisa:</b> Iguala la altitud del apoapsis proyectado con la órbita meta verde antes de presionar el botón de ignición.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debrief Modal -->
+    <div class="modal-overlay" id="debriefModal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <span id="debTitle" style="color:var(--crt-green)">INFORME DE MANIOBRA ORBITAL</span>
+                <button class="btn-ui" onclick="closeModals()">✕</button>
+            </div>
+            <div class="modal-content">
+                <p id="debMessage">Inserción de órbita completada con éxito.</p>
+                <div style="background:#091220; border:1px solid var(--border-panel); padding:10px; border-radius:3px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>Altitud Alcanzada: <b id="debAlt" style="color:var(--crt-green)">550 km</b></div>
+                    <div>Discrepancia Residual: <b id="debError" style="color:var(--crt-cyan)">1.2 km</b></div>
+                    <div>Delta-V Empleado: <b id="debDV" style="color:var(--crt-cyan)">+138 m/s</b></div>
+                    <div>Combustible Restante: <b id="debFuel" style="color:var(--crt-amber)">76.5%</b></div>
+                    <div>Calificación: <b id="debGrade" style="color:var(--crt-green)">A+ EXCELENTE</b></div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                    <button class="btn-ui" onclick="closeModals(); resetMission();">REINTENTAR</button>
+                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">SIGUIENTE NIVEL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+           1. BUFFERS INDIVIDUALES DE 256x192 POR ELEMENTO
+           ========================================================================= */
+        // Elemento 1: Tierra en Pixel Art (Buffer 256x192)
+        const earthBuffer = document.createElement('canvas');
+        earthBuffer.width = 256; earthBuffer.height = 192;
+        const eCtx = earthBuffer.getContext('2d');
+        eCtx.imageSmoothingEnabled = false;
+
+        let earthRotation = 0;
+        function renderEarthBuffer() {
+            eCtx.clearRect(0, 0, 256, 192);
+            const ecx = 128; const ecy = 96; const r = 52;
+
+            // Halo atmosférico
+            eCtx.fillStyle = 'rgba(0, 180, 255, 0.22)';
+            eCtx.beginPath(); eCtx.arc(ecx, ecy, r + 4, 0, Math.PI * 2); eCtx.fill();
+
+            // Océanos profundos
+            eCtx.fillStyle = '#0a3258';
+            eCtx.beginPath(); eCtx.arc(ecx, ecy, r, 0, Math.PI * 2); eCtx.fill();
+
+            // Continentes en pixel art
+            eCtx.save();
+            eCtx.beginPath(); eCtx.arc(ecx, ecy, r, 0, Math.PI * 2); eCtx.clip();
+            eCtx.fillStyle = '#15803d';
+            const offset = (earthRotation * 15) % 120;
+            eCtx.fillRect(ecx - 60 + offset, ecy - 18, 28, 24);
+            eCtx.fillRect(ecx - 20 + offset, ecy + 4, 34, 20);
+            eCtx.fillRect(ecx + 30 + offset, ecy - 24, 30, 28);
+            eCtx.fillRect(ecx - 130 + offset, ecy - 12, 32, 28);
+
+            // Casquetes polares
+            eCtx.fillStyle = '#e2e8f0';
+            eCtx.fillRect(ecx - 28, ecy - r, 56, 7);
+            eCtx.fillRect(ecx - 28, ecy + r - 7, 56, 7);
+            eCtx.restore();
+        }
+
+        // Elemento 2: Tobera de Plasma Espacial (Buffer 256x192)
+        const engineBuffer = document.createElement('canvas');
+        engineBuffer.width = 256; engineBuffer.height = 192;
+        const engCtx = engineBuffer.getContext('2d');
+        engCtx.imageSmoothingEnabled = false;
+
+        function renderEngineBuffer(isBurning) {
+            engCtx.clearRect(0, 0, 256, 192);
+            const cx = 128; const cy = 96;
+
+            // Campana de la tobera metálica
+            engCtx.fillStyle = '#334155';
+            engCtx.beginPath();
+            engCtx.moveTo(cx - 16, cy - 25);
+            engCtx.lineTo(cx + 16, cy - 25);
+            engCtx.lineTo(cx + 34, cy + 25);
+            engCtx.lineTo(cx - 34, cy + 25);
+            engCtx.closePath();
+            engCtx.fill();
+            engCtx.strokeStyle = '#64748b';
+            engCtx.lineWidth = 2;
+            engCtx.stroke();
+
+            // Llama de plasma reactivo cuando está encendido
+            if (isBurning) {
+                const plumeH = 45 + Math.random() * 25;
+                const grad = engCtx.createLinearGradient(cx, cy + 25, cx, cy + 25 + plumeH);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, '#00e5ff');
+                grad.addColorStop(0.8, '#0055ff');
+                grad.addColorStop(1, 'transparent');
+                engCtx.fillStyle = grad;
+                engCtx.beginPath();
+                engCtx.moveTo(cx - 28, cy + 25);
+                engCtx.lineTo(cx + 28, cy + 25);
+                engCtx.lineTo(cx + (Math.random()*6-3), cy + 25 + plumeH);
+                engCtx.closePath();
+                engCtx.fill();
+            }
+        }
+        renderEngineBuffer(false);
+
+        /* =========================================================================
+           2. FÍSICA ORBITAL KEPLERIANA REAL (VIS-VIVA)
+           ========================================================================= */
+        const MU = 398600.44; // km^3/s^2 (Tierra)
+        const R_EARTH = 6371; // km
+
+        let difficulty = 2;
+        let isBurning = false;
+        let burnDuration = 0;
+        let missionTime = 0;
+
+        let sats = [];
+        let selectedSat = (typeof location !== 'undefined' && location.search && location.search.indexOf('sat=sat2') >= 0) ? 1 : 0;
+        let orbitState = {
+            altitude: 412.0,
+            targetAlt: 550.0,
+            tolerance: 15.0,
+            angle: 0.0,
+            speed: 7.68,
+            fuel: 85.0,
+            vector: 'prograde',
+            deltaV: 138,
+            isEnded: false
+        };
+
+        const trendData = [];
+
+        function setupDifficulty(lvl) {
+            difficulty = parseInt(lvl);
+            orbitState.isEnded = false;
+            isBurning = false;
+            missionTime = 0;
+            trendData.length = 0;
+
+            if (difficulty === 1) {
+                orbitState.altitude = 380; orbitState.targetAlt = 480; orbitState.deltaV = 98; orbitState.fuel = 95;
+            } else if (difficulty === 2) {
+                orbitState.altitude = 412; orbitState.targetAlt = 550; orbitState.deltaV = 138; orbitState.fuel = 85;
+            } else if (difficulty === 3) {
+                orbitState.altitude = 400; orbitState.targetAlt = 680; orbitState.deltaV = 220; orbitState.fuel = 75;
+            } else if (difficulty === 4) {
+                orbitState.altitude = 420; orbitState.targetAlt = 310; orbitState.vector = 'retrograde'; orbitState.deltaV = 115; orbitState.fuel = 70;
+            } else if (difficulty === 5) {
+                orbitState.altitude = 350; orbitState.targetAlt = 850; orbitState.deltaV = 380; orbitState.fuel = 60;
+            }
+
+            const baseSat = {
+                name: 'SAT-01 AMARU-COMMS',
+                short: 'SAT-01',
+                color: '#ffb703',
+                altitude: orbitState.altitude,
+                targetAlt: orbitState.targetAlt,
+                tolerance: orbitState.tolerance,
+                angle: Math.PI,
+                speed: orbitState.speed,
+                fuel: orbitState.fuel,
+                vector: orbitState.vector,
+                deltaV: orbitState.deltaV,
+                isEnded: false,
+                done: false,
+                err: 0
+            };
+            const sat2Target = orbitState.vector === 'retrograde'
+                ? Math.max(290, orbitState.targetAlt + 35)
+                : Math.max(baseSat.altitude + 55, orbitState.targetAlt - 55);
+            const sat2Alt = baseSat.altitude + 24;
+            const sat2Dv = Math.max(35, Math.round(Math.abs(sat2Target - sat2Alt) * 0.98));
+            const sat2 = {
+                name: 'SAT-02 INTI-SCIENCE',
+                short: 'SAT-02',
+                color: '#7dd3fc',
+                altitude: sat2Alt,
+                targetAlt: sat2Target,
+                tolerance: orbitState.tolerance,
+                angle: 0.0,
+                speed: Math.sqrt(MU / (R_EARTH + sat2Alt)),
+                fuel: Math.min(100, baseSat.fuel + 5),
+                vector: sat2Target >= sat2Alt ? 'prograde' : 'retrograde',
+                deltaV: sat2Dv,
+                isEnded: false,
+                done: false,
+                err: 0
+            };
+            sats = [baseSat, sat2];
+            if (selectedSat >= sats.length) selectedSat = 0;
+            orbitState = sats[selectedSat];
+            refreshSatSelectors();
+            setVector(orbitState.vector);
+            updateUI();
+        }
+
+        function refreshSatSelectors() {
+            [0, 1].forEach(function (k) {
+                var m = document.getElementById('mon' + (k + 1));
+                var b = document.getElementById('btnSel' + (k + 1));
+                if (m) m.classList.toggle('active', k === selectedSat);
+                if (b) b.classList.toggle('active', k === selectedSat);
+            });
+            var mText = document.getElementById('missionText');
+            if (mText && sats[selectedSat]) {
+                mText.textContent = 'MISIÓN: ' + sats[selectedSat].name + ' · MANIOBRA HOHMANN';
+            }
+        }
+
+        function selectSat(i) {
+            if (isBurning || !sats[i]) return;
+            selectedSat = i;
+            orbitState = sats[i];
+            refreshSatSelectors();
+            setVector(orbitState.vector);
+            updateUI();
+        }
+
+        function changeDifficulty(v) { setupDifficulty(v); }
+        function resetMission() { setupDifficulty(difficulty); }
+
+        function setVector(vec) {
+            orbitState.vector = vec;
+            document.getElementById('btnProg').classList.toggle('active', vec === 'prograde');
+            document.getElementById('btnRetro').classList.toggle('active', vec === 'retrograde');
+            updateUI();
+        }
+
+        function adjustDeltaV(amount) {
+            if (isBurning || orbitState.isEnded) return;
+            orbitState.deltaV = Math.max(0, Math.min(650, orbitState.deltaV + amount));
+            updateUI();
+        }
+
+        function executeBurn() {
+            if (isBurning || orbitState.isEnded || orbitState.deltaV <= 0) return;
+            isBurning = true;
+            burnDuration = 2.8; // 2.8s de maniobra dinámica
+            document.getElementById('btnExecuteBurn').disabled = true;
+            document.getElementById('engineStatusTag').textContent = "IGNICIÓN EN CURSO";
+            document.getElementById('engineStatusTag').style.color = "var(--crt-amber)";
+            renderEngineBuffer(true);
+            playBurnSound();
+        }
+
+        /* Audio procedural */
+        let audioCtx = null;
+        let soundActive = true;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playBurnSound() {
+            if (!soundActive) return;
+            initAudio();
+            try {
+                const bufferSize = audioCtx.sampleRate * 2.5;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(320, audioCtx.currentTime);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
+                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                noise.start();
+            } catch(e) {}
+        }
+        function toggleAudio() { soundActive = !soundActive; document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUDO'; }
+
+        /* Simulación Tick */
+        function updatePhysics(dt) {
+            if (orbitState.isEnded) return;
+
+            missionTime += dt;
+            earthRotation += 0.01;
+            renderEarthBuffer();
+
+            // Movimiento orbital
+            const r_curr = R_EARTH + orbitState.altitude;
+            const meanMotion = Math.sqrt(MU / Math.pow(r_curr, 3));
+            sats.forEach(function (sat) {
+                if (sat === orbitState) {
+                    sat.angle += meanMotion * dt * 45;
+                } else {
+                    const rOther = R_EARTH + sat.altitude;
+                    const mmOther = Math.sqrt(MU / Math.pow(rOther, 3));
+                    sat.speed = Math.sqrt(MU / rOther);
+                    sat.angle += mmOther * dt * 45;
+                }
+            });
+
+            // Velocidad vis-viva
+            orbitState.speed = Math.sqrt(MU / r_curr);
+
+            if (isBurning) {
+                burnDuration -= dt;
+                orbitState.fuel = Math.max(0, orbitState.fuel - dt * 6.5);
+
+                const shift = (orbitState.vector === 'prograde' ? orbitState.deltaV : -orbitState.deltaV) * 0.95;
+                orbitState.altitude += (shift / 2.8) * dt;
+
+                if (burnDuration <= 0) {
+                    isBurning = false;
+                    document.getElementById('btnExecuteBurn').disabled = false;
+                    document.getElementById('engineStatusTag').textContent = "NOMINAL";
+                    document.getElementById('engineStatusTag').style.color = "var(--crt-green)";
+                    renderEngineBuffer(false);
+                    checkOutcome();
+                }
+            }
+
+            // Datos dinámicos para el gráfico
+            if (trendData.length === 0 || missionTime - trendData[trendData.length - 1].t > 0.4) {
+                trendData.push({ t: missionTime, alt: orbitState.altitude });
+                if (trendData.length > 50) trendData.shift();
+            }
+
+            updateUI();
+        }
+
+        function checkOutcome() {
+            orbitState.isEnded = true;
+            const error = Math.abs(orbitState.altitude - orbitState.targetAlt);
+            const success = (error <= orbitState.tolerance);
+
+            saveOrbitRecord({
+                timestamp: new Date().toLocaleTimeString(),
+                missionName: document.getElementById('missionText').textContent,
+                success: success,
+                altFinal: Math.round(orbitState.altitude),
+                error: error.toFixed(1),
+                deltaV: `${orbitState.vector === 'prograde' ? '+' : '-'}${orbitState.deltaV}`,
+                fuel: orbitState.fuel.toFixed(1),
+                grade: success ? (error < 5 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO"
+            });
+
+            if (!success) {
+                showDebriefModal(false, error);
+                return;
+            }
+            orbitState.done = true;
+            orbitState.err = error;
+            if (sats.length >= 2 && !sats.every(function (x) { return x.done; })) {
+                orbitState.isEnded = false;
+                var otherIdx = selectedSat === 0 ? 1 : 0;
+                var other = sats[otherIdx];
+                var pill = document.getElementById('missionStatusPill');
+                if (pill) { pill.textContent = orbitState.short + ' ✔ · FALTA ' + other.short; pill.style.color = 'var(--crt-green)'; }
+                var goal = document.getElementById('missionGoal');
+                if (goal) goal.textContent = orbitState.name + ' ALINEADO ✔. Ahora selecciona ' + other.name + ' arriba y ejecuta su maniobra.';
+                updateUI();
+                return;
+            }
+            const maxErr = sats.length ? Math.max.apply(null, sats.map(function (x) { return x.err || 0; })) : error;
+            showDebriefModal(true, maxErr);
+        }
+
+        /* =========================================================================
+           3. HISTORIAL Y MODALES
+           ========================================================================= */
+        const STORAGE_KEY = 'space_sim_orbit_history';
+        function getOrbitHistory() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; }
+        }
+        function saveOrbitRecord(rec) {
+            const list = getOrbitHistory(); list.unshift(rec);
+            if (list.length > 30) list.pop();
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
+        }
+        function clearHistory() {
+            try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+            renderHistoryTable();
+        }
+        function openHistoryModal() { renderHistoryTable(); document.getElementById('historyModal').style.display = 'flex'; }
+        function openGuideModal() { document.getElementById('guideModal').style.display = 'flex'; }
+        function closeModals() {
+            document.getElementById('historyModal').style.display = 'none';
+            document.getElementById('guideModal').style.display = 'none';
+            document.getElementById('debriefModal').style.display = 'none';
+        }
+
+        function renderHistoryTable() {
+            const list = getOrbitHistory();
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No hay maniobras registradas aún.</td></tr>';
+                return;
+            }
+            list.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.timestamp}</td>
+                    <td>${r.missionName.replace('MISIÓN: ', '')}</td>
+                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'ÉXITO' : 'FALLO'}</td>
+                    <td>${r.altFinal} km</td>
+                    <td>${r.error} km</td>
+                    <td>${r.deltaV} m/s</td>
+                    <td>${r.fuel}%</td>
+                    <td><b>${r.grade}</b></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('historyStatsSummary').textContent = `${list.length} maniobras registradas`;
+        }
+
+        function showDebriefModal(success, error) {
+            const modal = document.getElementById('debriefModal');
+            modal.style.display = 'flex';
+            document.getElementById('debTitle').textContent = success ? "¡INSERCIÓN ORBITAL EXITOSA!" : "MANIOBRA FALLIDA";
+            document.getElementById('debTitle').style.color = success ? "var(--crt-green)" : "var(--crt-red)";
+            document.getElementById('debAlt').textContent = `${Math.round(orbitState.altitude)} km`;
+            document.getElementById('debError').textContent = `${error.toFixed(1)} km`;
+            document.getElementById('debDV').textContent = `${orbitState.vector === 'prograde' ? '+' : '-'}${orbitState.deltaV} m/s`;
+            document.getElementById('debFuel').textContent = `${orbitState.fuel.toFixed(1)}%`;
+            document.getElementById('debGrade').textContent = success ? (error < 5 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO";
+        }
+
+        function nextLevel() {
+            closeModals();
+            if (difficulty < 5) {
+                document.getElementById('diffSelect').value = difficulty + 1;
+                setupDifficulty(difficulty + 1);
+            } else {
+                alert("¡Has completado todos los escenarios de Navegación Orbital!");
+                setupDifficulty(1);
+            }
+        }
+
+        /* =========================================================================
+           4. RENDERIZADO VISUAL
+           ========================================================================= */
+        const canvas = document.getElementById('orbitCanvas');
+        const ctx = canvas.getContext('2d');
+        const trendCanvas = document.getElementById('trendCanvas');
+        const tCtx = trendCanvas.getContext('2d');
+
+        function resizeViewport() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeViewport);
+
+        function drawSatPreview(cEl, sat, isSat1, t) {
+            if (!cEl) return;
+            const sCtx = cEl.getContext('2d');
+            const sw = cEl.width, sh = cEl.height;
+            sCtx.fillStyle = '#030711';
+            sCtx.fillRect(0, 0, sw, sh);
+            sCtx.fillStyle = 'rgba(255,255,255,0.6)';
+            for (let i = 0; i < 12; i++) sCtx.fillRect((i * 31) % sw, (i * 19) % sh, 1.5, 1.5);
+            sCtx.fillStyle = '#0f3860';
+            sCtx.beginPath(); sCtx.arc(sw / 2, sh + 48, 62, 0, Math.PI * 2); sCtx.fill();
+            const mx = Math.round(sw / 2), my = 20;
+            if (isSat1) {
+                sCtx.fillStyle = '#1d4ed8';
+                sCtx.fillRect(mx - 28, my - 13, 12, 26);
+                sCtx.fillRect(mx + 16, my - 13, 12, 26);
+                sCtx.fillStyle = '#60a5fa';
+                sCtx.fillRect(mx - 28, my - 4, 12, 1);
+                sCtx.fillRect(mx + 16, my - 4, 12, 1);
+                sCtx.fillStyle = '#e0a82e';
+                sCtx.fillRect(mx - 9, my - 9, 18, 18);
+                sCtx.fillStyle = '#e2e8f0';
+                sCtx.fillRect(mx - 6, my + 10, 12, 3);
+            } else {
+                sCtx.fillStyle = '#2563eb';
+                sCtx.fillRect(mx - 26, my - 10, 14, 7);
+                sCtx.fillRect(mx + 12, my - 10, 14, 7);
+                sCtx.fillRect(mx - 26, my + 3, 14, 7);
+                sCtx.fillRect(mx + 12, my + 3, 14, 7);
+                sCtx.fillStyle = '#cbd5e1';
+                sCtx.fillRect(mx - 11, my - 5, 20, 10);
+                sCtx.fillStyle = '#22d3ee';
+                sCtx.fillRect(mx + 8, my - 4, 6, 8);
+                sCtx.strokeStyle = Math.sin(t * 8) > 0 ? '#4ade80' : '#22c55e';
+                sCtx.beginPath(); sCtx.moveTo(mx + 11, my + 4); sCtx.lineTo(mx + 22, sh - 2); sCtx.stroke();
+            }
+            if (sat && sat.done) {
+                sCtx.fillStyle = '#4ade80';
+                sCtx.font = 'bold 10px Courier New';
+                sCtx.fillText('OK ✔', 4, 11);
+            }
+        }
+
+        function drawOrbitScene() {
+            const nowT = performance.now() / 1000;
+            if (sats.length >= 2) {
+                drawSatPreview(document.getElementById('satCanvas1'), sats[0], true, nowT);
+                drawSatPreview(document.getElementById('satCanvas2'), sats[1], false, nowT);
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const w = canvas.width; const h = canvas.height;
+            const cx = w * 0.45; const cy = h * 0.52;
+
+            // Escala geométrica
+            const scaleR = Math.min(w, h) * 0.18;
+            const curR = scaleR + (orbitState.altitude / 850) * (scaleR * 0.95);
+            const targetR = scaleR + (orbitState.targetAlt / 850) * (scaleR * 0.95);
+
+            // 1. Dibuja elemento Tierra (Buffer 256x192 individual escalado)
+            const earthW = scaleR * 2.3;
+            const earthH = (earthW * 192) / 256;
+            ctx.drawImage(earthBuffer, cx - earthW/2, cy - earthH/2, earthW, earthH);
+
+            // 2. Órbita actual (Azul cian)
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(cx, cy, curR, 0, Math.PI * 2); ctx.stroke();
+
+            // 3. Órbita meta (Verde neón punteada)
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.75)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.arc(cx, cy, targetR, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 4. Elipse de transferencia de Hohmann proyectada (Naranja)
+            if (orbitState.deltaV > 0) {
+                const projApo = curR + ((orbitState.vector === 'prograde' ? orbitState.deltaV : -orbitState.deltaV) / 850) * (scaleR * 0.95);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                const semiMajor = (curR + projApo) / 2;
+                const offsetCenter = (projApo - curR) / 2;
+                ctx.ellipse(cx + offsetCenter, cy, Math.abs(semiMajor), curR, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // 5. Estación meta (Icono pixel art con cruceta)
+            const targetAng = orbitState.angle + 2.4;
+            const tx = cx + Math.cos(targetAng) * targetR;
+            const ty = cy + Math.sin(targetAng) * targetR;
+            ctx.strokeStyle = '#00ff88';
+            ctx.strokeRect(tx - 6, ty - 6, 12, 12);
+            ctx.fillStyle = '#00ff88'; ctx.fillRect(tx - 2, ty - 2, 4, 4);
+
+            // 6. Nave espacial en órbita
+            const shipX = cx + Math.cos(orbitState.angle) * curR;
+            const shipY = cy + Math.sin(orbitState.angle) * curR;
+            ctx.fillStyle = '#f59e0b'; ctx.fillRect(shipX - 3, shipY - 3, 6, 6);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(shipX - 1, shipY - 1, 2, 2);
+
+            // Satélite secundario (opuesto 180° en órbita)
+            sats.forEach(function (sat) {
+                if (sat === orbitState) return;
+                const rO = scaleR + (sat.altitude / 850) * (scaleR * 0.95);
+                const rOTgt = scaleR + (sat.targetAlt / 850) * (scaleR * 0.95);
+                ctx.strokeStyle = 'rgba(125,211,252,0.35)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 4]);
+                ctx.beginPath(); ctx.arc(cx, cy, rO, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx, cy, rOTgt, 0, Math.PI * 2); ctx.stroke();
+                ctx.setLineDash([]);
+                const ox = cx + Math.cos(sat.angle) * rO;
+                const oy = cy + Math.sin(sat.angle) * rO;
+                ctx.fillStyle = sat.color;
+                ctx.fillRect(ox - 3, oy - 3, 6, 6);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = 'bold 9px Courier New';
+                ctx.fillText(sat.short + (sat.done ? ' ✔' : ''), ox + 8, oy - 5);
+            });
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px Courier New';
+            ctx.fillText((orbitState.short || 'SAT-01') + ' ▶', shipX + 8, shipY - 6);
+
+            // Elemento Tobera proyectado en la esquina derecha del HUD
+            const engScale = 90;
+            ctx.drawImage(engineBuffer, w - engScale - 20, h - (engScale*192/256) - 20, engScale, (engScale*192)/256);
+        }
+
+        function drawTrendChart() {
+            trendCanvas.width = trendCanvas.parentElement.clientWidth;
+            trendCanvas.height = trendCanvas.parentElement.clientHeight;
+            const tw = trendCanvas.width; const th = trendCanvas.height;
+
+            tCtx.fillStyle = '#060b13'; tCtx.fillRect(0, 0, tw, th);
+            if (trendData.length < 2) return;
+
+            tCtx.strokeStyle = '#00e5ff';
+            tCtx.lineWidth = 1.5;
+            tCtx.beginPath();
+            for (let i = 0; i < trendData.length; i++) {
+                const x = (i / (trendData.length - 1)) * tw;
+                const y = th - Math.max(5, Math.min(th - 5, ((trendData[i].alt - 200) / 700) * th));
+                if (i === 0) tCtx.moveTo(x, y); else tCtx.lineTo(x, y);
+            }
+            tCtx.stroke();
+        }
+
+        function updateUI() {
+            document.getElementById('hudAlt').textContent = `${orbitState.altitude.toFixed(1)} km`;
+            document.getElementById('hudTargetAlt').textContent = `${orbitState.targetAlt.toFixed(1)} km`;
+            document.getElementById('hudVel').textContent = `${orbitState.speed.toFixed(2)} km/s`;
+            document.getElementById('hudFuel').textContent = `${orbitState.fuel.toFixed(1)}%`;
+            document.getElementById('maneuverReadout').textContent = `${orbitState.vector === 'prograde' ? '+' : '-'}${orbitState.deltaV} m/s`;
+            document.getElementById('valApo').textContent = `${Math.round(orbitState.altitude)} km`;
+            document.getElementById('valPeri').textContent = `${Math.round(orbitState.altitude)} km`;
+            if (sats.length >= 2) {
+                var a1 = document.getElementById('alt1'); if (a1) a1.textContent = sats[0].altitude.toFixed(0) + ' km';
+                var t1 = document.getElementById('tgt1'); if (t1) { t1.textContent = (sats[0].done ? '✔ ' : '→') + sats[0].targetAlt + 'km'; t1.style.color = sats[0].done ? '#00ff88' : '#ffb703'; }
+                var a2 = document.getElementById('alt2'); if (a2) a2.textContent = sats[1].altitude.toFixed(0) + ' km';
+                var t2 = document.getElementById('tgt2'); if (t2) { t2.textContent = (sats[1].done ? '✔ ' : '→') + sats[1].targetAlt + 'km'; t2.style.color = sats[1].done ? '#00ff88' : '#7dd3fc'; }
+                var dtTag = document.getElementById('dualSatTag');
+                if (dtTag) {
+                    var readyCount = (sats[0].done ? 1 : 0) + (sats[1].done ? 1 : 0);
+                    dtTag.textContent = readyCount + '/2 LISTOS';
+                    dtTag.style.color = readyCount === 2 ? '#00ff88' : '#00e5ff';
+                }
+            }
+        }
+
+        let lastT = performance.now();
+        function loop(now) {
+            const dt = Math.min(0.1, (now - lastT) / 1000);
+            lastT = now;
+            updatePhysics(dt);
+            drawOrbitScene();
+            drawTrendChart();
+            requestAnimationFrame(loop);
+        }
+
+        window.onload = () => {
+            resizeViewport();
+            setupDifficulty(2);
+            requestAnimationFrame(loop);
+        };
+    </script>
+
+<script>
+/* === Puente con la Estación Espacial (iframe -> React) === */
+(function () {
+  var victorySent = false;
+  function notifyVictory() {
+    if (victorySent) return;
+    victorySent = true;
+    var payload = { type: 'MINIGAME_COMPLETE', game: 'nav', success: true };
+    try { window.parent.postMessage(payload, '*'); } catch (e) {}
+    try { window.parent.postMessage({ type: 'minigame-complete', game: 'nav', success: true }, '*'); } catch (e) {}
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      try { window.parent.postMessage({ type: 'minigame-close', game: 'nav' }, '*'); } catch (err) {}
+    }
+  });
+
+  // 1) Minijuegos nuevos: completeMission(...)
+  var origComplete = window.completeMission;
+  if (typeof origComplete === 'function') {
+    window.completeMission = function (arg0) {
+      var r = origComplete.apply(this, arguments);
+      if (arg0 !== false) notifyVictory();
+      return r;
+    };
+  }
+
+  // 2) Minijuegos v2: showDebriefModal(success, ...)
+  var origDebrief = window.showDebriefModal;
+  if (typeof origDebrief === 'function') {
+    window.showDebriefModal = function (success) {
+      var r = origDebrief.apply(this, arguments);
+      if (success === true) notifyVictory();
+      return r;
+    };
+  }
+
+  // Permitir reintento limpio si el jugador repite dentro del modal
+  ['resetMission', 'setupScenario', 'setupDifficulty', 'closeModalAndRetry'].forEach(function (fnName) {
+    var origFn = window[fnName];
+    if (typeof origFn === 'function') {
+      window[fnName] = function () {
+        victorySent = false;
+        return origFn.apply(this, arguments);
+      };
+    }
+  });
+
+  window.addEventListener('load', function () { try { window.focus(); } catch (e) {} });
+})();
+</script>
+</body>
+</html>

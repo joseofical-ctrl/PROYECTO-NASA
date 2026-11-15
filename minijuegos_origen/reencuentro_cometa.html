@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reencuentro Cometa - Defensa contra Meteoritos</title>
+    <style>
+        :root {
+            --bg-hull: #0f141c;
+            --bg-panel: #141c26;
+            --border-panel: #273547;
+            --border-highlight: #38bdf8;
+            --crt-green: #00ff88;
+            --crt-amber: #f59e0b;
+            --crt-cyan: #38bdf8;
+            --crt-red: #ef4444;
+            --text-mono: 'Courier New', monospace;
+            --panel-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: #07090f;
+            color: #e2e8f0;
+            font-family: var(--text-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(16, 30, 24, 0.4) 0%, rgba(5, 8, 12, 0.95) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            z-index: 99;
+            opacity: 0.75;
+        }
+
+        header {
+            background: #111823;
+            border-bottom: 2px solid #334155;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .title-block { display: flex; align-items: center; gap: 12px; }
+
+        .badge-system {
+            background: #064e3b;
+            color: var(--crt-green);
+            border: 1px solid var(--crt-green);
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        h1 { font-size: 15px; letter-spacing: 2px; color: #f8fafc; }
+
+        .top-controls { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+
+        .select-diff {
+            background: #1e293b;
+            color: var(--crt-cyan);
+            border: 1px solid #475569;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-header {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f1f5f9;
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-header:hover { background: #334155; border-color: var(--crt-cyan); }
+
+        .workspace-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 50px);
+        }
+
+        .industrial-panel {
+            background: var(--bg-panel);
+            border: 3px solid #1e293b;
+            border-radius: 4px;
+            box-shadow: var(--panel-shadow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-bezel {
+            position: absolute;
+            top: 2px; left: 2px; right: 2px; bottom: 2px;
+            border: 1px solid #334155;
+            pointer-events: none;
+        }
+
+        .rivet {
+            position: absolute;
+            width: 5px; height: 5px;
+            background: #64748b;
+            border-radius: 50%;
+            border: 1px solid #1e293b;
+        }
+        .rivet-tl { top: 4px; left: 4px; }
+        .rivet-tr { top: 4px; right: 4px; }
+        .rivet-bl { bottom: 4px; left: 4px; }
+        .rivet-br { bottom: 4px; right: 4px; }
+
+        .panel-header {
+            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 2px solid #334155;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--crt-green);
+            letter-spacing: 1.5px;
+        }
+
+        .panel-body {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: #03060a;
+            border: 1px solid #1e293b;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        canvas { display: block; image-rendering: pixelated; }
+
+        .telemetry-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #263342;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .tele-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            border-bottom: 1px dashed #263342;
+            padding-bottom: 3px;
+        }
+
+        .tele-val { font-size: 14px; font-weight: bold; color: var(--crt-green); }
+
+        .bar-container {
+            width: 100%;
+            height: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            position: relative;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+            transition: width 0.3s;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-card {
+            width: 600px; max-width: 90%;
+            background: #111827;
+            border: 2px solid var(--border-highlight);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.25);
+            padding: 24px;
+            display: flex; flex-direction: column; gap: 16px;
+            color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <header>
+        <div class="title-block">
+            <span class="badge-system">PILOTO // DEFENSA</span>
+            <h1>DEFENSA ORBITAL CONTRA METEORITOS</h1>
+        </div>
+        <div class="top-controls">
+            <button class="btn-header" onclick="location.href='index.html'">⌂ HUB</button>
+            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
+                <option value="1">Nivel 1 - Tranquilo</option>
+                <option value="2" selected>Nivel 2 - Moderado</option>
+                <option value="3">Nivel 3 - Intenso</option>
+            </select>
+            <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
+            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+        </div>
+    </header>
+
+    <div class="workspace-grid">
+        <!-- LEFT: Radar & Shooter Canvas -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>RADAR DE INTERCEPCIÓN TÁCTICA</span>
+                <span id="threatStatus" style="color:var(--crt-green)">ESTADO: PERÍMETRO SEGURO</span>
+            </div>
+            <div class="panel-body" style="padding:0;">
+                <div class="canvas-container">
+                    <canvas id="defenseCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Telemetry & Controls Info -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>ESTADO DEL CASCO Y MISIÓN</span>
+                <span id="clockDisplay">00:00</span>
+            </div>
+            <div class="panel-body">
+                <div class="telemetry-block">
+                    <div class="tele-row">
+                        <span style="color:#94a3b8">INTEGRIDAD DEL CASCO:</span>
+                        <span class="tele-val" id="teleHull">100%</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-fill" id="barHull" style="width: 100%;"></div>
+                    </div>
+                    <div class="tele-row" style="margin-top:8px;">
+                        <span style="color:#94a3b8">METEORITOS DESTRUIDOS:</span>
+                        <span class="tele-val" id="teleScore" style="color:var(--crt-cyan)">0 / 15</span>
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.3); border:1px solid #263342; padding:12px; font-size:11px; line-height:1.5;">
+                    <b style="color:var(--crt-cyan)">INSTRUCCIONES DE DEFENSA:</b>
+                    <p style="color:#94a3b8; margin-top:6px;">Haz <b>clic izquierdo</b> sobre los meteoritos que vengan desde el espacio hacia la estación central para destruirlos con el cañón láser antes de que impacten.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debriefing Modal -->
+    <div class="modal-overlay" id="debriefModal">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-highlight); padding-bottom:8px;">
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME TÉCNICO DE DEFENSA</span>
+                <span class="badge-system" id="debBadge">ÉXITO</span>
+            </div>
+            <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-cyan)">1. RESULTADO DE INTERCEPCIÓN:</b>
+                    <p id="debDesc">La estación repelió con éxito la amenaza meteórica.</p>
+                </div>
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE COMBATE:</b>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+                        <div>Meteoritos Destruidos: <b id="debScore">-</b></div>
+                        <div>Casco Restante: <b id="debHullFinal">-</b></div>
+                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
+                        <div>Calificación: <b id="debGrade">-</b></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
+                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        
+        function playLaserSound() {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            } catch(e){}
+        }
+
+        function playExplosionSound() {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const duration = 0.25;
+                const bufferSize = audioCtx.sampleRate * duration;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                noise.connect(filter); filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                noise.start();
+            } catch(e){}
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btnAudio').textContent = soundEnabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF';
+            if (soundEnabled) playLaserSound();
+        }
+
+        let difficulty = 2;
+        let isPaused = false;
+        let isMissionEnded = false;
+        let missionTime = 0;
+        let hull = 100;
+        let score = 0;
+        let targetScore = 15;
+        let meteorites = [];
+        let spawnTimer = 0;
+
+        function setupScenario(lvl) {
+            difficulty = parseInt(lvl);
+            isMissionEnded = false;
+            isPaused = false;
+            missionTime = 0;
+            hull = 100;
+            score = 0;
+            meteorites = [];
+            spawnTimer = 0;
+
+            // Ajustar la meta según la dificultad seleccionada
+            if (difficulty === 1) targetScore = 10;
+            else if (difficulty === 2) targetScore = 15;
+            else if (difficulty === 3) targetScore = 20;
+
+            updateUI();
+        }
+
+        function changeDifficulty(val) { setupScenario(val); }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function resetMission() { setupScenario(difficulty); }
+
+        const canvas = document.getElementById('defenseCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Disparar al hacer clic en el canvas
+        canvas.addEventListener('click', (e) => {
+            if (isPaused || isMissionEnded) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            playLaserSound();
+
+            // Comprobar si el clic impactó algún meteorito
+            for (let i = meteorites.length - 1; i >= 0; i--) {
+                const m = meteorites[i];
+                const dist = Math.hypot(m.x - clickX, m.y - clickY);
+                if (dist < m.radius + 10) {
+                    playExplosionSound();
+                    meteorites.splice(i, 1);
+                    score++;
+                    updateUI();
+
+                    if (score >= targetScore) {
+                        completeMission();
+                    }
+                    break;
+                }
+            }
+        });
+
+        function completeMission() {
+            isMissionEnded = true;
+            document.getElementById('debriefModal').style.display = 'flex';
+            document.getElementById('debTitle').textContent = "¡DEFENSA EXITOSA!";
+            document.getElementById('debBadge').textContent = "SECTOR SEGURO";
+            document.getElementById('debDesc').textContent = "Todos los incoming meteorites fueron interceptados con éxito antes de dañar el casco.";
+            document.getElementById('debScore').textContent = `${score} / ${targetScore}`;
+            document.getElementById('debHullFinal').textContent = `${hull}%`;
+            document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
+            document.getElementById('debGrade').textContent = hull === 100 ? "A+ PERFECTO" : "A BUENO";
+        }
+
+        function failMission() {
+            isMissionEnded = true;
+            document.getElementById('debriefModal').style.display = 'flex';
+            document.getElementById('debTitle').textContent = "CASCO COLAPSADO";
+            document.getElementById('debBadge').textContent = "FALLO";
+            document.getElementById('debBadge').style.background = "#7f1d1d";
+            document.getElementById('debDesc').textContent = "Demasiados impactos de meteoritos destruyeron los escudos de la estación.";
+            document.getElementById('debScore').textContent = `${score} / ${targetScore}`;
+            document.getElementById('debHullFinal').textContent = `0%`;
+            document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
+            document.getElementById('debGrade').textContent = "F - REPROBADO";
+        }
+
+        function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
+        function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
+
+        function updateUI() {
+            document.getElementById('teleHull').textContent = `${hull}%`;
+            document.getElementById('barHull').style.width = `${hull}%`;
+            document.getElementById('teleScore').textContent = `${score} / ${targetScore}`;
+            const mins = String(Math.floor(missionTime / 60)).padStart(2, '0');
+            const secs = String(Math.floor(missionTime % 60)).padStart(2, '0');
+            document.getElementById('clockDisplay').textContent = `${mins}:${secs}`;
+        }
+
+        function render() {
+            if (!isPaused && !isMissionEnded) {
+                missionTime += 0.016;
+                spawnTimer += 0.016;
+
+                // Intervalo de aparición según la dificultad (En difícil aparecen más seguido)
+                const spawnInterval = difficulty === 1 ? 2.2 : (difficulty === 2 ? 1.6 : 1.0);
+                
+                if (spawnTimer >= spawnInterval) {
+                    spawnTimer = 0;
+                    const cx = canvas.width / 2;
+                    const cy = canvas.height / 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const spawnDist = Math.max(canvas.width, canvas.height) * 0.7;
+                    const startX = cx + Math.cos(angle) * spawnDist;
+                    const startY = cy + Math.sin(angle) * spawnDist;
+
+                    // LÓGICA DE VELOCIDADES SEGÚN DIFICULTAD
+                    let speed = 1.0;
+                    if (difficulty === 1) {
+                        // FÁCIL: Velocidades estables y predecibles
+                        speed = 0.8 + Math.random() * 0.4;
+                    } else if (difficulty === 2) {
+                        // MODERADO: Mezcla de meteoritos muy lentos y otros rápidos
+                        speed = Math.random() < 0.4 ? (0.4 + Math.random() * 0.4) : (1.5 + Math.random() * 0.8);
+                    } else if (difficulty === 3) {
+                        // DIFÍCIL: Más caótico, con rocas hiper-rápidas y lentas de trampa
+                        speed = Math.random() < 0.35 ? (0.3 + Math.random() * 0.3) : (1.9 + Math.random() * 1.1);
+                    }
+
+                    meteorites.push({
+                        x: startX,
+                        y: startY,
+                        targetX: cx + (Math.random() * 40 - 20),
+                        targetY: cy + (Math.random() * 40 - 20),
+                        speed: speed,
+                        radius: 14 + Math.random() * 12
+                    });
+                }
+
+                // Mover meteoritos hacia el centro
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                for (let i = meteorites.length - 1; i >= 0; i--) {
+                    let m = meteorites[i];
+                    let dx = cx - m.x;
+                    let dy = cy - m.y;
+                    let dist = Math.hypot(dx, dy);
+
+                    if (dist < 20) {
+                        // ¡Impacto en la nave central!
+                        meteorites.splice(i, 1);
+                        hull = Math.max(0, hull - 15);
+                        playExplosionSound();
+                        updateUI();
+                        if (hull <= 0) {
+                            failMission();
+                        }
+                    } else {
+                        m.x += (dx / dist) * m.speed;
+                        m.y += (dy / dist) * m.speed;
+                    }
+                }
+            }
+
+            // Dibujar entorno espacial CRT
+            ctx.fillStyle = '#03060a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Dibujar la base/nave en el centro
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = '#0284c7';
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 3, cy - 3, 6, 6);
+
+            // Dibujar meteoritos acercándose
+            for (let m of meteorites) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        window.onload = () => { resizeCanvas(); setupScenario(2); requestAnimationFrame(render); };
+    </script>
+</body>
+</html>

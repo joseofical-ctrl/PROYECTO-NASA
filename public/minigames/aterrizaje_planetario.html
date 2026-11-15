@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aterrizaje Planetario - Descenso y Toma de Contacto</title>
+    <style>
+        :root {
+            --bg-hull: #0f141c;
+            --bg-panel: #141c26;
+            --border-panel: #273547;
+            --border-highlight: #38bdf8;
+            --crt-green: #00ff88;
+            --crt-amber: #f59e0b;
+            --crt-cyan: #38bdf8;
+            --crt-red: #ef4444;
+            --text-mono: 'Courier New', monospace;
+            --panel-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: #07090f;
+            color: #e2e8f0;
+            font-family: var(--text-mono);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(16, 30, 24, 0.4) 0%, rgba(5, 8, 12, 0.95) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            z-index: 99;
+            opacity: 0.75;
+        }
+
+        header {
+            background: #111823;
+            border-bottom: 2px solid #334155;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .title-block { display: flex; align-items: center; gap: 12px; }
+
+        .badge-system {
+            background: #064e3b;
+            color: var(--crt-green);
+            border: 1px solid var(--crt-green);
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        h1 { font-size: 15px; letter-spacing: 2px; color: #f8fafc; }
+
+        .top-controls { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+
+        .select-diff {
+            background: #1e293b;
+            color: var(--crt-cyan);
+            border: 1px solid #475569;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-header {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f1f5f9;
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-header:hover { background: #334155; border-color: var(--crt-cyan); }
+
+        .workspace-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 50px);
+        }
+
+        .industrial-panel {
+            background: var(--bg-panel);
+            border: 3px solid #1e293b;
+            border-radius: 4px;
+            box-shadow: var(--panel-shadow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-bezel {
+            position: absolute;
+            top: 2px; left: 2px; right: 2px; bottom: 2px;
+            border: 1px solid #334155;
+            pointer-events: none;
+        }
+
+        .rivet {
+            position: absolute;
+            width: 5px; height: 5px;
+            background: #64748b;
+            border-radius: 50%;
+            border: 1px solid #1e293b;
+        }
+        .rivet-tl { top: 4px; left: 4px; }
+        .rivet-tr { top: 4px; right: 4px; }
+        .rivet-bl { bottom: 4px; left: 4px; }
+        .rivet-br { bottom: 4px; right: 4px; }
+
+        .panel-header {
+            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 2px solid #334155;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--crt-green);
+            letter-spacing: 1.5px;
+        }
+
+        .panel-body {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: #020408;
+            border: 1px solid #1e293b;
+            position: relative;
+        }
+
+        canvas { display: block; image-rendering: pixelated; }
+
+        .telemetry-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #263342;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .tele-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            border-bottom: 1px dashed #263342;
+            padding-bottom: 3px;
+        }
+
+        .tele-val { font-size: 14px; font-weight: bold; color: var(--crt-green); }
+
+        .bar-container {
+            width: 100%;
+            height: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            position: relative;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+            transition: width 0.1s;
+        }
+
+        .btn-burn {
+            background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+            border: 1px solid #f59e0b;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            padding: 16px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.1s;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+        }
+        .btn-burn:hover { background: #f59e0b; color: #000; }
+        .btn-burn:active { transform: scale(0.97); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-card {
+            width: 600px; max-width: 90%;
+            background: #111827;
+            border: 2px solid var(--border-highlight);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.25);
+            padding: 24px;
+            display: flex; flex-direction: column; gap: 16px;
+            color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <header>
+        <div class="title-block">
+            <span class="badge-system">PILOTO // DESCENSO</span>
+            <h1>ATERRIZAJE PLANETARIO DE SONDA CIENTÍFICA · PUMA-3</h1>
+        </div>
+        <div class="top-controls">
+            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
+                <option value="1">Nivel 1 - Gravedad Baja</option>
+                <option value="2" selected>Nivel 2 - Gravedad Estándar</option>
+                <option value="3">Nivel 3 - Gravedad Extrema</option>
+            </select>
+            <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
+            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+        </div>
+    </header>
+
+    <div class="workspace-grid">
+        <!-- LEFT: Descent Radar Visualizer -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>RADAR DE ALTITUD Y DESCENSO</span>
+                <span id="landStatus" style="color:var(--crt-cyan)">FASES DE APROXIMACIÓN</span>
+            </div>
+            <div class="panel-body" style="padding:0;">
+                <div class="canvas-container">
+                    <canvas id="landCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Telemetry & Retro-Thrust Control -->
+        <div class="industrial-panel">
+            <div class="panel-bezel"></div>
+            <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
+            <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
+            <div class="panel-header">
+                <span>TELEMETRÍA Y PROPULSORES</span>
+                <span id="clockDisplay">00:00</span>
+            </div>
+            <div class="panel-body">
+                <div class="telemetry-block">
+                    <div class="tele-row">
+                        <span style="color:#94a3b8">ALTITUD (h):</span>
+                        <span class="tele-val" id="teleAlt">500 m</span>
+                    </div>
+                    <div class="tele-row">
+                        <span style="color:#94a3b8">VELOCIDAD VERTICAL (v_y):</span>
+                        <span class="tele-val" id="teleVel" style="color:var(--crt-amber)">0.0 m/s</span>
+                    </div>
+                    <div class="tele-row" style="border-bottom:none;">
+                        <span style="color:#94a3b8">COMBUSTIBLE RETRO:</span>
+                        <span class="tele-val" id="teleFuel">100%</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-fill" id="barFuel" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.3); border:1px solid #263342; padding:10px; font-size:11px; line-height:1.5;">
+                    <b style="color:var(--crt-cyan)">CONTROL DE FRENADO:</b>
+                    <p style="color:#94a3b8; margin-top:4px;">Mantén presionado el botón inferior o la barra espaciadora para encender los retro-cohetes. Aterriza con una velocidad menor a <b>5.0 m/s</b>.</p>
+                </div>
+
+                <button class="btn-burn" id="btnBurn" onmousedown="startBurn()" onmouseup="stopBurn()" ontouchstart="startBurn()" ontouchend="stopBurn()">
+                    🔥 ENCENDER RETRO-COHETES (MANTENER)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debriefing Modal -->
+    <div class="modal-overlay" id="debriefModal">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-highlight); padding-bottom:8px;">
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME DE TOMA DE CONTACTO</span>
+                <span class="badge-system" id="debBadge">ÉXITO</span>
+            </div>
+            <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-cyan)">1. RESULTADO DE MISIÓN:</b>
+                    <p id="debDesc">La nave tocó superficie alienígena con éxito total.</p>
+                </div>
+                <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
+                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE IMPACTO:</b>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+                        <div>Velocidad de Descenso: <b id="debSpeed">-</b></div>
+                        <div>Combustible Restante: <b id="debFuel">-</b></div>
+                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
+                        <div>Estado de Tripulación: <b id="debCrew">¡A SALVO!</b></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
+                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">FINALIZAR HACKATHON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playThrustSound() {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } catch(e){}
+        }
+        function playExplosion() {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const duration = 0.4;
+                const bufferSize = audioCtx.sampleRate * duration;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass'; filter.frequency.value = 300;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                noise.start();
+            } catch(e){}
+        }
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btnAudio').textContent = soundEnabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF';
+            if (soundEnabled) playThrustSound();
+        }
+
+        let difficulty = 2;
+        let isPaused = false;
+        let isMissionEnded = false;
+        let missionTime = 0;
+
+        // Lander physics state
+        let altitude = 500.0; // meters
+        let velocity = 0.0;   // m/s (downward positive)
+        let fuel = 100.0;     // %
+        let isBurning = false;
+        let gravity = 0.12;   // acceleration per tick
+
+        function setupScenario(lvl) {
+            difficulty = parseInt(lvl);
+            isMissionEnded = false;
+            isPaused = false;
+            missionTime = 0;
+            altitude = 500.0;
+            velocity = 12.0; // velocidad inicial de caída
+            fuel = 100.0;
+            isBurning = false;
+
+            if (difficulty === 1) gravity = 0.08;
+            else if (difficulty === 2) gravity = 0.14;
+            else if (difficulty === 3) gravity = 0.22;
+
+            updateUI();
+        }
+
+        function changeDifficulty(val) { setupScenario(val); }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function resetMission() { setupScenario(difficulty); }
+
+        function startBurn() { if (!isPaused && !isMissionEnded && fuel > 0) isBurning = true; }
+        function stopBurn() { isBurning = false; }
+
+        // Control por teclado (Barra espaciadora)
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') startBurn(); });
+        window.addEventListener('keyup', (e) => { if (e.code === 'Space') stopBurn(); });
+
+        function completeMission(finalVel) {
+            isMissionEnded = true;
+            document.getElementById('debriefModal').style.display = 'flex';
+            document.getElementById('debTitle').textContent = "¡ATERRIZAJE EXITOSO! MISIÓN CUMPLIDA";
+            document.getElementById('debBadge').textContent = "ÉXITO ROTUNDO";
+            document.getElementById('debBadge').style.background = "#064e3b";
+            document.getElementById('debDesc').textContent = "La sonda científica del Escuadrón Andino logró posarse en la superficie planetaria sin daños estructurales.";
+            document.getElementById('debSpeed').textContent = `${finalVel.toFixed(1)} m/s`;
+            document.getElementById('debFuel').textContent = `${fuel.toFixed(1)}%`;
+            document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
+        }
+
+        function failMission(finalVel) {
+            isMissionEnded = true;
+            document.getElementById('debriefModal').style.display = 'flex';
+            document.getElementById('debTitle').textContent = "COLISIÓN CATASTRÓFICA";
+            document.getElementById('debBadge').textContent = "IMPACTO";
+            document.getElementById('debBadge').style.background = "#7f1d1d";
+            document.getElementById('debDesc').textContent = `Velocidad de impacto excesiva (${finalVel.toFixed(1)} m/s). El módulo colisionó contra la superficie rocosa.`;
+            document.getElementById('debSpeed').textContent = `${finalVel.toFixed(1)} m/s (ESTRELLADO)`;
+            document.getElementById('debFuel').textContent = `${fuel.toFixed(1)}%`;
+            document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
+            document.getElementById('debCrew').textContent = "💀 FUERA DE COMBATE";
+        }
+
+        function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
+        function nextLevelOrFinish() {
+            document.getElementById('debriefModal').style.display = 'none';
+            if (difficulty < 3) {
+                document.getElementById('diffSelect').value = String(difficulty + 1);
+                setupScenario(difficulty + 1);
+            } else {
+                try { window.parent.postMessage({ type: 'minigame-close', game: 'lander' }, '*'); } catch (e) {}
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('teleAlt').textContent = `${Math.max(0, Math.round(altitude))} m`;
+            document.getElementById('teleVel').textContent = `${velocity.toFixed(1)} m/s`;
+            document.getElementById('teleFuel').textContent = `${Math.round(fuel)}%`;
+            document.getElementById('barFuel').style.width = `${fuel}%`;
+            const mins = String(Math.floor(missionTime / 60)).padStart(2, '0');
+            const secs = String(Math.floor(missionTime % 60)).padStart(2, '0');
+            document.getElementById('clockDisplay').textContent = `${mins}:${secs}`;
+        }
+
+        const canvas = document.getElementById('landCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+        window.addEventListener('resize', resizeCanvas);
+
+        function render() {
+            if (!isPaused && !isMissionEnded) {
+                missionTime += 0.016;
+
+                // Física de descenso
+                velocity += gravity; // gravedad tira hacia abajo
+                if (isBurning && fuel > 0) {
+                    velocity -= gravity * 2.2; // retro-cohete frena el descenso
+                    fuel = Math.max(0, fuel - 0.4);
+                    playThrustSound();
+                }
+
+                altitude -= velocity * 0.15; // actualizar altitud
+
+                if (altitude <= 0) {
+                    altitude = 0;
+                    if (velocity <= 5.0) {
+                        completeMission(velocity);
+                    } else {
+                        playExplosion();
+                        failMission(velocity);
+                    }
+                }
+            }
+
+            ctx.fillStyle = '#020408';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const groundY = canvas.height - 40;
+            const maxAlt = 500;
+            const shipY = groundY - (altitude / maxAlt) * (groundY - 80);
+
+            // Dibujar superficie planetaria alienígena (montañas pixel art)
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, groundY, canvas.width, 40);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(0, groundY, canvas.width, 4);
+
+            // 1. Cono de la nariz (Parte superior de la cápsula)
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.moveTo(cx, shipY - 24);
+            ctx.lineTo(cx + 16, shipY - 6);
+            ctx.lineTo(cx - 16, shipY - 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Antena de telemetría superior
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, shipY - 24);
+            ctx.lineTo(cx, shipY - 32);
+            ctx.stroke();
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(cx - 1, shipY - 34, 2, 2);
+
+            // 2. Cuerpo principal de la nave
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(cx - 18, shipY - 6, 36, 20);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cx - 18, shipY - 6, 36, 20);
+
+            // 3. Ventana de la cabina (Cockpit de cristal brillante)
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(cx, shipY + 2, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Brillo en la ventana
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - 2, shipY, 2, 2);
+
+            // 4. Estructura de patas de aterrizaje reforzadas
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            // Pata izquierda
+            ctx.moveTo(cx - 12, shipY + 14);
+            ctx.lineTo(cx - 22, shipY + 26);
+            // Pata derecha
+            ctx.moveTo(cx + 12, shipY + 14);
+            ctx.lineTo(cx + 22, shipY + 26);
+            // Barra horizontal de soporte de aterrizaje
+            ctx.moveTo(cx - 18, shipY + 22);
+            ctx.lineTo(cx + 18, shipY + 22);
+            ctx.stroke();
+            // Llama del propulsor si está activo
+            if (isBurning && fuel > 0) {
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(cx - 10, shipY + 24);
+                ctx.lineTo(cx + 10, shipY + 24);
+                ctx.lineTo(cx, shipY + 45 + Math.random() * 10);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            updateUI();
+            requestAnimationFrame(render);
+        }
+
+        window.onload = () => { resizeCanvas(); setupScenario(2); requestAnimationFrame(render); };
+    </script>
+
+<script>
+/* === Puente con la Estación Espacial (iframe -> React) === */
+(function () {
+  var victorySent = false;
+  function notifyVictory() {
+    if (victorySent) return;
+    victorySent = true;
+    var payload = { type: 'MINIGAME_COMPLETE', game: 'lander', success: true };
+    try { window.parent.postMessage(payload, '*'); } catch (e) {}
+    try { window.parent.postMessage({ type: 'minigame-complete', game: 'lander', success: true }, '*'); } catch (e) {}
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      try { window.parent.postMessage({ type: 'minigame-close', game: 'lander' }, '*'); } catch (err) {}
+    }
+  });
+
+  // 1) Minijuegos nuevos: completeMission(...)
+  var origComplete = window.completeMission;
+  if (typeof origComplete === 'function') {
+    window.completeMission = function (arg0) {
+      var r = origComplete.apply(this, arguments);
+      if (arg0 !== false) notifyVictory();
+      return r;
+    };
+  }
+
+  // 2) Minijuegos v2: showDebriefModal(success, ...)
+  var origDebrief = window.showDebriefModal;
+  if (typeof origDebrief === 'function') {
+    window.showDebriefModal = function (success) {
+      var r = origDebrief.apply(this, arguments);
+      if (success === true) notifyVictory();
+      return r;
+    };
+  }
+
+  // Permitir reintento limpio si el jugador repite dentro del modal
+  ['resetMission', 'setupScenario', 'setupDifficulty', 'closeModalAndRetry'].forEach(function (fnName) {
+    var origFn = window[fnName];
+    if (typeof origFn === 'function') {
+      window[fnName] = function () {
+        victorySent = false;
+        return origFn.apply(this, arguments);
+      };
+    }
+  });
+
+  window.addEventListener('load', function () { try { window.focus(); } catch (e) {} });
+})();
+</script>
+</body>
+</html>

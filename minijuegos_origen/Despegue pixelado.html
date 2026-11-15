@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Misión Águila · Despegue</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+:root{color-scheme:dark;--u:min(100vw,calc(100vh*16/9));box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;background:#05060c;font-family:"Press Start 2P",ui-monospace,monospace;color:#fff}
+body{display:flex;align-items:center;justify-content:center}
+#w{position:relative;width:var(--u);aspect-ratio:16/9;overflow:hidden;background:#000}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.v{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.6))}
+.bar{position:absolute;left:0;right:0;height:9%;background:#000;display:flex;align-items:center;justify-content:space-between;padding:0 3%;font-size:calc(var(--u)*.016);color:#ffb347}
+#tb{top:0}#bb{bottom:0}
+#big{position:absolute;left:0;right:0;top:36%;text-align:center;font-size:calc(var(--u)*.07);text-shadow:calc(var(--u)*.006) calc(var(--u)*.006) 0 #000;transition:none}
+#sub{position:absolute;left:0;right:0;top:50%;text-align:center;font-size:calc(var(--u)*.02);color:#fff;text-shadow:2px 2px 0 #000}
+#s{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;background:rgba(0,0,0,.6);z-index:3}
+#s.end{background:none;justify-content:flex-end;padding-bottom:12%;pointer-events:none}
+#s h1{margin:0;font-size:calc(var(--u)*.055);color:#ffb347;text-shadow:calc(var(--u)*.005) calc(var(--u)*.005) 0 #7a2c10;text-align:center;line-height:1.3}
+#s.end h1{display:none}
+button{font:inherit;font-size:calc(var(--u)*.022);background:#ffb347;color:#2a1405;border:0;padding:1.4% 3%;cursor:pointer;box-shadow:calc(var(--u)*.005) calc(var(--u)*.005) 0 #000;pointer-events:auto}
+</style>
+</head>
+<body>
+<div id="w">
+<canvas id="c" width="240" height="135"></canvas>
+<div class="v"></div>
+<div class="bar" id="tb"><span>MISIÓN ÁGUILA</span><span id="ck">T-00:00</span></div>
+<div class="bar" id="bb"><span id="alt">ALT 0 km</span><span id="vel">VEL 0 m/s</span></div>
+<div id="big"></div><div id="sub"></div>
+<div id="s"><h1>MISIÓN<br>ÁGUILA</h1><button id="b">▶ INICIAR (con sonido)</button></div>
+</div>
+<script>
+const W=240,H=135,G=122,CX=120,TOP0=G-69,IGN=4.5,LIFT=7,SEP=260;
+const cv=document.getElementById('c'),x=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+let t0=null,puffs=[],sepT=null,ign=0,flash=0,ended=0,seed=7,ac;
+const rn=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+const r=(a,b,w,h,c)=>{x.fillStyle=c;x.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.max(0,Math.round(h)))};
+const lerp=(a,b,k)=>a+(b-a)*k;
+const stars=Array.from({length:70},()=>[Math.floor(rn()*W),Math.floor(rn()*H),rn()]);
+const clouds=[[20,30],[130,70],[70,110],[190,20],[40,150]];
+const K=[[0,[42,47,107],[255,154,92]],[.3,[63,134,196],[169,212,234]],[1,[2,2,12],[12,16,48]]];
+function pal(k){let a=K[0],b=K[1];if(k>=.3){a=K[1];b=K[2]}const f=Math.min(1,(k-a[0])/(b[0]-a[0]));return[a[1].map((v,i)=>lerp(v,b[1][i],f)),a[2].map((v,i)=>lerp(v,b[2][i],f))]}
+function fire(sx,w,L,yb){L*=.85+Math.random()*.3;
+ r(sx-1,yb,w+2,L,'#e8402a');r(sx,yb,w,L*.85,'#ff9a3c');r(sx,yb,w,L*.65,'#ffd966');r(sx+1,yb,w-2,L*.4,'#fff');r(sx+1,yb+L,w-2,3,'#e8402a')}
+function srb(sx,y){r(sx,y+14,5,54,'#d8d8d8');r(sx+4,y+14,1,54,'#9a9a9a');r(sx+1,y+10,3,4,'#e8e8e8');
+ for(const o of[30,44,58])r(sx,y+o,5,1,'#777')}
+function shuttle(top,fl,on){const cx=CX,yb=top+69;
+ r(cx-6,top+6,12,62,'#c0561b');r(cx-6,top+6,3,62,'#a8440f');r(cx+4,top+6,2,62,'#d9743a');r(cx-4,top+3,8,3,'#c0561b');r(cx-2,top,4,3,'#c0561b');
+ if(on){srb(cx-13,top);srb(cx+8,top)}
+ r(cx-3,top+24,6,44,'#f0f0f0');r(cx-3,top+24,1,44,'#cfcfcf');r(cx-2,top+19,4,5,'#e6e6e6');r(cx-2,top+20,4,2,'#222');
+ for(let i=0;i<15;i++){const w=Math.floor(i*1.1)+1,y=top+52+i;r(cx-3-w,y,w,1,'#f0f0f0');r(cx+3,y,w,1,'#f0f0f0');r(cx-3-w,y,1,1,'#222');r(cx+2+w,y,1,1,'#222')}
+ r(cx-9,top+60,2,2,'#2a5db0');r(cx+7,top+60,3,2,'#c33');r(cx-3,top+66,6,3,'#333');
+ if(fl>0){if(on){fire(cx-13,5,fl,yb);fire(cx+8,5,fl,yb)}fire(cx-2,4,fl*(on?.5:1),yb)}}
+function sound(){try{if(ac)ac.close();ac=new(window.AudioContext||window.webkitAudioContext)();
+ const n=ac.sampleRate*2,bf=ac.createBuffer(1,n,ac.sampleRate),d=bf.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+ const s=ac.createBufferSource();s.buffer=bf;s.loop=true;const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=180;
+ const g=ac.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(ac.destination);s.start();const T=ac.currentTime;
+ g.gain.setValueAtTime(0,T+IGN);g.gain.linearRampToValueAtTime(.5,T+IGN+.5);g.gain.linearRampToValueAtTime(1,T+LIFT+2);g.gain.linearRampToValueAtTime(.4,T+LIFT+14);g.gain.linearRampToValueAtTime(0,T+LIFT+20);
+ f.frequency.setValueAtTime(180,T+IGN);f.frequency.linearRampToValueAtTime(900,T+LIFT+3);f.frequency.linearRampToValueAtTime(250,T+LIFT+18);
+ [1.5,2.5,3.5].forEach(b=>{const o=ac.createOscillator(),og=ac.createGain();o.type='square';o.frequency.value=660;og.gain.setValueAtTime(.06,T+b);og.gain.setValueAtTime(0,T+b+.15);o.connect(og);og.connect(ac.destination);o.start(T+b);o.stop(T+b+.2)})}catch(e){}}
+function start(){t0=performance.now();puffs=[];sepT=null;ign=0;flash=0;ended=0;$('s').style.display='none';sound()}
+$('b').onclick=start;
+function spawn(o){if(puffs.length>320)puffs.shift();puffs.push(o)}
+function frame(now){
+ const t=t0==null?0:(now-t0)/1000,lt=Math.max(0,t-LIFT);
+ const lift=lt?2.2*lt*lt+8*lt:0,off=Math.min(lift,32),gO=lift,k=Math.min(1,lift/600);
+ if(t0!=null&&t>IGN&&!ign){ign=1;flash=1}
+ if(lift>=SEP&&sepT==null){sepT=t;flash=.8}
+ const sh=t>IGN?Math.min(3,1+(t-IGN)*.6)*Math.max(0,1-lift/250):0;
+ x.save();x.translate(Math.round((Math.random()-.5)*sh*2),Math.round((Math.random()-.5)*sh*2));
+ // cielo en bandas
+ const[tp,bt]=pal(k);
+ for(let y=-4;y<H+4;y+=3){const f=Math.max(0,y)/H;x.fillStyle='rgb('+[0,1,2].map(i=>Math.round(lerp(tp[i],bt[i],f))).join(',')+')';x.fillRect(-4,y,W+8,3)}
+ if(k>.25)for(const s of stars)if(s[2]<k)r(s[0],s[1],1,1,'#fff');
+ // sol
+ if(k<.3){const sy=100+gO,sx=190;if(sy<H+30){x.globalAlpha=.25;for(let d=-14;d<=14;d++)r(sx-Math.sqrt(196-d*d),sy+d,2*Math.sqrt(196-d*d),1,'#ffc878');x.globalAlpha=1;
+  for(let d=-8;d<=8;d++){const w=Math.round(Math.sqrt(64-d*d));r(sx-w,sy+d,2*w,1,'#fff2b0')}}}
+ // tierra
+ if(k>.5){const h=(k-.5)*60;for(let xx=-4;xx<W+4;xx++){const yy=H-h+Math.pow(xx-CX,2)/260;r(xx,yy,1,H-yy,'#1c56a0');r(xx,yy,1,2,'#8fdcff');r(xx,yy+2,1,2,'#4aa3e0');
+  if((xx*7)%23<3)r(xx,yy+8+(xx%5),3,1,'#e8f4ff')}}
+ // nubes
+ if(k<.5){x.globalAlpha=Math.max(0,1-k*2.2);for(const c of clouds){const cy=((c[1]+gO*.9)%190)-30;r(c[0],cy+4,26,5,'#fff');r(c[0]+5,cy,12,6,'#fff');r(c[0]+14,cy+2,9,5,'#fff');r(c[0],cy+8,26,1,'#c9dcea')}x.globalAlpha=1}
+ // colinas, suelo y torre
+ if(gO<H){for(let xx=-4;xx<W;xx+=8)r(xx,G-5-((xx*7)%9)+gO,8,14,'#27403a');
+  r(-4,G+gO,W+8,40,'#2f4a35');r(-4,G+gO,W+8,2,'#4a6f4d');r(80,G+gO+6,80,6,'#555a63');
+  r(72,TOP0+gO,4,69,'#b04a3a');for(let i=0;i<69;i+=6)r(72,TOP0+gO+i,4,1,'#6a2a20');r(76,TOP0+26+gO,9,2,'#b04a3a')}
+ // brillo de ignición y onda de choque
+ if(t>IGN&&lt<4){const a=Math.min(1,(t-IGN)/2)*.4*(1-lt/4);x.globalAlpha=a;r(CX-50,G-14+gO,100,18,'#ff9a3c');r(CX-26,G-8+gO,52,10,'#ffe08a');x.globalAlpha=1}
+ if(lt>0&&lt<2.4){const w=lt*60;x.globalAlpha=.6*(1-lt/2.4);r(CX-w,G+gO-1,2*w,2,'#fff4d6');x.globalAlpha=1}
+ // partículas
+ const top=TOP0-off+(t>IGN&&lt<2?Math.round((Math.random()-.5)*2):0),yb=top+69;
+ const fl=t<IGN?0:Math.min(44,(t-IGN)*9+lt*14+6);
+ if(t>IGN&&lt<9)for(let i=0;i<4;i++)spawn({x:CX+(rn()-.5)*30,y:G-2,vx:(rn()-.5)*(lt?3:1.2),vy:-rn()*.15,s:3+rn()*5,g:.22,a:1,da:.005,c:rn()<.5?'#fff':'#dfe8ef'});
+ if(lt>0&&k<.8){for(const dx of[-13,-11,8,10,0])if(sepT==null||dx==0)spawn({x:CX+dx+2,y:yb-gO+4,vx:(rn()-.5)*.4,vy:0,s:3,g:.12,a:.9,da:.012,c:'#eef3f7'});}
+ if(fl>0)for(let i=0;i<2;i++)spawn({x:CX+(rn()-.5)*30,y:yb-gO+fl*.6,vx:(rn()-.5)*2,vy:1.5+rn()*2,s:1,g:0,a:1,da:.05,c:'#ffd27a'});
+ puffs=puffs.filter(p=>p.a>0);
+ for(const p of puffs){p.x+=p.vx*.5;p.y+=p.vy;p.s+=p.g*.5;p.a-=p.da;x.globalAlpha=Math.max(0,p.a);r(p.x-p.s/2,p.y+gO-p.s/2,p.s,p.s,p.c)}
+ x.globalAlpha=1;
+ // líneas de velocidad
+ if(lt>1.5&&k<.9)for(let i=0;i<5;i++)r(Math.floor(Math.random()*W),Math.floor(Math.random()*H),1,8+Math.random()*12,'rgba(255,255,255,.45)');
+ // propulsores separados
+ if(sepT!=null){const dt=t-sepT;for(const d of[-1,1]){const bx=CX+d*(13+dt*16)-(d<0?0:0),by=top+dt*dt*34+dt*8;if(by<H+10)srb(bx,by)}}
+ shuttle(top,fl,sepT==null);
+ x.restore();
+ if(flash>.01){x.globalAlpha=flash;r(0,0,W,H,'#fff');x.globalAlpha=1;flash*=.93}
+ // texto
+ let big='',sub='',col='#fff',sc=1;
+ if(t0!=null){
+  if(t<1.5){big='MISIÓN ÁGUILA';sub='LANZAMIENTO ORBITAL';col='#ffb347'}
+  else if(t<IGN){const n=3-Math.floor(t-1.5);sc=1+(1-(t-1.5)%1)*.8;big=n;col='#ff5a3c'}
+  else if(t<LIFT){big='IGNICIÓN';col='#ffb347'}
+  else if(lt<3){big='¡DESPEGUE!';col='#ffd966'}
+  else if(sepT!=null&&t-sepT<2.2){big='SEPARACIÓN';sub='PROPULSORES LIBERADOS'}
+  else if(lt>15){big='EN ÓRBITA';sub='MISIÓN CUMPLIDA';col='#8fdcff'}}
+ const B=$('big');B.textContent=big;B.style.color=col;B.style.transform='scale('+sc+')';$('sub').textContent=sub;
+ const ct=t-LIFT;$('ck').textContent=t0==null?'T-00:07':(ct<0?'T-':'T+')+'00:'+String(Math.abs(Math.floor(ct))).padStart(2,'0');
+ $('alt').textContent='ALT '+Math.min(408,Math.floor(lift*.6))+' km';
+ $('vel').textContent='VEL '+(lt?Math.floor((4.4*lt+8)*45):0)+' m/s';
+ if(lt>17&&!ended){ended=1;const s=$('s');s.style.display='flex';s.className='end';$('b').textContent='↻ REPETIR'}
+ else if(!ended&&t0!=null)$('s').className='';
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+$('b').addEventListener('click',()=>{$('s').className=''});
+</script>
+</body>
+</html>
