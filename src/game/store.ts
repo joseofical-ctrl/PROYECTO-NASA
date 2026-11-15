@@ -324,11 +324,35 @@ export const actions = {
   clear() {
     apply({ parts: {} }, 'vaciar los módulos del hangar')
   },
-  post(m: ChatMsg) { set({ ...state, chat: [...state.chat, m].slice(-40) }) },
-  initWorkshop(assignments: (RoleId | null)[], startRole: RoleId, playerNames?: Record<RoleId, string>) {
-    const names = playerNames ? { ...DEFAULT_NAMES, ...playerNames } : { ...DEFAULT_NAMES }
+  loadDesign(next: Design, note?: { role?: RoleId | 'sistema'; text?: string; kind?: MsgKind; installedId?: string }) {
+    const cleanText = note?.text?.trim()
     set({
-      ...DEFAULT_DESIGN,
+      ...state,
+      contractId: next.contractId,
+      launcherId: next.launcherId,
+      chassisId: next.chassisId,
+      parts: { ...next.parts },
+      lastInstall: note?.installedId ? { id: note.installedId, at: Date.now() } : state.lastInstall,
+      chat: cleanText
+        ? [...state.chat, msg(note?.role ?? 'sistema', 'todos', note?.kind ?? 'info', cleanText)].slice(-40)
+        : state.chat,
+    })
+  },
+  setPlayerNames(playerNames: Partial<Record<RoleId, string>>) {
+    set({ ...state, playerNames: { ...state.playerNames, ...playerNames } })
+  },
+  post(m: ChatMsg) { set({ ...state, chat: [...state.chat, m].slice(-40) }) },
+  initWorkshop(
+    assignments: (RoleId | null)[],
+    startRole: RoleId,
+    playerNames?: Record<RoleId, string>,
+    initialDesign?: Design
+  ) {
+    const names = playerNames ? { ...DEFAULT_NAMES, ...playerNames } : { ...DEFAULT_NAMES }
+    const seedDesign = initialDesign ?? DEFAULT_DESIGN
+    set({
+      ...seedDesign,
+      parts: { ...seedDesign.parts },
       activeRole: startRole,
       assignments,
       playerNames: names,

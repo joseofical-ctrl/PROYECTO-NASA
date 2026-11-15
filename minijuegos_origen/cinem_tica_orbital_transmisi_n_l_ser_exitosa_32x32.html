@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CubeSat Architect 2D-RPG — Transmisión Orbital Épica 32×32</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Estilo base pixel-art y CRT retro */
+        body {
+            background-color: #02050d;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+        .font-pixel {
+            font-family: 'Press Start 2P', monospace;
+        }
+        canvas {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(56, 189, 248, 0.02),
+                rgba(16, 185, 129, 0.02),
+                rgba(56, 189, 248, 0.02)
+            );
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+        .hud-panel {
+            background: rgba(6, 14, 28, 0.92);
+            border: 1px solid #0ea5e9;
+            box-shadow: 0 0 24px rgba(14, 165, 233, 0.28), inset 0 0 12px rgba(56, 189, 248, 0.12);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-[#02050d] relative">
+
+    <!-- ÁREA DE CINEMÁTICA A PANTALLA COMPLETA -->
+    <main class="relative w-full h-full overflow-hidden bg-[#02050d]">
+        <canvas id="sceneCanvas" class="w-full h-full block"></canvas>
+        
+        <!-- Capa Scanlines CRT -->
+        <div class="scanlines absolute inset-0"></div>
+
+        <!-- Botones discretos flotantes en esquina superior derecha -->
+        <div class="absolute top-3 right-3 flex items-center gap-2 z-20 opacity-85 hover:opacity-100 transition-opacity">
+            <button id="btn-export" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-emerald-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer" title="Descargar archivo HTML autónomo">
+                <span>⬇</span>
+                <span>EXPORTAR HTML</span>
+            </button>
+            <button id="btn-audio" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-amber-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
+                <span id="audio-icon">🔇</span>
+                <span id="audio-label">AUDIO</span>
+            </button>
+            <button id="btn-restart" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
+                <span>↻</span>
+                <span>REPETIR</span>
+            </button>
+        </div>
+
+        <!-- Cartel Cinematográfico Épico de Estado de Misión -->
+        <div id="mission-banner" class="hidden absolute top-5 sm:top-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none w-full px-4">
+            <div id="banner-main" class="px-4 sm:px-6 py-2 rounded bg-sky-950/90 border-2 border-cyan-400 text-cyan-100 font-pixel text-[10px] sm:text-sm tracking-widest shadow-[0_0_28px_rgba(34,211,238,0.65)] text-center">
+                ✦ SINCRONIZACIÓN ORBITAL ACTIVA ✦
+            </div>
+            <div id="banner-sub" class="px-3 py-1 rounded bg-slate-950/85 border border-emerald-400/70 text-emerald-300 font-pixel text-[8px] sm:text-[10px] tracking-wider text-center">
+                ALINEANDO MATRICES DE COMUNICACIÓN LÁSER
+            </div>
+        </div>
+
+        <!-- Barra de Progreso de Transferencia de Paquetes (Solo visible durante la transmisión) -->
+        <div id="transfer-hud" class="hidden absolute bottom-5 left-1/2 -translate-x-1/2 z-10 w-[88%] max-w-md pointer-events-none">
+            <div class="bg-slate-950/85 border border-cyan-500/70 rounded-lg px-3.5 py-2.5 backdrop-blur-sm shadow-[0_0_20px_rgba(14,165,233,0.35)]">
+                <div class="flex justify-between items-center text-[9px] sm:text-[10px] font-pixel text-cyan-300 mb-1.5">
+                    <span id="transfer-status-text">ENVIANDO TELEMETRÍA</span>
+                    <span id="transfer-percent" class="text-emerald-400">0%</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-900 rounded overflow-hidden border border-slate-700 p-0.5">
+                    <div id="transfer-bar" class="h-full bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400 transition-all duration-75" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay Final de Misión Cumplida -->
+        <div id="end-overlay" class="hidden absolute inset-0 bg-slate-950/45 flex flex-col items-center justify-center p-4 z-20">
+            <div class="hud-panel border-2 border-emerald-400/90 rounded-xl p-5 sm:p-6 max-w-sm w-full text-center space-y-4">
+                <div class="inline-block px-3 py-1 rounded bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-bold tracking-widest">
+                    TRANSMISIÓN COMPLETADA • 100% INTEGRIDAD
+                </div>
+                <h2 class="font-pixel text-xs sm:text-sm text-white leading-relaxed">
+                    ENLACE ORBITAL EXITOSO
+                </h2>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    <span class="text-cyan-300 font-bold">SAT-01</span> y <span class="text-purple-300 font-bold">SAT-02</span> sincronizaron sus sensores y enviaron los paquetes científicos a la red terrestre sin pérdida de señal.
+                </p>
+                <div class="pt-1 flex justify-center gap-2">
+                    <button id="btn-replay-modal" class="px-4 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/30 border border-cyan-300/60 transition cursor-pointer flex items-center gap-1.5">
+                        <span>↻</span> REPETIR
+                    </button>
+                    <button id="btn-export-modal" class="px-4 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-emerald-300 font-bold text-xs border border-emerald-500/50 transition cursor-pointer flex items-center gap-1.5">
+                        <span>⬇</span> EXPORTAR HTML
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. MATRICES DE SPRITES AUTÉNTICOS DE 32x32 PÍXELES (SAT-01 & SAT-02)
+         * ============================================================================
+         */
+        const SAT_PALETTE = {
+            '.': null,       // Transparente
+            'K': '#060913',  // Contorno oscuro profundo
+            'B': '#1e3a8a',  // Azul marino borde panel solar
+            'S': '#2563eb',  // Azul celda solar (SAT-01)
+            'C': '#60a5fa',  // Azul brillo solar
+            'L': '#bae6fd',  // Reflejo especular celeste
+            'P': '#4c1d95',  // Púrpura oscuro panel (SAT-02)
+            'V': '#7c3aed',  // Violeta celda solar (SAT-02)
+            'M': '#c084fc',  // Magenta brillo solar (SAT-02)
+            'G': '#94a3b8',  // Gris metálico chasis
+            'W': '#f1f5f9',  // Blanco metálico iluminado
+            'D': '#475569',  // Gris sombra chasis
+            'Y': '#facc15',  // Dorado aislamiento térmico / antena
+            'N': '#ca8a04',  // Dorado sombra
+            'E': '#10b981',  // Verde LED nominal
+            'A': '#38bdf8'   // Cian lente óptica / emisor láser
+        };
+
+        // SAT-01: CubeSat 6U azul/dorado con doble antena
+        const CUBESAT1_32X32 = [
+            "...........KK......KK...........",
+            "..........KYYK....KYYK..........",
+            "..........KYYK....KYYK..........",
+            "...........KK......KK...........",
+            "............KK....KK............",
+            "............KKKKKKKK............",
+            "...........KAAAAAAAAK...........",
+            "...........KAAWWWWAAK...........",
+            "...........KAAAAAAAAK...........",
+            "..........KKKKKKKKKKKK..........",
+            "..........KWWWWWWWWWWK..........",
+            ".KKKKKKKKKKWGGGGGGGGWKKKKKKKKKK.",
+            "KBBBBBBBBBKWGGEEEEGGWKBBBBBBBBBK",
+            "KBSSCSSCSCKWGGEEEEGGWKBSSCSSCSCK",
+            "KBSSCSSCSCKWGGGGGGGGWKBSSCSSCSCK",
+            "KBLLCLLCLLKWYYYYYYYYWKBLLCLLCLLK",
+            "KBSSCSSCSCKWNYYYYYYNWKBSSCSSCSCK",
+            "KBSSCSSCSCKWGGGGGGGGWKBSSCSSCSCK",
+            "KBLLCLLCLLKWGGAAAAAGWKBLLCLLCLLK",
+            "KBSSCSSCSCKWGGGGGGGGWKBSSCSSCSCK",
+            "KBBBBBBBBBKWDDDDDDDDWKBBBBBBBBBK",
+            ".KKKKKKKKKKWWWWWWWWWWKKKKKKKKKK.",
+            "..........KKKKKKKKKKKK..........",
+            "...........KDDD..DDDK...........",
+            "...........KAAA..AAAK...........",
+            "............KK....KK............",
+            "................................",
+            "................................",
+            "................................",
+            "................................",
+            "................................",
+            "................................"
+        ];
+
+        // SAT-02: CubeSat 6U violeta/dorado con plato parabólico superior
+        const CUBESAT2_32X32 = [
+            "...............KK...............",
+            ".............KKKKKK.............",
+            "...........KKWWWWWWKK...........",
+            "..........KWAAAAAAAAWK..........",
+            "..........KWAAWWWWAAWK..........",
+            "...........KKWWWWWWKK...........",
+            ".............KKKKKK.............",
+            "..............KYYK..............",
+            "..............KYYK..............",
+            "..........KKKKKKKKKKKK..........",
+            "..........KYYYYYYYYYYK..........",
+            ".KKKKKKKKKKYGGGGGGGGYKKKKKKKKKK.",
+            "KPPPPPPPPPKYGGEEEEGGYKPPPPPPPPPK",
+            "KPVVMVVMVPKYGGGGGGGGYKPVVMVVMVPK",
+            "KPVVMVVMVPKYGGAAAAAGYKPVVMVVMVPK",
+            "KPMMLMMLMPKYGGGGGGGGYKPMMLMMLMPK",
+            "KPVVMVVMVPKDDDDDDDDDDKPVVMVVMVPK",
+            "KPVVMVVMVPKYWWWWWWWWYKPVVMVVMVPK",
+            "KPMMLMMLMPKYGGEEEEGGYKPMMLMMLMPK",
+            "KPVVMVVMVPKYGGGGGGGGYKPVVMVVMVPK",
+            "KPPPPPPPPPKYDDDDDDDDYKPPPPPPPPPK",
+            ".KKKKKKKKKKYYYYYYYYYYKKKKKKKKKK.",
+            "..........KKKKKKKKKKKK..........",
+            "...........KDDD..DDDK...........",
+            "...........KAAA..AAAK...........",
+            "............KK....KK............",
+            "................................",
+            "................................",
+            "................................",
+            "................................",
+            "................................",
+            "................................"
+        ];
+
+        function createSpriteCanvas(matrix, activeBeam = false) {
+            const c = document.createElement('canvas');
+            c.width = 32;
+            c.height = 32;
+            const sctx = c.getContext('2d');
+            for (let y = 0; y < 32; y++) {
+                const row = matrix[y];
+                for (let x = 0; x < 32; x++) {
+                    const ch = row[x];
+                    let color = SAT_PALETTE[ch];
+                    if (color) {
+                        if (activeBeam && (ch === 'A' || ch === 'E')) {
+                            color = ch === 'A' ? '#a5f3fc' : '#34d399';
+                        }
+                        sctx.fillStyle = color;
+                        sctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+            return c;
+        }
+
+        const spriteSat1Normal = createSpriteCanvas(CUBESAT1_32X32, false);
+        const spriteSat1Active = createSpriteCanvas(CUBESAT1_32X32, true);
+        const spriteSat2Normal = createSpriteCanvas(CUBESAT2_32X32, false);
+        const spriteSat2Active = createSpriteCanvas(CUBESAT2_32X32, true);
+
+        /**
+         * ============================================================================
+         * 2. MOTOR DE AUDIO ÉPICO SINTETIZADO 8-BIT / SCI-FI (WEB AUDIO API)
+         * ============================================================================
+         */
+        class EpicOrbitalAudio {
+            constructor() {
+                this.ctx = null;
+                this.enabled = false;
+            }
+
+            toggle() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+                this.enabled = !this.enabled;
+                return this.enabled;
+            }
+
+            playTelemetryPulse(freq = 520, duration = 0.09, type = 'sine', vol = 0.06) {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, now);
+                    osc.frequency.exponentialRampToValueAtTime(freq * 1.35, now + duration);
+                    gain.gain.setValueAtTime(vol, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + duration);
+                } catch (e) {}
+            }
+
+            playBeamActivationChord() {
+                if (!this.enabled || !this.ctx) return;
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25]; // Acorde Cmaj9 épico
+                notes.forEach((freq, idx) => {
+                    try {
+                        const now = this.ctx.currentTime + idx * 0.06;
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now);
+                        gain.gain.setValueAtTime(0.001, now);
+                        gain.gain.linearRampToValueAtTime(0.08, now + 0.15);
+                        gain.gain.exponentialRampToValueAtTime(0.0008, now + 2.2);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 2.25);
+                    } catch (e) {}
+                });
+            }
+
+            playSuccessFanfare() {
+                if (!this.enabled || !this.ctx) return;
+                const melody = [
+                    { f: 523.25, t: 0.00, d: 0.14 },
+                    { f: 659.25, t: 0.12, d: 0.14 },
+                    { f: 783.99, t: 0.24, d: 0.14 },
+                    { f: 1046.50, t: 0.36, d: 0.55 }
+                ];
+                melody.forEach(n => {
+                    try {
+                        const now = this.ctx.currentTime + n.t;
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(n.f, now);
+                        gain.gain.setValueAtTime(0.06, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + n.d);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + n.d);
+                    } catch (e) {}
+                });
+            }
+        }
+
+        const audio = new EpicOrbitalAudio();
+
+        /**
+         * ============================================================================
+         * 3. CONFIGURACIÓN DEL CANVAS, FONDO ESPACIAL Y PLANETA TIERRA GIGANTE
+         * ============================================================================
+         */
+        const canvas = document.getElementById('sceneCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const PIXEL_SCALE = 3;
+        let W = 420;
+        let H = 240;
+
+        let stars = [];
+        let nebulas = [];
+
+        function generateSpaceBackdrop() {
+            stars = [];
+            nebulas = [];
+            const starCount = Math.floor((W * H) / 380);
+            const starColors = ['#ffffff', '#bae6fd', '#fde68a', '#a5f3fc', '#c7d2fe'];
+
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.floor(Math.random() * W),
+                    y: Math.floor(Math.random() * H),
+                    size: Math.random() > 0.84 ? 2 : 1,
+                    color: starColors[i % starColors.length],
+                    phase: Math.random() * Math.PI * 2,
+                    speed: 1.4 + Math.random() * 3.0
+                });
+            }
+
+            for (let i = 0; i < 7; i++) {
+                nebulas.push({
+                    x: Math.floor(Math.random() * W),
+                    y: Math.floor(Math.random() * H * 0.62),
+                    rx: 32 + Math.floor(Math.random() * 52),
+                    ry: 16 + Math.floor(Math.random() * 26),
+                    color: i % 2 === 0 ? 'rgba(14, 116, 144, 0.13)' : 'rgba(30, 58, 138, 0.14)'
+                });
+            }
+        }
+
+        let earthBuffer = document.createElement('canvas');
+        let earthCtx = earthBuffer.getContext('2d');
+        let earthParams = { cx: 0, cy: 0, radius: 0 };
+
+        function buildMajesticEarthBuffer() {
+            const radius = Math.max(135, Math.round(Math.max(W * 0.45, H * 0.70)));
+            const cx = Math.floor(W * 0.5);
+            const cy = Math.floor(H + radius * 0.52);
+
+            earthParams = { cx, cy, radius };
+
+            const pad = 34;
+            const size = (radius + pad) * 2;
+            earthBuffer.width = size;
+            earthBuffer.height = size;
+            const bCx = radius + pad;
+            const bCy = radius + pad;
+
+            earthCtx.clearRect(0, 0, size, size);
+            const r2 = radius * radius;
+
+            // 5 Capas atmosféricas brillantes en el horizonte
+            const atmoLayers = [
+                { extra: 28, color: 'rgba(14, 165, 233, 0.06)' },
+                { extra: 21, color: 'rgba(56, 189, 248, 0.14)' },
+                { extra: 14, color: 'rgba(125, 211, 252, 0.25)' },
+                { extra: 8,  color: 'rgba(186, 230, 253, 0.44)' },
+                { extra: 3,  color: 'rgba(240, 249, 255, 0.78)' }
+            ];
+
+            for (const layer of atmoLayers) {
+                const lr2 = (radius + layer.extra) * (radius + layer.extra);
+                earthCtx.fillStyle = layer.color;
+                for (let dy = -radius - layer.extra; dy <= radius + layer.extra; dy++) {
+                    if (cy + dy < -12 || cy + dy > H + 12) continue;
+                    for (let dx = -radius - layer.extra; dx <= radius + layer.extra; dx++) {
+                        if (cx + dx < -12 || cx + dx > W + 12) continue;
+                        const d2 = dx * dx + dy * dy;
+                        if (d2 <= lr2 && d2 > r2) {
+                            earthCtx.fillRect(bCx + dx, bCy + dy, 1, 1);
+                        }
+                    }
+                }
+            }
+
+            // Superficie planetaria con océanos profundos, continentes detallados y luces nocturnas
+            for (let dy = -radius; dy <= radius; dy++) {
+                if (cy + dy < -12 || cy + dy > H + 12) continue;
+                for (let dx = -radius; dx <= radius; dx++) {
+                    if (cx + dx < -12 || cx + dx > W + 12) continue;
+                    const d2 = dx * dx + dy * dy;
+                    if (d2 <= r2) {
+                        const dist = Math.sqrt(d2);
+                        const normDist = dist / radius;
+
+                        const lightDot = (-dx * 0.52 - dy * 0.68) / radius;
+                        const isNight = lightDot < -0.24;
+                        const isTwilight = lightDot >= -0.24 && lightDot < -0.04;
+
+                        const lat = dy / radius;
+                        const lon = dx / (radius * Math.max(0.22, Math.sqrt(1 - lat * lat)));
+
+                        const landNoise =
+                            Math.sin(lon * 3.1 + 0.5) * Math.cos(lat * 3.7 - 0.25) +
+                            Math.sin((lon - lat) * 5.8) * 0.36 +
+                            Math.cos(lon * 12.0 + lat * 10.0) * 0.15;
+
+                        const mountainRidge = Math.abs(lon + 0.16 + Math.sin(lat * 4.8) * 0.11) < 0.11 && landNoise > 0.10;
+
+                        let color = '#1e3a8a';
+                        if (landNoise > -0.06) color = '#0284c7';
+                        else if (lightDot > 0.22) color = '#1d4ed8';
+                        if (lightDot > 0.52 && landNoise <= -0.06) color = '#2563eb';
+
+                        if (landNoise > 0.10) {
+                            color = '#15803d';
+                            if (landNoise > 0.32) color = '#16a34a';
+                            if (landNoise > 0.48) color = '#22c55e';
+                            if (mountainRidge) {
+                                color = landNoise > 0.42 ? '#f8fafc' : (landNoise > 0.26 ? '#92400e' : '#b45309');
+                            }
+                        }
+
+                        if (normDist > 0.95 && !isNight) {
+                            color = '#bae6fd';
+                        } else if (normDist > 0.90 && !isNight) {
+                            color = '#38bdf8';
+                        }
+
+                        if (isNight) {
+                            const cityCluster = landNoise > 0.18 && Math.sin(dx * 17.1) * Math.cos(dy * 21.3) > 0.89;
+                            color = cityCluster ? '#fde047' : '#050914';
+                        } else if (isTwilight) {
+                            if (landNoise > 0.10) color = '#064e3b';
+                            else color = '#172554';
+                        }
+
+                        earthCtx.fillStyle = color;
+                        earthCtx.fillRect(bCx + dx, bCy + dy, 1, 1);
+                    }
+                }
+            }
+        }
+
+        function drawMajesticEarth(time, beamIntensity = 0, receiverX = W * 0.5, receiverY = H * 0.85) {
+            const { cx, cy, radius } = earthParams;
+            const pad = 34;
+            ctx.drawImage(earthBuffer, cx - radius - pad, cy - radius - pad);
+
+            // Aurora boreal luminosa en el terminador
+            const auroraAlpha = 0.24 + 0.14 * Math.sin(time * 3.2);
+            ctx.fillStyle = `rgba(52, 211, 153, ${auroraAlpha})`;
+            for (let i = 0; i < 16; i++) {
+                const a = -Math.PI * 0.34 + i * 0.012;
+                const ax = Math.round(cx + Math.cos(a) * (radius + 2));
+                const ay = Math.round(cy + Math.sin(a) * (radius + 2) - (i % 3));
+                if (ay > 0 && ay < H) ctx.fillRect(ax, ay, 2, 4);
+            }
+
+            // Nubes pixeladas en movimiento con sombra proyectada
+            const cloudCount = 24;
+            for (let i = 0; i < cloudCount; i++) {
+                const baseAngle = -Math.PI * 0.80 + (i / cloudCount) * Math.PI * 0.60;
+                const drift = Math.sin(time * 0.14 + i * 1.9) * 0.045;
+                const angle = baseAngle + drift;
+                const alt = radius * (0.74 + (i % 5) * 0.045);
+
+                const clX = Math.round(cx + Math.cos(angle) * alt);
+                const clY = Math.round(cy + Math.sin(angle) * alt);
+
+                if (clY > 0 && clY < H) {
+                    const isDark = clX > cx + radius * 0.24;
+                    const w = 11 + (i % 4) * 5;
+                    ctx.fillStyle = 'rgba(2, 6, 23, 0.35)';
+                    ctx.fillRect(clX - Math.floor(w / 2) + 2, clY + 2, w, 2);
+                    ctx.fillStyle = isDark ? 'rgba(100, 116, 139, 0.6)' : 'rgba(248, 250, 252, 0.92)';
+                    ctx.fillRect(clX - Math.floor(w / 2), clY, w, 2);
+                    ctx.fillRect(clX - Math.floor(w / 2) + 2, clY - 1, w - 4, 1);
+                }
+            }
+
+            // Estación receptora en superficie terrestre y resplandor de recepción de datos
+            const rx = Math.round(receiverX);
+            const ry = Math.round(receiverY);
+            if (ry > 0 && ry < H) {
+                // Baliza terrestre
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(rx - 3, ry - 1, 6, 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(rx - 1, ry - 2, 2, 2);
+
+                if (beamIntensity > 0.05) {
+                    const glowW = Math.round(28 * beamIntensity);
+                    ctx.fillStyle = `rgba(34, 211, 238, ${0.45 * beamIntensity})`;
+                    ctx.fillRect(rx - glowW, ry - 2, glowW * 2, 4);
+                    ctx.fillStyle = `rgba(167, 243, 208, ${0.85 * beamIntensity})`;
+                    ctx.fillRect(rx - Math.floor(glowW * 0.4), ry - 3, Math.floor(glowW * 0.8), 3);
+                }
+            }
+
+            // Anillo orbital discontinuo
+            const orbitR = radius + 20;
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+            for (let a = -Math.PI * 0.85; a <= -Math.PI * 0.15; a += 0.022) {
+                if (Math.floor((a + time * 0.08) * 38) % 2 === 0) {
+                    const ox = Math.round(cx + Math.cos(a) * orbitR);
+                    const oy = Math.round(cy + Math.sin(a) * orbitR);
+                    if (oy > 0 && oy < H) ctx.fillRect(ox, oy, 2, 1);
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 4. ESTADO DE LA CINEMÁTICA DE SINCRONIZACIÓN Y ENVÍO DE INFORMACIÓN
+         * ============================================================================
+         */
+        const LINK_START_TIME = 3.2;     // Se establece el enlace cuántico entre satélites
+        const DOWNLINK_START_TIME = 4.6; // Comienza el envío épico de datos hacia la Tierra
+        const COMPLETE_TIME = 10.6;      // 100% de paquetes transmitidos
+        const END_MODAL_TIME = 12.2;     // Aparece panel final de misión cumplida
+
+        const state = {
+            time: 0,
+            beamIntensity: 0,
+            downlinkIntensity: 0,
+            transferProgress: 0,
+            chordPlayed: false,
+            fanfarePlayed: false,
+            lastPacketTime: 0,
+            lastBeepTime: 0,
+            sat1: { x: 24, y: 60, angle: 0 },
+            sat2: { x: 396, y: 60, angle: 0 },
+            crossPackets: [],     // Paquetes viajando entre SAT-01 y SAT-02
+            downlinkPackets: [],  // Paquetes viajando al planeta Tierra
+            groundWaves: [],      // Ondas expansivas de confirmación en la Tierra
+            scanPulses: []        // Pulsos de escaneo orbital
+        };
+
+        function getReceiverCoords() {
+            const { cx, cy, radius } = earthParams;
+            const rx = Math.floor(cx);
+            const ry = Math.floor(cy - radius);
+            return { rx, ry };
+        }
+
+        function updateSimulation(dt) {
+            state.time += dt;
+            const t = state.time;
+
+            const centerX = Math.floor(W * 0.5);
+            const formationY = Math.floor(H * 0.30);
+            const spacing = Math.min(82, Math.floor(W * 0.21));
+
+            // 1. Aproximación suave y estabilización orbital (sin choque, distancia segura)
+            const approachProgress = Math.min(1, t / LINK_START_TIME);
+            const easeOut = 1 - Math.pow(1 - approachProgress, 3);
+
+            const start1X = 26;
+            const start2X = W - 26;
+            const target1X = centerX - spacing;
+            const target2X = centerX + spacing;
+
+            const floatY1 = Math.sin(t * 2.2) * 2.5;
+            const floatY2 = Math.cos(t * 2.2) * 2.5;
+
+            state.sat1.x = start1X + (target1X - start1X) * easeOut;
+            state.sat1.y = (H * 0.22) + (formationY - H * 0.22) * easeOut + floatY1;
+            state.sat1.angle = (1 - easeOut) * 0.22 + Math.sin(t * 1.8) * 0.03;
+
+            state.sat2.x = start2X + (target2X - start2X) * easeOut;
+            state.sat2.y = (H * 0.38) + (formationY - H * 0.38) * easeOut + floatY2;
+            state.sat2.angle = -(1 - easeOut) * 0.22 - Math.sin(t * 1.8) * 0.03;
+
+            // 2. Carteles cinematográficos y barras de progreso
+            const banner = document.getElementById('mission-banner');
+            const bannerMain = document.getElementById('banner-main');
+            const bannerSub = document.getElementById('banner-sub');
+            const transferHud = document.getElementById('transfer-hud');
+            const transferBar = document.getElementById('transfer-bar');
+            const transferPercent = document.getElementById('transfer-percent');
+            const transferStatusText = document.getElementById('transfer-status-text');
+
+            if (t >= 0.6 && t < LINK_START_TIME) {
+                banner.classList.remove('hidden');
+                bannerMain.textContent = '✦ SINCRONIZACIÓN ORBITAL ACTIVA ✦';
+                bannerSub.textContent = 'ESTABILIZANDO FORMACIÓN DE SATÉLITES 6U';
+            } else if (t >= LINK_START_TIME && t < DOWNLINK_START_TIME) {
+                banner.classList.remove('hidden');
+                bannerMain.textContent = '⚡ ENLACE LÁSER ESTABLECIDO ⚡';
+                bannerSub.textContent = 'FUSIONANDO TELEMETRÍA ENTRE SAT-01 Y SAT-02';
+            } else if (t >= DOWNLINK_START_TIME && t < COMPLETE_TIME) {
+                banner.classList.remove('hidden');
+                bannerMain.textContent = '📡 TRANSMITIENDO DATOS A LA TIERRA 📡';
+                bannerSub.textContent = 'FLUJO CUÁNTICO DE ALTA VELOCIDAD • SEÑAL ÓPTIMA';
+            } else if (t >= COMPLETE_TIME && t < END_MODAL_TIME) {
+                banner.classList.remove('hidden');
+                bannerMain.textContent = '✔ INFORMACIÓN RECIBIDA CON ÉXITO ✔';
+                bannerSub.textContent = 'PAQUETES CIENTÍFICOS VERIFICADOS EN ESTACIÓN TERRESTRE';
+            } else {
+                banner.classList.add('hidden');
+            }
+
+            // 3. Activación de enlaces y generación de paquetes de datos
+            if (t >= LINK_START_TIME) {
+                state.beamIntensity = Math.min(1, (t - LINK_START_TIME) * 2.2);
+
+                if (!state.chordPlayed) {
+                    state.chordPlayed = true;
+                    audio.playBeamActivationChord();
+                }
+
+                // Generar paquetes luminosos viajando entre SAT-01 y SAT-02
+                if (t - state.lastPacketTime > 0.11 && t < COMPLETE_TIME) {
+                    state.lastPacketTime = t;
+                    const dir = Math.random() < 0.5 ? 1 : -1;
+                    state.crossPackets.push({
+                        progress: 0,
+                        dir: dir,
+                        speed: 1.8 + Math.random() * 0.8,
+                        color: dir > 0 ? '#38bdf8' : '#c084fc',
+                        size: 3
+                    });
+                }
+            }
+
+            if (t >= DOWNLINK_START_TIME) {
+                state.downlinkIntensity = Math.min(1, (t - DOWNLINK_START_TIME) * 1.8);
+                state.transferProgress = Math.min(100, ((t - DOWNLINK_START_TIME) / (COMPLETE_TIME - DOWNLINK_START_TIME)) * 100);
+
+                transferHud.classList.remove('hidden');
+                const pct = Math.floor(state.transferProgress);
+                transferBar.style.width = `${pct}%`;
+                transferPercent.textContent = `${pct}%`;
+                transferStatusText.textContent = pct >= 100 ? 'TRANSMISIÓN COMPLETADA' : 'ENVIANDO PAQUETES DE DATOS';
+
+                // Sonido rítmico de paquetes enviados
+                if (pct < 100 && t - state.lastBeepTime > 0.24) {
+                    state.lastBeepTime = t;
+                    audio.playTelemetryPulse(480 + pct * 4.5, 0.06, 'sine', 0.045);
+                }
+
+                // Generar paquetes descendiendo hacia la estación terrestre
+                if (pct < 100 && Math.random() < 0.55) {
+                    const fromLeft = Math.random() < 0.5;
+                    const src = fromLeft ? state.sat1 : state.sat2;
+                    state.downlinkPackets.push({
+                        startX: src.x,
+                        startY: src.y + 8,
+                        progress: 0,
+                        speed: 1.45 + Math.random() * 0.55,
+                        color: fromLeft ? '#38bdf8' : '#34d399',
+                        size: Math.random() < 0.4 ? 3 : 2
+                    });
+                }
+            }
+
+            if (t >= COMPLETE_TIME && !state.fanfarePlayed) {
+                state.fanfarePlayed = true;
+                audio.playSuccessFanfare();
+                const { rx, ry } = getReceiverCoords();
+                // Onda expansiva épica al completar la recepción en Tierra
+                for (let i = 0; i < 3; i++) {
+                    state.groundWaves.push({
+                        x: rx,
+                        y: ry,
+                        radius: 4 + i * 10,
+                        speed: 65 + i * 15,
+                        maxR: 180,
+                        color: i === 0 ? '#34d399' : '#38bdf8',
+                        alpha: 1
+                    });
+                }
+            }
+
+            // 4. Actualizar paquetes entre satélites
+            for (let i = state.crossPackets.length - 1; i >= 0; i--) {
+                const pkt = state.crossPackets[i];
+                pkt.progress += pkt.speed * dt;
+                if (pkt.progress >= 1) state.crossPackets.splice(i, 1);
+            }
+
+            // 5. Actualizar paquetes hacia la Tierra y disparar ondas al impactar el receptor
+            const { rx, ry } = getReceiverCoords();
+            for (let i = state.downlinkPackets.length - 1; i >= 0; i--) {
+                const dp = state.downlinkPackets[i];
+                dp.progress += dp.speed * dt;
+                if (dp.progress >= 1) {
+                    state.downlinkPackets.splice(i, 1);
+                    if (state.groundWaves.length < 10) {
+                        state.groundWaves.push({
+                            x: rx,
+                            y: ry,
+                            radius: 2,
+                            speed: 42,
+                            maxR: 75,
+                            color: '#34d399',
+                            alpha: 0.85
+                        });
+                    }
+                }
+            }
+
+            // 6. Actualizar ondas expansivas en la superficie terrestre
+            for (let i = state.groundWaves.length - 1; i >= 0; i--) {
+                const gw = state.groundWaves[i];
+                gw.radius += gw.speed * dt;
+                gw.alpha = Math.max(0, 1 - gw.radius / gw.maxR);
+                if (gw.alpha <= 0) state.groundWaves.splice(i, 1);
+            }
+
+            // 7. Mostrar panel final al concluir la secuencia
+            if (t >= END_MODAL_TIME) {
+                const endOverlay = document.getElementById('end-overlay');
+                if (endOverlay && endOverlay.classList.contains('hidden')) {
+                    endOverlay.classList.remove('hidden');
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 5. RENDERIZADO PIXEL-ART DE LA ESCENA ÉPICA
+         * ============================================================================
+         */
+        function drawSatellite32(sat, spriteNormal, spriteActive, label, isActive, thrusterDir) {
+            ctx.save();
+            ctx.translate(Math.round(sat.x), Math.round(sat.y));
+            ctx.rotate(sat.angle);
+
+            // Propulsores de maniobra azul cian suaves
+            const flameLen = isActive ? (2 + Math.floor(Math.random() * 3)) : (4 + Math.floor(Math.random() * 5));
+            ctx.fillStyle = '#38bdf8';
+            if (thrusterDir > 0) {
+                ctx.fillRect(-17 - flameLen, -2, flameLen, 3);
+            } else {
+                ctx.fillRect(17, -2, flameLen, 3);
+            }
+
+            // Aura energética cuando el enlace está activo
+            if (isActive) {
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-18, -17, 36, 34);
+            }
+
+            // Sprite 32x32 centrado
+            ctx.drawImage(isActive ? spriteActive : spriteNormal, -16, -16);
+            ctx.restore();
+
+            // Etiqueta identificadora flotante
+            ctx.fillStyle = isActive ? '#67e8f9' : '#bae6fd';
+            ctx.font = 'bold 7px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, Math.round(sat.x), Math.round(sat.y) - 19);
+        }
+
+        function renderScene() {
+            ctx.save();
+            ctx.fillStyle = '#02050d';
+            ctx.fillRect(0, 0, W, H);
+
+            // 1. Nebulosas y campo estelar
+            for (const neb of nebulas) {
+                ctx.fillStyle = neb.color;
+                ctx.fillRect(neb.x - neb.rx, neb.y - neb.ry, neb.rx * 2, neb.ry * 2);
+            }
+
+            for (const st of stars) {
+                const twinkle = Math.sin(state.time * st.speed + st.phase);
+                if (twinkle > -0.65) {
+                    ctx.globalAlpha = 0.45 + 0.55 * ((twinkle + 1) * 0.5);
+                    ctx.fillStyle = st.color;
+                    ctx.fillRect(st.x, st.y, st.size, st.size);
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            // 2. Planeta Tierra gigante y majestuoso en el horizonte
+            const { rx, ry } = getReceiverCoords();
+            drawMajesticEarth(state.time, state.downlinkIntensity, rx, ry);
+
+            // 3. Ondas expansivas de confirmación sobre la atmósfera terrestre
+            for (const gw of state.groundWaves) {
+                ctx.save();
+                ctx.globalAlpha = gw.alpha;
+                ctx.strokeStyle = gw.color;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(gw.x, gw.y, Math.round(gw.radius), Math.PI, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 4. Haces láser de enlace entre SAT-01 y SAT-02
+            if (state.beamIntensity > 0.01) {
+                const x1 = Math.round(state.sat1.x);
+                const y1 = Math.round(state.sat1.y);
+                const x2 = Math.round(state.sat2.x);
+                const y2 = Math.round(state.sat2.y);
+
+                // Haz exterior luminoso
+                ctx.save();
+                ctx.globalAlpha = state.beamIntensity * 0.45;
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Núcleo láser blanco-cian
+                ctx.globalAlpha = state.beamIntensity * 0.95;
+                ctx.strokeStyle = '#e0f2fe';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.restore();
+
+                // Paquetes de datos viajando entre ambos satélites
+                for (const pkt of state.crossPackets) {
+                    const tP = pkt.dir > 0 ? pkt.progress : (1 - pkt.progress);
+                    const px = Math.round(x1 + (x2 - x1) * tP);
+                    const py = Math.round(y1 + (y2 - y1) * tP);
+                    ctx.fillStyle = pkt.color;
+                    ctx.fillRect(px - 2, py - 2, 4, 4);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(px - 1, py - 1, 2, 2);
+                }
+            }
+
+            // 5. Haces épicos de transmisión hacia la Tierra (Downlink)
+            if (state.downlinkIntensity > 0.01 && ry > 0 && ry < H + 20) {
+                const emitters = [state.sat1, state.sat2];
+                emitters.forEach((sat, idx) => {
+                    const sx = Math.round(sat.x);
+                    const sy = Math.round(sat.y + 8);
+                    const beamColor = idx === 0 ? '56, 189, 248' : '52, 211, 153';
+
+                    // Cono de transmisión semitransparente
+                    ctx.save();
+                    ctx.fillStyle = `rgba(${beamColor}, ${0.14 * state.downlinkIntensity})`;
+                    ctx.beginPath();
+                    ctx.moveTo(sx - 2, sy);
+                    ctx.lineTo(sx + 2, sy);
+                    ctx.lineTo(rx + 14, ry);
+                    ctx.lineTo(rx - 14, ry);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Rayo láser central
+                    ctx.strokeStyle = `rgba(${beamColor}, ${0.85 * state.downlinkIntensity})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(rx, ry);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+
+                // Paquetes de información descendiendo a toda velocidad
+                for (const dp of state.downlinkPackets) {
+                    const px = Math.round(dp.startX + (rx - dp.startX) * dp.progress);
+                    const py = Math.round(dp.startY + (ry - dp.startY) * dp.progress);
+                    ctx.fillStyle = dp.color;
+                    ctx.fillRect(px - 1, py - 2, dp.size, dp.size + 1);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(px, py - 1, 1, 2);
+                }
+            }
+
+            // 6. Satélites 32x32 (SAT-01 y SAT-02)
+            const isActive = state.time >= LINK_START_TIME;
+            drawSatellite32(state.sat1, spriteSat1Normal, spriteSat1Active, 'SAT-01 [TX]', isActive, 1);
+            drawSatellite32(state.sat2, spriteSat2Normal, spriteSat2Active, 'SAT-02 [RX]', isActive, -1);
+
+            ctx.restore();
+        }
+
+        /**
+         * ============================================================================
+         * 6. EXPORTACIÓN A HTML AUTÓNOMO, CONTROLES Y BUCLE PRINCIPAL
+         * ============================================================================
+         */
+        function resetCinematic() {
+            state.time = 0;
+            state.beamIntensity = 0;
+            state.downlinkIntensity = 0;
+            state.transferProgress = 0;
+            state.chordPlayed = false;
+            state.fanfarePlayed = false;
+            state.lastPacketTime = 0;
+            state.lastBeepTime = 0;
+            state.crossPackets = [];
+            state.downlinkPackets = [];
+            state.groundWaves = [];
+            state.sat1 = { x: 26, y: H * 0.22, angle: 0 };
+            state.sat2 = { x: W - 26, y: H * 0.38, angle: 0 };
+
+            const endOverlay = document.getElementById('end-overlay');
+            const banner = document.getElementById('mission-banner');
+            const transferHud = document.getElementById('transfer-hud');
+            if (endOverlay) endOverlay.classList.add('hidden');
+            if (banner) banner.classList.add('hidden');
+            if (transferHud) transferHud.classList.add('hidden');
+        }
+
+        function exportStandaloneHTML() {
+            const docClone = document.documentElement.cloneNode(true);
+            const endOverlay = docClone.querySelector('#end-overlay');
+            const banner = docClone.querySelector('#mission-banner');
+            const transferHud = docClone.querySelector('#transfer-hud');
+            const audioIcon = docClone.querySelector('#audio-icon');
+
+            if (endOverlay) endOverlay.classList.add('hidden');
+            if (banner) banner.classList.add('hidden');
+            if (transferHud) transferHud.classList.add('hidden');
+            if (audioIcon) audioIcon.textContent = '🔇';
+
+            const htmlSource = '<!DOCTYPE html>\n' + docClone.outerHTML;
+            const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cinematica_transmision_orbital.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            W = Math.max(320, Math.floor(rect.width / PIXEL_SCALE));
+            H = Math.max(190, Math.floor(rect.height / PIXEL_SCALE));
+            canvas.width = W;
+            canvas.height = H;
+            ctx.imageSmoothingEnabled = false;
+            generateSpaceBackdrop();
+            buildMajesticEarthBuffer();
+        }
+
+        document.getElementById('btn-export').addEventListener('click', exportStandaloneHTML);
+        document.getElementById('btn-export-modal').addEventListener('click', exportStandaloneHTML);
+        document.getElementById('btn-restart').addEventListener('click', resetCinematic);
+        document.getElementById('btn-replay-modal').addEventListener('click', resetCinematic);
+
+        document.getElementById('btn-audio').addEventListener('click', () => {
+            const isOn = audio.toggle();
+            document.getElementById('audio-icon').textContent = isOn ? '🔊' : '🔇';
+            if (isOn) audio.playTelemetryPulse(660, 0.08, 'sine', 0.06);
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        let lastTimestamp = 0;
+        function mainLoop(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
+            lastTimestamp = timestamp;
+
+            updateSimulation(dt);
+            renderScene();
+            requestAnimationFrame(mainLoop);
+        }
+
+        window.onload = function () {
+            resizeCanvas();
+            resetCinematic();
+            requestAnimationFrame(mainLoop);
+        };
+    </script>
+</body>
+</html>

@@ -217,13 +217,14 @@
             color: #f3f4f6;
         }
     </style>
+<style data-mg-safe-css="1">html,body{min-width:0;min-height:0;} .industrial-panel,.panel-body,.panel,.canvas-container,.canvas-wrap{min-width:0;min-height:0;} .canvas-container,.canvas-wrap{min-height:220px;}</style>
 </head>
 <body>
     <div class="scanlines"></div>
 
     <header>
         <div class="title-block">
-            <span class="badge-system">PILOTO // DEFENSA</span>
+            <span class="badge-system">DIRECTOR // DEFENSA ORBITAL (CÓNDOR-4)</span>
             <h1>DEFENSA ORBITAL CONTRA METEORITOS · CÓNDOR-4</h1>
         </div>
         <div class="top-controls">
@@ -376,6 +377,8 @@
         let score = 0;
         let targetScore = 15;
         let meteorites = [];
+        let lasers = [];
+        let particles = [];
         let spawnTimer = 0;
 
         function setupScenario(lvl) {
@@ -386,12 +389,15 @@
             hull = 100;
             score = 0;
             meteorites = [];
-            spawnTimer = 0;
+            lasers = [];
+            particles = [];
+            const initInterval = difficulty === 1 ? 1.4 : (difficulty === 2 ? 1.1 : 0.9);
+            spawnTimer = Math.max(0, initInterval - 0.3);
 
-            // Ajustar la meta según la dificultad seleccionada
-            if (difficulty === 1) targetScore = 10;
-            else if (difficulty === 2) targetScore = 15;
-            else if (difficulty === 3) targetScore = 20;
+            // Meta accesible según dificultad
+            if (difficulty === 1) targetScore = 5;
+            else if (difficulty === 2) targetScore = 7;
+            else if (difficulty === 3) targetScore = 9;
 
             updateUI();
         }
@@ -402,7 +408,13 @@
 
         const canvas = document.getElementById('defenseCanvas');
         const ctx = canvas.getContext('2d');
-        function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+        function resizeCanvas() {
+            const pw = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+            const ph = canvas.parentElement ? canvas.parentElement.clientHeight : 0;
+            const w = pw >= 100 ? pw : Math.max(480, Math.floor((window.innerWidth || 960) * 0.55));
+            const h = ph >= 100 ? ph : Math.max(320, Math.floor((window.innerHeight || 640) * 0.70));
+            if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+        }
         window.addEventListener('resize', resizeCanvas);
 
         // Disparar al hacer clic en el canvas
@@ -413,13 +425,24 @@
             const clickY = e.clientY - rect.top;
 
             playLaserSound();
+            lasers.push({ x: clickX, y: clickY, life: 1.0 });
 
-            // Comprobar si el clic impactó algún meteorito
+            // Hitbox amplio (m.radius + 28)
             for (let i = meteorites.length - 1; i >= 0; i--) {
                 const m = meteorites[i];
                 const dist = Math.hypot(m.x - clickX, m.y - clickY);
-                if (dist < m.radius + 10) {
+                if (dist < m.radius + 28) {
                     playExplosionSound();
+                    for (let k = 0; k < 14; k++) {
+                        const a = (Math.PI * 2 * k) / 14 + Math.random() * 0.3;
+                        const sp = 1.4 + Math.random() * 3.2;
+                        particles.push({
+                            x: m.x, y: m.y,
+                            vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+                            life: 1.0,
+                            color: k % 3 === 0 ? '#00e5ff' : (k % 3 === 1 ? '#fbbf24' : '#f87171')
+                        });
+                    }
                     meteorites.splice(i, 1);
                     score++;
                     updateUI();
@@ -470,12 +493,14 @@
         }
 
         function render() {
+            if (canvas.width < 100 || canvas.height < 100) resizeCanvas();
             if (!isPaused && !isMissionEnded) {
                 missionTime += 0.016;
                 spawnTimer += 0.016;
+                updateUI();
 
                 // Intervalo de aparición según la dificultad (En difícil aparecen más seguido)
-                const spawnInterval = difficulty === 1 ? 2.2 : (difficulty === 2 ? 1.6 : 1.0);
+                const spawnInterval = difficulty === 1 ? 1.4 : (difficulty === 2 ? 1.1 : 0.9);
                 
                 if (spawnTimer >= spawnInterval) {
                     spawnTimer = 0;
@@ -504,8 +529,8 @@
                         y: startY,
                         targetX: cx + (Math.random() * 40 - 20),
                         targetY: cy + (Math.random() * 40 - 20),
-                        speed: speed,
-                        radius: 14 + Math.random() * 12
+                        speed: speed * 0.6,
+                        radius: (14 + Math.random() * 12) * 1.6
                     });
                 }
 
@@ -541,6 +566,28 @@
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
 
+            // Anillos concéntricos verdes del radar orbital y haz de barrido
+            const maxR = Math.max(120, Math.min(canvas.width, canvas.height) * 0.46);
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.18)';
+            ctx.lineWidth = 1;
+            for (let ring = 1; ring <= 4; ring++) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, (maxR * ring) / 4, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.12)';
+            ctx.beginPath();
+            ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
+            ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
+            ctx.stroke();
+            const sweepAngle = missionTime * 1.45;
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.45)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + Math.cos(sweepAngle) * maxR, cy + Math.sin(sweepAngle) * maxR);
+            ctx.stroke();
+
             // Dibujar la base/nave en el centro
             ctx.strokeStyle = '#38bdf8';
             ctx.lineWidth = 2;
@@ -551,6 +598,39 @@
             ctx.fill();
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(cx - 3, cy - 3, 6, 6);
+
+            // Rayos láser cian desde la estación al objetivo clicado
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                const l = lasers[i];
+                ctx.save();
+                ctx.globalAlpha = l.life;
+                ctx.strokeStyle = '#00e5ff';
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#00e5ff';
+                ctx.shadowBlur = 12;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(l.x, l.y); ctx.stroke();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(l.x, l.y); ctx.stroke();
+                ctx.beginPath(); ctx.arc(l.x, l.y, 7 * (1.2 - l.life), 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
+                l.life -= 0.085;
+                if (l.life <= 0) lasers.splice(i, 1);
+            }
+
+            // Partículas de explosión
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+                ctx.restore();
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.045;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
 
             // Dibujar meteoritos acercándose
             for (let m of meteorites) {
@@ -567,33 +647,564 @@
         }
 
         window.onload = () => { resizeCanvas(); setupScenario(2); requestAnimationFrame(render); };
-    </script>
+    
+
+        /* === THREAT_SYNC_START === */
+        (function () {
+          var initialDiffApplied = false;
+          var initialSeedApplied = false;
+          function seededUnit(seedVal, salt) {
+            var x = Math.sin((seedVal || 1) * 12.9898 + (salt || 0) * 78.233) * 43758.5453;
+            return x - Math.floor(x);
+          }
+
+          function applyLiveThreatState(data) {
+            if (!data || typeof data !== 'object') return;
+            try {
+              var gid = 'comet';
+              var nDiff = Number(data.diff);
+              if (!initialDiffApplied && isFinite(nDiff) && nDiff >= 1 && nDiff <= 3) {
+                initialDiffApplied = true;
+                var dInt = Math.round(nDiff);
+                var ds = document.getElementById('diffSelect') || document.getElementById('difficulty-select');
+                if (ds) ds.value = String(dInt);
+                if (typeof changeDifficulty === 'function') {
+                  changeDifficulty(dInt);
+                } else if (typeof setupDifficulty === 'function') {
+                  setupDifficulty(dInt);
+                } else if (typeof setupScenario === 'function') {
+                  setupScenario(dInt);
+                } else if (typeof applyDifficulty === 'function') {
+                  applyDifficulty(dInt);
+                }
+              }
+
+              var nAlt = Number(data.alt);
+              var nHull = Number(data.hull);
+              var nBat = Number(data.battery);
+              var nO2 = Number(data.o2);
+              var nSig = Number(data.signal);
+              var nOrbit = Number(data.orbit);
+
+              if (gid === 'lander' && isFinite(nAlt) && nAlt > 20 && nAlt <= 500 && typeof altitude === 'number') {
+                altitude = Math.max(45, Math.round(nAlt));
+                if (typeof velocity === 'number') {
+                  velocity = Math.max(8, +(11 + (500 - altitude) * 0.015).toFixed(1));
+                }
+              }
+              if (gid === 'comet' && isFinite(nHull) && nHull > 15 && nHull <= 100 && typeof hull === 'number') {
+                hull = Math.round(nHull);
+              }
+              if (gid === 'eps' && isFinite(nBat) && nBat > 10 && nBat <= 100 && typeof battery === 'object' && battery) {
+                battery.cur = Math.max(6, Math.round((nBat / 100) * battery.cap));
+                if (typeof inEclipse === 'boolean' && nBat < 96) inEclipse = true;
+              }
+              if (gid === 'eclss' && isFinite(nO2) && nO2 > 10 && nO2 < 100 && typeof o2Val === 'number') {
+                o2Val = +(16.6 + (nO2 / 100) * 4.4).toFixed(2);
+                if (typeof co2Val === 'number') {
+                  co2Val = +(0.04 + ((100 - nO2) / 100) * 0.85).toFixed(2);
+                }
+                if (typeof pressVal === 'number') {
+                  pressVal = +(91 + (nO2 / 100) * 10.3).toFixed(1);
+                }
+              }
+              if (gid === 'dock' && isFinite(nOrbit) && nOrbit > 15 && nOrbit < 100 && typeof state === 'object' && state && state.pos) {
+                state.pos.z = Math.min(68, +(state.pos.z + (100 - nOrbit) * 0.22).toFixed(1));
+              }
+              if (gid === 'nav' && isFinite(nOrbit) && nOrbit > 15 && nOrbit < 100 && typeof orbitState === 'object' && orbitState) {
+                var driftKm = Math.round((100 - nOrbit) * 0.45);
+                if (orbitState.altitude < orbitState.targetAlt) {
+                  orbitState.altitude = Math.max(290, orbitState.altitude - driftKm);
+                } else {
+                  orbitState.altitude = Math.min(820, orbitState.altitude + driftKm);
+                }
+                orbitState.deltaV = 15;
+              }
+              if (gid === 'telecom' && isFinite(nSig) && nSig > 15 && nSig < 100 && typeof userFreq === 'number') {
+                var offset = Math.round((100 - nSig) * 0.25);
+                userFreq = Math.max(10, Math.min(100, userFreq + (userFreq < 50 ? -offset : offset)));
+                var sf = document.getElementById('sliderFreq');
+                if (sf) sf.value = String(userFreq);
+              }
+              if (gid === 'cyber' && isFinite(nSig) && nSig > 15 && nSig <= 100 && typeof shieldIntegrity === 'number') {
+                shieldIntegrity = Math.max(40, Math.min(100, Math.round(nSig)));
+              }
+
+              var nAttempt = Number(data.attempt);
+              var nSeed = Number(data.seed);
+              if (!initialSeedApplied && ((isFinite(nAttempt) && nAttempt >= 2) || (isFinite(nSeed) && nSeed > 0 && nAttempt >= 1))) {
+                initialSeedApplied = true;
+                var seedVal = isFinite(nSeed) && nSeed > 0 ? nSeed : (Math.round(nAttempt || 2) * 97 + 13);
+                if (nAttempt >= 2) {
+                  if (gid === 'nav' && typeof orbitState === 'object' && orbitState) {
+                    var candAlt = Math.round(340 + seededUnit(seedVal, 1) * 410);
+                    if (Math.abs(candAlt - orbitState.altitude) < 90) {
+                      candAlt = orbitState.altitude > 520 ? Math.max(320, orbitState.altitude - 140) : Math.min(780, orbitState.altitude + 140);
+                    }
+                    orbitState.targetAlt = candAlt;
+                    if (typeof sats !== 'undefined' && Array.isArray(sats) && sats[0]) {
+                      sats[0].targetAlt = candAlt;
+                      if (sats[1]) {
+                        sats[1].targetAlt = Math.max(300, Math.min(820, candAlt + (seededUnit(seedVal, 2) > 0.5 ? 55 : -55)));
+                      }
+                      if (typeof refreshSatSelectors === 'function') refreshSatSelectors();
+                    }
+                  } else if (gid === 'telecom') {
+                    if (typeof targetFreq === 'number') targetFreq = Math.round(28 + seededUnit(seedVal, 1) * 58);
+                    if (typeof targetGain === 'number') targetGain = Math.round(30 + seededUnit(seedVal, 2) * 56);
+                  } else if (gid === 'eps') {
+                    if (typeof inEclipse === 'boolean') inEclipse = true;
+                    if (typeof battery === 'object' && battery) {
+                      battery.cur = Math.min(battery.cur, Math.round(battery.cap * (0.48 + seededUnit(seedVal, 1) * 0.24)));
+                    }
+                  } else if (gid === 'eclss') {
+                    if (typeof o2Val === 'number') o2Val = +(18.5 + seededUnit(seedVal, 1) * 1.4).toFixed(2);
+                    if (typeof co2Val === 'number') co2Val = +(0.25 + seededUnit(seedVal, 2) * 0.35).toFixed(2);
+                  } else if (gid === 'dock' && typeof state === 'object' && state && state.pos) {
+                    state.pos.x = +((seededUnit(seedVal, 1) - 0.5) * 0.44).toFixed(2);
+                    state.pos.y = +((seededUnit(seedVal, 2) - 0.5) * 0.40).toFixed(2);
+                    state.pos.z = 10.0;
+                    if (state.vel) { state.vel.x = 0.0; state.vel.y = 0.0; state.vel.z = -0.85; }
+                    if (state.rot) { state.rot.yaw = 0.2; state.rot.pitch = -0.2; state.rot.roll = 0.1; }
+                  } else if (gid === 'lander' && typeof altitude === 'number') {
+                    altitude = Math.round(150 + seededUnit(seedVal, 1) * 30);
+                    if (typeof velocity === 'number') velocity = +(4.5 + seededUnit(seedVal, 2) * 3.0).toFixed(1);
+                  } else if (gid === 'comet' && typeof hull === 'number') {
+                    hull = Math.round(78 + seededUnit(seedVal, 1) * 18);
+                  } else if (gid === 'cyber' && typeof shieldIntegrity === 'number') {
+                    shieldIntegrity = Math.round(75 + seededUnit(seedVal, 1) * 20);
+                  } else if (gid === 'gyro' && typeof omega === 'object' && omega) {
+                    omega.pitch = (seededUnit(seedVal, 1) > 0.5 ? 1 : -1) * +(0.09 + seededUnit(seedVal, 2) * 0.06).toFixed(2);
+                    omega.roll = (seededUnit(seedVal, 3) > 0.5 ? 1 : -1) * +(0.09 + seededUnit(seedVal, 4) * 0.06).toFixed(2);
+                    omega.yaw = (seededUnit(seedVal, 5) > 0.5 ? 1 : -1) * +(0.07 + seededUnit(seedVal, 6) * 0.05).toFixed(2);
+                  } else if (gid === 'debris' && typeof targetTime === 'number') {
+                    targetTime = Math.round(8 + seededUnit(seedVal, 1) * 2);
+                  } else if (gid === 'reactor' && typeof cores !== 'undefined' && Array.isArray(cores)) {
+                    for (var ci = 0; ci < cores.length; ci++) {
+                      cores[ci] = Math.round(560 + seededUnit(seedVal, ci + 1) * 75);
+                    }
+                  } else if (gid === 'spectro' && typeof SAMPLES !== 'undefined' && Array.isArray(SAMPLES)) {
+                    for (var si = 0; si < SAMPLES.length; si++) {
+                      SAMPLES[si].freq = Math.round(200 + seededUnit(seedVal, si * 2 + 1) * 580);
+                      SAMPLES[si].heat = Math.round(25 + seededUnit(seedVal, si * 2 + 2) * 60);
+                    }
+                  } else if (gid === 'hga') {
+                    if (typeof satAz === 'number') satAz = Math.round(seededUnit(seedVal, 1) * 340);
+                    if (typeof satEl === 'number') satEl = Math.round(35 + seededUnit(seedVal, 2) * 35);
+                    if (typeof satPol === 'number') satPol = [-35, -20, 20, 30, -25, 35][Math.floor(seededUnit(seedVal, 3) * 6)];
+                  }
+                }
+              }
+              if (typeof updateSliders === 'function') updateSliders();
+              if (typeof updateOptics === 'function') updateOptics();
+              if (typeof updateDish === 'function') updateDish();
+              if (typeof updateUI === 'function') updateUI();
+            } catch (err) {}
+          }
+
+          function readSearchParams() {
+            if (typeof URLSearchParams === 'undefined') return {};
+            var qs = new URLSearchParams(window.location.search || '');
+            var obj = {};
+            qs.forEach(function (v, k) { obj[k] = v; });
+            return obj;
+          }
+
+          window.addEventListener('load', function () {
+            window.setTimeout(function () {
+              applyLiveThreatState(readSearchParams());
+            }, 35);
+          });
+
+          window.addEventListener('message', function (e) {
+            if (e.data && e.data.type === 'THREAT_SYNC') {
+              applyLiveThreatState(e.data);
+            }
+          });
+        })();
+        /* === THREAT_SYNC_END === */
+
+
+
+        /* === VERIFY_SYS_START === */
+        (function () {
+          var manualHoldUntil = 0;
+
+          function playVerifyWarnTone() {
+            try {
+              var Ctx = window.AudioContext || window.webkitAudioContext;
+              if (!Ctx) return;
+              if (!window.__mgVerifyAudio) window.__mgVerifyAudio = new Ctx();
+              var ctx = window.__mgVerifyAudio;
+              if (ctx.state === 'suspended') ctx.resume();
+              var now = ctx.currentTime;
+              var osc = ctx.createOscillator();
+              var gain = ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(240, now);
+              osc.frequency.exponentialRampToValueAtTime(175, now + 0.16);
+              gain.gain.setValueAtTime(0.11, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now);
+              osc.stop(now + 0.19);
+            } catch (e) {}
+          }
+
+          function playVerifySuccessTone() {
+            try {
+              var Ctx = window.AudioContext || window.webkitAudioContext;
+              if (!Ctx) return;
+              if (!window.__mgVerifyAudio) window.__mgVerifyAudio = new Ctx();
+              var ctx = window.__mgVerifyAudio;
+              if (ctx.state === 'suspended') ctx.resume();
+              var now = ctx.currentTime;
+              var osc = ctx.createOscillator();
+              var gain = ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(660, now);
+              osc.frequency.setValueAtTime(880, now + 0.08);
+              gain.gain.setValueAtTime(0.14, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now);
+              osc.stop(now + 0.25);
+            } catch (e) {}
+          }
+
+          function setVerifyBanner(msg, isOk, holdMs) {
+            try {
+              var modal = document.getElementById('debriefModal');
+              var el = document.getElementById('verifyFeedbackBanner');
+              if (modal && modal.style.display === 'flex') {
+                if (el) el.style.display = 'none';
+                return;
+              }
+              if (!el) {
+                el = document.createElement('div');
+                el.id = 'verifyFeedbackBanner';
+                el.style.cssText = 'position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:99999;max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:5px 14px;font-family:"Courier New",monospace;font-size:11.5px;font-weight:bold;border-radius:4px;pointer-events:none;transition:all 0.18s;';
+                document.body.appendChild(el);
+              }
+              if (holdMs) manualHoldUntil = Date.now() + holdMs;
+              el.textContent = String(msg || '').replace(/\s+/g, ' ').trim();
+              el.style.border = isOk ? '1px solid #00ff88' : '1px solid #fbbf24';
+              el.style.background = isOk ? 'rgba(2,44,34,0.94)' : 'rgba(48,28,4,0.94)';
+              el.style.color = isOk ? '#86efac' : '#fde68a';
+              el.style.display = el.textContent ? 'block' : 'none';
+            } catch (e) {}
+          }
+          window.__setVerifyBanner = setVerifyBanner;
+
+          function showStepAmber(msg) {
+            playVerifyWarnTone();
+            setVerifyBanner(msg, false, 2400);
+            return false;
+          }
+
+          function approveVerifiedSystem(okMsg) {
+            playVerifySuccessTone();
+            setVerifyBanner(okMsg, true, 3000);
+            if (window.__notifyVictoryNow) window.__notifyVictoryNow();
+            return true;
+          }
+
+          var NEW_OK_LABELS = {
+            gyro: '✔ CARDANES CMG ESTABILIZADOS',
+            debris: '✔ CORREDOR KESSLER DESPEJADO',
+            reactor: '✔ NÚCLEOS DEL REACTOR REFRIGERADOS',
+            pcb: '✔ CIRCUITOS PCB RUTADOS CORRECTAMENTE',
+            spectro: '✔ ESPECTROMETRÍA COMPLETADA',
+            thermal: '✔ BARRIDO MULTIESPECTRAL VALIDADO',
+            hga: '✔ ENLACE PARABÓLICO HGA / DSN CONFIRMADO',
+            decrypt: '✔ CANAL CUÁNTICO DESCIFRADO'
+          };
+
+          function evalVerifyStatus(gid) {
+            switch (gid) {
+              case 'dock': {
+                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ ACOPLAMIENTO APAS VERIFICADO' };
+                var lat = Math.hypot(state.pos.x, state.pos.y);
+                return {
+                  ready: lat <= 1.50,
+                  needMsg: 'Centra desvío lateral a <= 1.50m (actual ' + lat.toFixed(2) + 'm) con WASD/Flechas',
+                  okMsg: '✔ Listo: desvío ' + lat.toFixed(2) + 'm — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { state.pos.z = 0; state.isEnded = true; }
+                };
+              }
+              case 'comet': {
+                if (typeof hull === 'number' && hull <= 0) {
+                  return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
+                }
+                var sc = typeof score === 'number' ? score : 0;
+                return {
+                  ready: sc >= 3,
+                  needMsg: 'Destruye ' + (3 - sc) + ' meteorito(s) más con clic para confirmar (' + sc + '/3)',
+                  okMsg: '✔ Listo: ' + sc + ' meteoritos destruidos — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
+                };
+              }
+              case 'eps': {
+                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ MATRIZ EPS OK' };
+                var sv = state.loads[0] && state.loads[0].active ? state.loads[0].power : 0;
+                var bat = Math.round(state.battery || 0);
+                var okEps = sv >= 50 && state.battery > 15;
+                return {
+                  ready: okEps,
+                  needMsg: sv < 50 ? 'Sube Sop. Vital >= 50 MW o pulsa AUTO-BALANCEAR' : 'Batería <= 15% (' + bat + '%): pulsa AUTO-BALANCEAR CARGAS',
+                  okMsg: '✔ Listo: Sop. Vital ' + sv + ' MW y Batería ' + bat + '% — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { state.isEnded = true; }
+                };
+              }
+              case 'eclss': {
+                var o2Ok = typeof o2Val !== 'number' || (o2Val >= 18.0 && o2Val <= 26.0);
+                var co2Ok = typeof co2Val !== 'number' || co2Val < 1.2;
+                var actOk = (typeof activeScrub === 'number' && activeScrub === 1) || (typeof isSealed === 'boolean' && isSealed);
+                var msgNeed = !o2Ok
+                  ? 'Ajusta O2 entre 18% y 26% o pulsa ESTABILIZAR AUTOMÁTICO'
+                  : !co2Ok
+                    ? 'Reduce CO2 < 1.2% con Canister B o ESTABILIZAR AUTOMÁTICO'
+                    : 'Cambia a Canister B o sella la esclusa para confirmar';
+                return {
+                  ready: o2Ok && co2Ok && actOk,
+                  needMsg: msgNeed,
+                  okMsg: '✔ Listo: gases seguros y esclusa/filtro OK — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
+                };
+              }
+              case 'nav': {
+                if (typeof isBurning !== 'undefined' && isBurning) {
+                  return { ready: false, needMsg: 'Espera 1s a que termine el encendido orbital' };
+                }
+                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ ÓRBITA HOHMANN OK' };
+                var navErr = Math.abs(orbitState.altitude - orbitState.targetAlt);
+                var recSigned = Math.round((orbitState.targetAlt - orbitState.altitude) / 0.95);
+                var curSigned = orbitState.vector === 'prograde' ? orbitState.deltaV : -orbitState.deltaV;
+                var dvDiff = Math.abs(curSigned - recSigned);
+                var okNav = Boolean(orbitState.done || navErr <= 45 || dvDiff <= 35);
+                return {
+                  ready: okNav,
+                  needMsg: 'Pon Δv cerca de ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) y confirma',
+                  okMsg: '✔ Listo: impulso Δv alineado — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { orbitState.altitude = orbitState.targetAlt; orbitState.done = true; orbitState.isEnded = true; }
+                };
+              }
+              case 'lander': {
+                var vel = typeof velocity === 'number' ? velocity : 0;
+                return {
+                  ready: vel < 10.0,
+                  needMsg: 'Frena con [ESPACIO] por debajo de 10.0 m/s (actual ' + vel.toFixed(1) + ' m/s)',
+                  okMsg: '✔ Listo: velocidad ' + vel.toFixed(1) + ' m/s — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () {
+                    if (typeof altitude !== 'undefined') altitude = 0;
+                    if (typeof updateUI === 'function') updateUI();
+                    if (typeof isMissionEnded !== 'undefined') isMissionEnded = true;
+                  }
+                };
+              }
+              case 'telecom': {
+                var fDiff = Math.abs(userFreq - targetFreq);
+                var gDiff = Math.abs(userGain - targetGain);
+                return {
+                  ready: fDiff <= 25 && gDiff <= 20,
+                  needMsg: 'Pon Freq ~' + targetFreq + ' Hz (±25) y Ampl ~' + targetGain + '% (±20)',
+                  okMsg: '✔ Listo: señal DSN sincronizada — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
+                };
+              }
+              case 'cyber': {
+                if (typeof shieldIntegrity === 'number' && shieldIntegrity <= 0) {
+                  return { ready: false, needMsg: 'Escudo en 0%: pulsa REINICIAR arriba' };
+                }
+                var pc = typeof packetsChecked === 'number' ? packetsChecked : 0;
+                return {
+                  ready: pc >= 3,
+                  needMsg: 'Filtra ' + (3 - pc) + ' paquete(s) más (verde PERMITIR / rojo BLOQUEAR)',
+                  okMsg: '✔ Listo: ' + pc + ' paquetes filtrados — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
+                };
+              }
+              case 'gyro':
+              case 'debris':
+              case 'reactor':
+              case 'pcb':
+              case 'spectro':
+              case 'thermal':
+              case 'hga':
+              case 'decrypt': {
+                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
+                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Batería agotada: pulsa REINICIAR arriba' };
+                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Sobrepresión: pulsa REINICIAR arriba' };
+                var interacted = (window.__mgAdjustCount || 0) >= 1;
+                var mTime = typeof missionTime === 'number' ? missionTime : 0;
+                var okNew = interacted || mTime >= 4.0;
+                return {
+                  ready: okNew,
+                  needMsg: 'Haz 1 ajuste (o pulsa AUTO-CALIBRAR / opera ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
+                  okMsg: '✔ Listo: sistema calibrado — Pulsa [ CONFIRMAR ] arriba',
+                  onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
+                };
+              }
+            }
+            return { ready: true, okMsg: '✔ SISTEMA VERIFICADO' };
+          }
+
+          function refreshLiveVerifyBanner() {
+            if (Date.now() < manualHoldUntil) return;
+            try {
+              var st = evalVerifyStatus('comet');
+              setVerifyBanner(st.ready ? st.okMsg : ('⚡ ' + st.needMsg), st.ready, 0);
+            } catch (e) {}
+          }
+
+          function verifyAndConfirmMinigame() {
+            var gid = 'comet';
+            try {
+              var st = evalVerifyStatus(gid);
+              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Completa el paso indicado'));
+              if (typeof st.onApprove === 'function') st.onApprove();
+              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SISTEMA ESTABILIZADO');
+            } catch (err) {}
+            return false;
+          }
+
+          window.__verifyAndConfirmMinigame = verifyAndConfirmMinigame;
+          window.addEventListener('load', function () {
+            window.setTimeout(refreshLiveVerifyBanner, 120);
+            window.setInterval(refreshLiveVerifyBanner, 380);
+          });
+        })();
+        /* === VERIFY_SYS_END === */
+
+</script>
 
 <script>
 /* === Puente con la Estación Espacial (iframe -> React) === */
 (function () {
+  var wonPending = false;
   var victorySent = false;
+  var failReported = false;
+
+  function showConsoleHudNotice(msg, kind) {
+    if (typeof window.__setVerifyBanner === 'function') {
+      window.__setVerifyBanner(msg, kind === 'ok', 2200);
+      return;
+    }
+    try {
+      var el = document.getElementById('verifyFeedbackBanner');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'verifyFeedbackBanner';
+        el.style.cssText = 'position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:99999;max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:5px 14px;font-family:"Courier New",monospace;font-size:11.5px;font-weight:bold;border-radius:4px;pointer-events:none;transition:all 0.2s;';
+        document.body.appendChild(el);
+      }
+      var isOk = kind === 'ok';
+      el.textContent = String(msg || '');
+      el.style.border = isOk ? '1px solid #00ff88' : '1px solid #fbbf24';
+      el.style.background = isOk ? 'rgba(2,44,34,0.94)' : 'rgba(48,28,4,0.94)';
+      el.style.color = isOk ? '#86efac' : '#fde68a';
+      el.style.display = 'block';
+    } catch (e) {}
+  }
+  window.__showConsoleHudNotice = showConsoleHudNotice;
+  window.alert = function (msg) { showConsoleHudNotice(msg, 'warn'); };
+
   function notifyVictory() {
     if (victorySent) return;
     victorySent = true;
+    wonPending = false;
     var payload = { type: 'MINIGAME_COMPLETE', game: 'comet', success: true };
     try { window.parent.postMessage(payload, '*'); } catch (e) {}
     try { window.parent.postMessage({ type: 'minigame-complete', game: 'comet', success: true }, '*'); } catch (e) {}
   }
+  window.__notifyVictoryNow = notifyVictory;
+
+  function notifyFailure() {
+    if (failReported || wonPending || victorySent) return;
+    failReported = true;
+    try { window.parent.postMessage({ type: 'MINIGAME_FAILED', game: 'comet' }, '*'); } catch (e) {}
+  }
+  window.__notifyFailureNow = notifyFailure;
+
+  function closeFrameNow() {
+    try { window.parent.postMessage({ type: 'minigame-close', game: 'comet' }, '*'); } catch (err) {}
+  }
+  window.__closeFrameNow = closeFrameNow;
+
+  function updateDebriefActionButton(isVictory) {
+    var modal = document.getElementById('debriefModal');
+    if (!modal) return;
+    var btn =
+      modal.querySelector('button[data-solved-btn="1"]') ||
+      modal.querySelector('button[onclick*="nextLevel"]');
+    if (!btn) return;
+    btn.setAttribute('data-solved-btn', '1');
+    if (!btn.hasAttribute('data-orig-label')) {
+      btn.setAttribute('data-orig-label', btn.textContent || 'SIGUIENTE NIVEL');
+    }
+    if (!btn.hasAttribute('data-bridge-click')) {
+      btn.setAttribute('data-bridge-click', '1');
+      btn.addEventListener('click', function () {
+        if (wonPending) {
+          modal.style.display = 'none';
+          notifyVictory();
+          closeFrameNow();
+        }
+      });
+    }
+    if (isVictory) {
+      btn.textContent = "[ ✔ DESACTIVAR TORRETA Y VOLVER AL PUENTE ]";
+      btn.style.background = 'linear-gradient(180deg, #059669 0%, #047857 100%)';
+      btn.style.borderColor = '#00ff88';
+      btn.style.color = '#ffffff';
+      btn.style.fontWeight = 'bold';
+      btn.style.boxShadow = '0 0 14px rgba(0, 255, 136, 0.45)';
+    } else {
+      btn.textContent = btn.getAttribute('data-orig-label') || 'REINTENTAR';
+      btn.style.background = '#1e293b';
+      btn.style.borderColor = '#475569';
+      btn.style.color = '#e2e8f0';
+      btn.style.boxShadow = 'none';
+    }
+  }
+
+  function markPendingWin() {
+    wonPending = true;
+    updateDebriefActionButton(true);
+    try { window.parent.postMessage({ type: 'MINIGAME_WON_PENDING', game: 'comet' }, '*'); } catch (e) {}
+  }
 
   window.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      try { window.parent.postMessage({ type: 'minigame-close', game: 'comet' }, '*'); } catch (err) {}
+      if (wonPending) notifyVictory();
+      closeFrameNow();
     }
   });
 
-  // 1) Minijuegos nuevos: completeMission(...)
+  // 1) Minijuegos nuevos: completeMission(...) y failMission(...)
   var origComplete = window.completeMission;
   if (typeof origComplete === 'function') {
     window.completeMission = function (arg0) {
       var r = origComplete.apply(this, arguments);
-      if (arg0 !== false) notifyVictory();
+      if (arg0 !== false) markPendingWin();
+      else {
+        wonPending = false;
+        updateDebriefActionButton(false);
+        notifyFailure();
+      }
       return r;
+    };
+  }
+
+  var origFail = window.failMission;
+  if (typeof origFail === 'function') {
+    window.failMission = function () {
+      wonPending = false;
+      updateDebriefActionButton(false);
+      notifyFailure();
+      return origFail.apply(this, arguments);
     };
   }
 
@@ -602,23 +1213,112 @@
   if (typeof origDebrief === 'function') {
     window.showDebriefModal = function (success) {
       var r = origDebrief.apply(this, arguments);
-      if (success === true) notifyVictory();
+      if (success === true) {
+        markPendingWin();
+      } else {
+        wonPending = false;
+        updateDebriefActionButton(false);
+        notifyFailure();
+      }
       return r;
     };
   }
 
-  // Permitir reintento limpio si el jugador repite dentro del modal
+  // 3) Botón final del informe técnico: al ganar, notifica MINIGAME_COMPLETE y cierra el modal al instante
+  ['nextLevel', 'nextLevelOrFinish'].forEach(function (fnName) {
+    var origNext = window[fnName];
+    window[fnName] = function () {
+      if (wonPending) {
+        var modal = document.getElementById('debriefModal');
+        if (modal) modal.style.display = 'none';
+        notifyVictory();
+        closeFrameNow();
+        return;
+      }
+      if (typeof origNext === 'function') {
+        return origNext.apply(this, arguments);
+      }
+    };
+  });
+
+  // Reinicio limpio si reintenta
   ['resetMission', 'setupScenario', 'setupDifficulty', 'closeModalAndRetry'].forEach(function (fnName) {
     var origFn = window[fnName];
     if (typeof origFn === 'function') {
       window[fnName] = function () {
+        wonPending = false;
         victorySent = false;
+        failReported = false;
+        updateDebriefActionButton(false);
         return origFn.apply(this, arguments);
       };
     }
   });
 
-  window.addEventListener('load', function () { try { window.focus(); } catch (e) {} });
+  // 4) Auto-resize universal del <canvas> principal + ResizeObserver + vigilancia por frame
+  var MINI_CANVAS_SKIP = { satCanvas1: true, satCanvas2: true, trendCanvas: true };
+  function ensureMainCanvasesSized() {
+    try {
+      var list = document.querySelectorAll('canvas');
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        if (!c || MINI_CANVAS_SKIP[c.id]) continue;
+        var pw = c.parentElement ? c.parentElement.clientWidth : 0;
+        var ph = c.parentElement ? c.parentElement.clientHeight : 0;
+        if (c.width < 100 || c.height < 100) {
+          c.width = Math.max(480, pw >= 100 ? pw : Math.floor((window.innerWidth || 960) * 0.55));
+          c.height = Math.max(320, ph >= 100 ? ph : Math.floor((window.innerHeight || 640) * 0.70));
+        } else if (pw >= 120 && ph >= 120 && (Math.abs(c.width - pw) > 4 || Math.abs(c.height - ph) > 4)) {
+          c.width = pw;
+          c.height = ph;
+        }
+      }
+    } catch (e) {}
+  }
+
+  function installCanvasObservers() {
+    ensureMainCanvasesSized();
+    try {
+      if (typeof ResizeObserver !== 'undefined') {
+        var ro = new ResizeObserver(function () {
+          ensureMainCanvasesSized();
+        });
+        var canvases = document.querySelectorAll('canvas');
+        for (var i = 0; i < canvases.length; i++) {
+          var c = canvases[i];
+          if (c && !MINI_CANVAS_SKIP[c.id] && c.parentElement) {
+            ro.observe(c.parentElement);
+          }
+        }
+      }
+    } catch (e) {}
+    var watchFrames = 0;
+    function frameGuard() {
+      ensureMainCanvasesSized();
+      watchFrames++;
+      if (watchFrames < 90) {
+        requestAnimationFrame(frameGuard);
+      }
+    }
+    requestAnimationFrame(frameGuard);
+  }
+
+  installCanvasObservers();
+  window.addEventListener('message', function (e) {
+    if (e.data && e.data.type === 'REQUEST_VERIFY_MINIGAME') {
+      if (typeof window.__verifyAndConfirmMinigame === 'function') {
+        window.__verifyAndConfirmMinigame();
+      }
+    }
+  });
+  window.addEventListener('DOMContentLoaded', ensureMainCanvasesSized);
+  window.addEventListener('resize', ensureMainCanvasesSized);
+  window.addEventListener('load', function () {
+    try { window.focus(); } catch (e) {}
+    ensureMainCanvasesSized();
+    window.setTimeout(ensureMainCanvasesSized, 60);
+    window.setTimeout(ensureMainCanvasesSized, 240);
+  });
 })();
 </script>
 </body>

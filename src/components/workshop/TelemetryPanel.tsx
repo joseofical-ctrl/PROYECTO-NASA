@@ -8,9 +8,11 @@ import { playClick, playHover } from '../../audio'
 function Director({
   t,
   onLaunch,
+  launchReady,
 }: {
   t: Telemetry
   onLaunch: () => void
+  launchReady?: boolean
 }) {
   const orbitOk = t.orbitReachable && t.launcherFitsChassis
   const energyOk = t.genW >= t.loadW && t.eclipseOk && t.dvOk && t.kradOk
@@ -54,21 +56,21 @@ function Director({
       />
 
       {/* 4) Resumen visual de 4 iconos grandes */}
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-1">
         {statusBadges.map((b) => (
           <div
             key={b.label}
-            className="p-2 flex items-center justify-between border-2 border-black"
+            className="px-2 py-1.5 flex items-center justify-between border-2 border-black min-w-0"
             style={{
               background: b.ok ? '#113624' : '#3d1518',
               color: b.ok ? '#7bff9a' : '#ff8a8a',
             }}
           >
-            <span className="text-[9px] flex items-center gap-1">
+            <span className="text-[clamp(8px,0.62vw,9.5px)] flex items-center gap-1 truncate">
               <span>{b.icon}</span>
-              <span>{b.label}</span>
+              <span className="truncate">{b.label}</span>
             </span>
-            <span className="text-[10px] font-bold">{b.ok ? 'OK' : '✖'}</span>
+            <span className="text-[clamp(8.5px,0.68vw,10px)] font-bold shrink-0">{b.ok ? 'OK' : '✖'}</span>
           </div>
         ))}
       </div>
@@ -80,9 +82,9 @@ function Director({
           playClick()
           onLaunch()
         }}
-        className="mc-btn w-full py-3 text-[11px] mt-0.5 font-bold"
+        className="mc-btn w-full py-2.5 text-[clamp(9px,0.72vw,11px)] mt-0.5 font-bold"
         style={
-          t.allOk
+          (launchReady ?? t.allOk)
             ? {
                 background: '#15803d',
                 color: '#7bff9a',
@@ -165,22 +167,22 @@ function Science({ t }: { t: Telemetry }) {
 
       {/* 2) Los 2 Instrumentos Obligatorios */}
       <Box>
-        <div className="text-[10px] text-cyan-300 mb-0.5">📋 OBLIGATORIOS</div>
+        <div className="text-[clamp(8.5px,0.68vw,10px)] text-cyan-300 mb-0.5">📋 OBLIGATORIOS</div>
         {t.mandatory.map((m) => {
           const part = PART_BY_ID[m.id]
           return (
             <div
               key={m.id}
-              className="p-2 flex items-center justify-between border-2 border-black"
+              className="px-2 py-1.5 flex items-center justify-between border-2 border-black min-w-0"
               style={{
                 background: m.have ? '#113624' : '#3d1518',
                 color: m.have ? '#7bff9a' : '#ff9a9a',
               }}
             >
-              <span className="text-[10px]">
+              <span className="text-[clamp(8px,0.65vw,10px)] truncate">
                 {part?.icon} {m.name}
               </span>
-              <span className="text-[11px] shrink-0 ml-2">{m.have ? '✅' : '❌'}</span>
+              <span className="text-[10px] shrink-0 ml-1.5">{m.have ? '✅' : '❌'}</span>
             </div>
           )
         })}
@@ -188,15 +190,15 @@ function Science({ t }: { t: Telemetry }) {
 
       {/* 3) Un único resumen compacto de Consumo */}
       <div
-        className="p-2.5 text-center"
+        className="p-2 text-center"
         style={{
           background: '#171d36',
           border: '3px solid #000',
           boxShadow: 'inset 2px 2px 0 #2e3866',
         }}
       >
-        <div className="text-[10px] text-yellow-300 mb-1">⚡ CONSUMO DE PAYLOAD</div>
-        <div className="text-[9px] text-white leading-snug">
+        <div className="text-[clamp(8.5px,0.68vw,10px)] text-yellow-300 mb-0.5">⚡ CONSUMO DE PAYLOAD</div>
+        <div className="text-[clamp(8px,0.62vw,9px)] text-white leading-snug">
           Tus cámaras usan{' '}
           <strong className="text-orange-300">{t.sciPower.toFixed(1)} W</strong> y{' '}
           <strong className="text-cyan-300">{t.sciMass.toFixed(1)} kg</strong>
@@ -283,20 +285,25 @@ export default function TelemetryPanel({
   t,
   contractId,
   onLaunch,
+  bothSatsReady,
+  canLaunch = false,
 }: {
   role: RoleId
   t: Telemetry
   contractId: string
   onLaunch: () => void
+  bothSatsReady?: boolean
+  canLaunch?: boolean
 }) {
   const roleSpend = t.roleCosts[role] ?? 0
   const rolePct = t.budget > 0 ? Math.round((roleSpend / t.budget) * 100) : 0
+  const ready = bothSatsReady ?? t.allOk
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5 min-w-0">
       {/* Resumen compacto de gasto por rol */}
       <div
-        className="text-[9px] px-2.5 py-1.5 text-center leading-snug"
+        className="text-[clamp(8px,0.62vw,9px)] px-2 py-1 text-center leading-snug"
         style={{
           background: '#0e1326',
           border: '2px solid #000',
@@ -308,10 +315,33 @@ export default function TelemetryPanel({
         <strong className="text-cyan-300">{rolePct}%</strong> del equipo)
       </div>
 
-      {role === 'director' && <Director t={t} onLaunch={onLaunch} />}
+      {role === 'director' && <Director t={t} onLaunch={onLaunch} launchReady={ready} />}
       {role === 'engineer' && <Engineer t={t} />}
       {role === 'science' && <Science t={t} />}
       {role === 'comms' && <Comms t={t} contractId={contractId} />}
+
+      {role !== 'director' && canLaunch && (
+        <button
+          onMouseEnter={playHover}
+          onClick={() => {
+            playClick()
+            onLaunch()
+          }}
+          className="mc-btn w-full py-2 text-[clamp(8.5px,0.68vw,10px)] mt-0.5 font-bold"
+          style={
+            ready
+              ? {
+                  background: '#15803d',
+                  color: '#7bff9a',
+                  borderColor: '#7bff9a',
+                  boxShadow: 'inset 4px 4px 0 #4ade80, inset -4px -4px 0 #14532d, 0 0 14px #22c55e88',
+                }
+              : undefined
+          }
+        >
+          🚀 AUTORIZAR DESPEGUE DE LA FLOTA
+        </button>
+      )}
     </div>
   )
 }

@@ -1,28 +1,56 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Volume2, VolumeX } from 'lucide-react'
 import SpaceCanvas from './components/SpaceCanvas'
 import Logo from './components/Logo'
 import McButton from './components/McButton'
-import SquadModal from './components/SquadModal'
+import MissionLobbyScreen from './components/MissionLobbyScreen'
+import MissionBriefingScreen from './components/MissionBriefingScreen'
 import RoleWorkshopScreen from './components/RoleWorkshopScreen'
 import LaunchDockingCutscene from './components/LaunchDockingCutscene'
 import StationOperationScreen from './components/StationOperationScreen'
 import OrbitalSimulationScreen from './components/OrbitalSimulationScreen'
-import { ROLE_INFO } from './game/catalog'
+import { CHARACTER_ORDER } from './game/catalog'
 import type { RoleId } from './game/catalog'
+import {
+  MISSION_CATALOG,
+  resolveCompatibleLauncher,
+  sanitizeMissionId,
+} from './game/missions'
+import type { MissionId } from './game/missions'
+import {
+  advanceRoomNextMission,
+  createMultiplayerRoom,
+  fetchRoomByCode,
+  findMyRoleInRoom,
+  getDefaultPlayerName,
+  getOrCreateClientId,
+  leaveMultiplayerRoom,
+  postRoomAction,
+  savePlayerName,
+  sendLeaveBeacon,
+  sendRoomHeartbeat,
+} from './game/multiplayer'
+import type { RoomSnapshot } from './game/multiplayer'
 import { actions } from './game/store'
 import { isMusicOn, playClick, playHover, playIntroSweep, setMusic, unlockAudio } from './audio'
 
-type ScreenStage = 'menu' | 'workshop' | 'cutscene' | 'station' | 'orbit'
+type ScreenStage = 'menu' | 'briefing' | 'workshop' | 'cutscene' | 'station' | 'orbit'
+type MenuSubView = 'home' | 'join' | 'room'
 
 export default function App() {
   const [started, setStarted] = useState(false) // audio unlocked after first interaction
   const [showButtons, setShowButtons] = useState(false)
   const [music, setMusicState] = useState(false)
-  const [squadMode, setSquadMode] = useState<null | 'solo' | 'squad'>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [stage, setStage] = useState<ScreenStage>('menu')
+  const [menuSubView, setMenuSubView] = useState<MenuSubView>('home')
+  const [creatingRoom, setCreatingRoom] = useState(false)
+
+  const clientId = useMemo(() => getOrCreateClientId(), [])
+  const [playerName, setPlayerName] = useState<string>(() => getDefaultPlayerName(clientId))
+  const [room, setRoom] = useState<RoomSnapshot | null>(null)
+
   const [workshop, setWorkshop] = useState<{
     assignments: (RoleId | null)[]
     startRole: RoleId
@@ -38,10 +66,16 @@ export default function App() {
     },
   })
 
-  const notify = (m: string) => {
+  const notify = useCallback((m: string) => {
     setToast(m)
     window.setTimeout(() => setToast(null), 2600)
-  }
+  }, [])
+
+  const handlePlayerNameChange = useCallback((name: string) => {
+    const clipped = name.slice(0, 18)
+    setPlayerName(clipped)
+    savePlayerName(clipped)
+  }, [])
 
   // Browsers block audio until a gesture: first click/key triggers the intro sweep.
   useEffect(() => {
@@ -71,39 +105,291 @@ export default function App() {
     playClick()
   }
 
+  const roomCode = room?.code ?? null
+  const myRoomRole = useMemo(() => findMyRoleInRoom(room, clientId), [room, clientId])
+
+  const playerNameRef = useRef(playerName)
+  playerNameRef.current = playerName
+  const stageRef = useRef(stage)
+  stageRef.current = stage
+  const roomCodeRef = useRef<string | null>(roomCode)
+  roomCodeRef.current = roomCode
+
+  const applyRoomSnapshot = useCallback(
+    (nextRoom: RoomSnapshot) => {
+      setRoom(nextRoom)
+      const myRole = findMyRoleInRoom(nextRoom, clientId)
+      if (!myRole) return
+
+      const names: Record<RoleId, string> = {
+        engineer: nextRoom.roles?.engineer?.playerName ?? 'Jugador 1',
+        comms: nextRoom.roles?.comms?.playerName ?? 'Jugador 2',
+        science: nextRoom.roles?.science?.playerName ?? 'Jugador 3',
+        director: nextRoom.roles?.director?.playerName ?? 'Jugador 4',
+      }
+      const assign: (RoleId | null)[] = CHARACTER_ORDER.map((r) =>
+        nextRoom.roles?.[r] ? r : null
+      )
+
+      setWorkshop({
+        assignments: assign,
+        startRole: myRole,
+        playerNames: names,
+      })
+
+      if (
+        nextRoom.phase === 'MISSION_BRIEFING' &&
+        (stageRef.current === 'menu' ||
+          stageRef.current === 'station' ||
+          stageRef.current === 'orbit' ||
+          stageRef.current === 'workshop')
+      ) {
+        setStage('briefing')
+        const stDef = MISSION_CATALOG[sanitizeMissionId(nextRoom.missionId)]
+        notify(`🧭 Sala ${nextRoom.code}: Etapa ${nextRoom.currentMissionIndex ?? stDef.number}/3 · ${stDef.code}`)
+      } else if (
+        nextRoom.phase === 'WORKSHOP' &&
+        (stageRef.current === 'menu' || stageRef.current === 'briefing')
+      ) {
+        setStage('workshop')
+        const mCode = MISSION_CATALOG[sanitizeMissionId(nextRoom.missionId)].code
+        notify(`🚀 Sala ${nextRoom.code}: Entrando al Taller · ${mCode}`)
+      } else if (
+        nextRoom.phase === 'LAUNCH' &&
+        (stageRef.current === 'workshop' || stageRef.current === 'briefing')
+      ) {
+        setStage('cutscene')
+        notify(`🔥 Sala ${nextRoom.code}: ¡Despegue sincronizado!`)
+      } else if (
+        nextRoom.phase === 'STATION' &&
+        (stageRef.current === 'cutscene' || stageRef.current === 'briefing')
+      ) {
+        setStage('station')
+      }
+    },
+    [clientId, notify]
+  )
+
+  const handleCreateRoomFromMenu = async () => {
+    if (creatingRoom) return
+    setCreatingRoom(true)
+    try {
+      const created = await createMultiplayerRoom(clientId, playerName)
+      roomCodeRef.current = created.code
+      setRoom(created)
+      setMenuSubView('room')
+      notify(`Sala creada: ${created.code} — Elige tu personaje`)
+    } catch {
+      notify('No se pudo crear la sala multijugador')
+    } finally {
+      setCreatingRoom(false)
+    }
+  }
+
+  // Envía leave inmediato con navigator.sendBeacon si cierra pestaña o recarga página desde cualquier pantalla
+  useEffect(() => {
+    if (!roomCode) return
+    const handleUnload = () => {
+      if (roomCodeRef.current) {
+        sendLeaveBeacon(roomCodeRef.current, clientId, playerNameRef.current)
+      }
+    }
+    window.addEventListener('beforeunload', handleUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload)
+    }
+  }, [roomCode, clientId])
+
+  const handleRemoteRoomClosed = useCallback(
+    (msg = 'La sala fue cerrada') => {
+      roomCodeRef.current = null
+      setRoom(null)
+      setMenuSubView('join')
+      if (stageRef.current !== 'menu') {
+        setStage('menu')
+      }
+      setShowButtons(true)
+      notify(msg)
+    },
+    [notify]
+  )
+
+  // Sondeo de sala (500 ms) + Latido estricto (1.5 s) en Sala, Taller, Cinemática y Órbita
+  useEffect(() => {
+    if (!roomCode || stage === 'station') return
+    let cancelled = false
+
+    const pollRoom = async () => {
+      try {
+        const fresh = await fetchRoomByCode(roomCode)
+        if (!cancelled && roomCodeRef.current === roomCode) {
+          if (fresh) {
+            applyRoomSnapshot(fresh)
+          } else {
+            handleRemoteRoomClosed('La sala fue cerrada')
+          }
+        }
+      } catch {
+        // reintento automático en el siguiente ciclo
+      }
+    }
+
+    const pollTimer = window.setInterval(() => {
+      void pollRoom()
+    }, 500)
+
+    const hbTimer = window.setInterval(() => {
+      void sendRoomHeartbeat(
+        roomCode,
+        clientId,
+        playerNameRef.current.trim() || getDefaultPlayerName(clientId)
+      )
+        .then((res) => {
+          if (cancelled || roomCodeRef.current !== roomCode) return
+          if (res.status === 404 || res.deleted || (res.status === 400 && res.code === 'ROOM_FULL')) {
+            handleRemoteRoomClosed(res.error || 'La sala fue cerrada')
+            return
+          }
+          if (res.room) applyRoomSnapshot(res.room)
+        })
+        .catch(() => {})
+    }, 1500)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(pollTimer)
+      window.clearInterval(hbTimer)
+    }
+  }, [roomCode, stage, clientId, applyRoomSnapshot, handleRemoteRoomClosed])
+
+  const exitRoomToMenu = useCallback(async () => {
+    const codeToLeave = roomCodeRef.current
+    roomCodeRef.current = null
+    setRoom(null)
+    actions.setContract('andes')
+    actions.setLauncher('rideshare')
+    setMenuSubView('home')
+    setShowButtons(true)
+    setStage('menu')
+    if (codeToLeave) {
+      await leaveMultiplayerRoom(codeToLeave, clientId, playerNameRef.current)
+    }
+  }, [clientId])
+
+  const handleCutsceneComplete = useCallback(async () => {
+    if (roomCode) {
+      try {
+        const res = await postRoomAction(roomCode, {
+          action: 'set_phase',
+          clientId,
+          playerName: playerNameRef.current,
+          phase: 'STATION',
+        })
+        if (res.room) setRoom(res.room)
+      } catch {
+        // continuar transición local
+      }
+    }
+    setStage('station')
+  }, [roomCode, clientId])
+
+  const handleBackToWorkshop = useCallback(async () => {
+    if (roomCode) {
+      try {
+        const fresh = await fetchRoomByCode(roomCode)
+        if (fresh) setRoom(fresh)
+      } catch {
+        // mantener último estado
+      }
+    }
+    setStage('workshop')
+  }, [roomCode])
+
+  const handleAdvanceNextMission = useCallback(
+    async (nextMissionId: MissionId, keepPoints?: number) => {
+      const mDef = MISSION_CATALOG[nextMissionId]
+      const validLauncher = resolveCompatibleLauncher(nextMissionId, mDef.defaultLauncherId)
+      actions.setContract(nextMissionId)
+      actions.setLauncher(validLauncher)
+      if (roomCode) {
+        try {
+          const res = await advanceRoomNextMission(
+            roomCode,
+            clientId,
+            playerNameRef.current,
+            nextMissionId,
+            { launcherId: validLauncher, targetPhase: 'MISSION_BRIEFING', keepPoints }
+          )
+          if (res.room) applyRoomSnapshot(res.room)
+        } catch {
+          // continuar localmente
+        }
+      }
+      notify(`🚀 Desbloqueada Etapa ${mDef.number}/3: ${mDef.code} (Nivel ${mDef.difficulty})`)
+    },
+    [roomCode, clientId, applyRoomSnapshot, notify]
+  )
+
   return (
     <div className="relative w-full h-full overflow-hidden text-white">
+      {stage === 'briefing' && (
+        <MissionBriefingScreen
+          room={room}
+          clientId={clientId}
+          playerName={playerName}
+          myRole={myRoomRole}
+          onRoomUpdated={applyRoomSnapshot}
+          onBackToMenu={() => void exitRoomToMenu()}
+          onNotify={notify}
+        />
+      )}
+
       {stage === 'workshop' && (
         <RoleWorkshopScreen
           assignments={workshop.assignments}
           startRole={workshop.startRole}
           playerNames={workshop.playerNames}
-          onExit={() => setStage('menu')}
+          roomCode={roomCode}
+          clientId={clientId}
+          playerName={playerName}
+          roomSnapshot={room}
+          assignedRole={myRoomRole}
+          onRoomUpdated={applyRoomSnapshot}
+          onExit={() => void exitRoomToMenu()}
           onAuthorizedLaunch={() => setStage('cutscene')}
         />
       )}
 
       {stage === 'cutscene' && (
         <LaunchDockingCutscene
-          onComplete={() => setStage('station')}
-          onBackToWorkshop={() => setStage('workshop')}
+          onComplete={() => void handleCutsceneComplete()}
+          onBackToWorkshop={() => void handleBackToWorkshop()}
         />
       )}
 
       {stage === 'station' && (
         <StationOperationScreen
-          onBackToWorkshop={() => setStage('workshop')}
+          roomCode={roomCode}
+          missionId={room?.missionId}
+          clientIdOverride={clientId}
+          initialAssignedRole={myRoomRole}
+          initialPlayerName={playerName}
+          initialRoleClaims={room?.roles}
+          onRoomUpdated={applyRoomSnapshot}
+          onAdvanceMission={(nextId, keepPts) => void handleAdvanceNextMission(nextId, keepPts)}
+          onBackToWorkshop={() => void handleBackToWorkshop()}
           onReplayCutscene={() => setStage('cutscene')}
           onOpenTelemetryReport={() => setStage('orbit')}
-          onExitToMenu={() => setStage('menu')}
+          onExitToMenu={() => void exitRoomToMenu()}
+          onRoomClosed={() => handleRemoteRoomClosed('La sala fue cerrada')}
         />
       )}
 
       {stage === 'orbit' && (
         <OrbitalSimulationScreen
-          onBackToWorkshop={() => setStage('workshop')}
+          onBackToWorkshop={() => void handleBackToWorkshop()}
           onReplayCutscene={() => setStage('station')}
-          onExitToMenu={() => setStage('menu')}
+          onExitToMenu={() => void exitRoomToMenu()}
         />
       )}
 
@@ -128,72 +414,78 @@ export default function App() {
             <span className="hidden sm:inline">{music ? 'MÚSICA ON' : 'MÚSICA OFF'}</span>
           </button>
 
-          <main className="relative z-10 h-full flex flex-col items-center justify-start pt-[5vh] px-4 gap-4 sm:gap-6">
-            <Logo onLogoDone={onLogoDone} />
+          {menuSubView === 'home' ? (
+            <main className="relative z-10 h-full flex flex-col items-center justify-start pt-[5vh] px-4 gap-4 sm:gap-6">
+              <Logo onLogoDone={onLogoDone} />
 
-            {showButtons && (
-              <div className="w-full max-w-xl flex flex-col gap-3.5 mt-4 relative z-10">
-                <McButton
-                  delay={0}
-                  className="w-full py-4 text-[11px] sm:text-xs"
-                  onClick={() => setSquadMode('solo')}
-                >
-                  ▶ JUGAR MISIÓN (1 JUGADOR)
-                </McButton>
-                <McButton
-                  delay={0.12}
-                  className="w-full py-3.5 text-[10px] sm:text-[11px]"
-                  onClick={() => setSquadMode('squad')}
-                >
-                  👥 MODO ESCUADRÓN (1-4 JUGADORES / ROLES)
-                </McButton>
-                <div className="grid grid-cols-2 gap-3.5">
+              {showButtons && (
+                <div className="w-full max-w-xl flex flex-col gap-3.5 mt-4 relative z-10">
                   <McButton
-                    delay={0.24}
-                    className="py-3.5 px-2 text-[9px] sm:text-[10px]"
-                    onClick={() => notify('Sandbox libre: próximamente')}
+                    delay={0}
+                    className="w-full py-4 text-[11px] sm:text-xs"
+                    onClick={() => {
+                      setRoom(null)
+                      setMenuSubView('join')
+                    }}
                   >
-                    🛠️ SANDBOX LIBRE
+                    🌐 MULTIJUGADOR (UNIRSE A SALA)
                   </McButton>
                   <McButton
-                    delay={0.36}
-                    className="py-3.5 px-2 text-[9px] sm:text-[10px]"
-                    onClick={() => notify('Datos NASA & Créditos: próximamente')}
+                    delay={0.12}
+                    className="w-full py-3.5 text-[10px] sm:text-[11px]"
+                    onClick={() => void handleCreateRoomFromMenu()}
                   >
-                    📡 DATOS NASA & CRÉDITOS
+                    {creatingRoom ? '⏳ CREANDO SALA...' : '+ CREAR SALA'}
                   </McButton>
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <McButton
+                      delay={0.24}
+                      className="py-3.5 px-2 text-[9px] sm:text-[10px]"
+                      onClick={() => notify('Sandbox libre: próximamente')}
+                    >
+                      🛠️ SANDBOX LIBRE
+                    </McButton>
+                    <McButton
+                      delay={0.36}
+                      className="py-3.5 px-2 text-[9px] sm:text-[10px]"
+                      onClick={() => notify('Datos NASA & Créditos: próximamente')}
+                    >
+                      📡 DATOS NASA & CRÉDITOS
+                    </McButton>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {!started && (
-              <motion.p
-                className="absolute bottom-6 text-[9px] text-gray-300"
-                animate={{ opacity: [1, 0.2, 1] }}
-                transition={{ duration: 1.2, repeat: Infinity }}
-              >
-                HAZ CLIC PARA ACTIVAR EL AUDIO
-              </motion.p>
-            )}
-          </main>
+              {!started && (
+                <motion.p
+                  className="absolute bottom-6 text-[9px] text-gray-300"
+                  animate={{ opacity: [1, 0.2, 1] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                >
+                  HAZ CLIC PARA ACTIVAR EL AUDIO
+                </motion.p>
+              )}
+            </main>
+          ) : (
+            <main className="relative z-10 h-full overflow-y-auto flex flex-col items-center justify-start pt-[3vh] pb-12 px-3">
+              <MissionLobbyScreen
+                view={menuSubView}
+                clientId={clientId}
+                playerName={playerName}
+                onChangePlayerName={handlePlayerNameChange}
+                room={room}
+                onEnterRoom={(r) => {
+                  roomCodeRef.current = r.code
+                  setMenuSubView('room')
+                  applyRoomSnapshot(r)
+                }}
+                onBackToMenu={() => void exitRoomToMenu()}
+                onNotify={notify}
+              />
+            </main>
+          )}
         </>
       )}
-
-      <SquadModal
-        open={squadMode !== null}
-        mode={squadMode ?? 'squad'}
-        onClose={() => setSquadMode(null)}
-        onStart={(assignments, startRole, playerNames) => {
-          setSquadMode(null)
-          actions.initWorkshop(assignments, startRole, playerNames)
-          setWorkshop({ assignments, startRole, playerNames })
-          setStage('workshop')
-          const activeSummary = assignments
-            .filter((r): r is RoleId => r !== null)
-            .map((r) => `${ROLE_INFO[r].icon} ${ROLE_INFO[r].code} (${playerNames[r]})`)
-          notify(`Escuadrón en hangar: ${activeSummary.join(' · ')}`)
-        }}
-      />
 
       <AnimatePresence>
         {toast && (

@@ -2,24 +2,35 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CHASSIS, CONTRACTS, LAUNCHERS, ROLE_INFO, ROLE_ORDER } from '../game/catalog'
 import type { RoleId } from '../game/catalog'
+import { getNextMissionId, MISSION_CATALOG, sanitizeMissionId } from '../game/missions'
+import type { MissionId } from '../game/missions'
+import { paintAstronautPoseToAtlas } from '../game/astronautSprite'
 import { analyze } from '../game/sim'
 import { actions, useGame } from '../game/store'
 import { playClick, playHover, playIntroSweep } from '../audio'
+import GameOverExplosionModal from './GameOverExplosionModal'
+import VictoryCinematicModal from './VictoryCinematicModal'
+import type { VictoryPhase } from './VictoryCinematicModal'
+import MinigameFrame, { MINIGAME_META } from './minigames/MinigameFrame'
 import type { MinigameId } from './minigames/MinigameFrame'
-import NavegacionOrbitalModal from './minigames/NavegacionOrbitalModal'
-import DistribucionElectricaModal from './minigames/DistribucionElectricaModal'
-import SoporteVitalModal from './minigames/SoporteVitalModal'
-import AcoplamientoEspacialModal from './minigames/AcoplamientoEspacialModal'
-import AterrizajePlanetarioModal from './minigames/AterrizajePlanetarioModal'
-import ReparacionTelecomModal from './minigames/ReparacionTelecomModal'
-import ReencuentroCometaModal from './minigames/ReencuentroCometaModal'
-import CiberdefensaSatelitalModal from './minigames/CiberdefensaSatelitalModal'
+
+import type { RoleClaimsMap as SharedRoleClaimsMap, RoomSnapshot } from '../game/multiplayer'
 
 interface Props {
   onBackToWorkshop: () => void
-  onReplayCutscene: () => void
+  onReplayCutscene?: () => void
   onOpenTelemetryReport: () => void
   onExitToMenu: () => void
+  onRoomClosed?: () => void
+  onRoomUpdated?: (room: RoomSnapshot) => void
+  onAdvanceMission?: (nextMissionId: MissionId, keepPoints?: number) => void
+  missionId?: MissionId | string
+  roomCode?: string | null
+  clientIdOverride?: string
+  initialAssignedRole?: RoleId | null
+  initialPlayerName?: string
+  initialRoleClaims?: SharedRoleClaimsMap
+  initialSoloMode?: boolean
 }
 
 export type StationEventId = 'none' | 'eclipse' | 'solar_storm' | 'o2_leak'
@@ -81,14 +92,13 @@ interface CorridorSegment {
   orientation: 'horizontal' | 'vertical'
 }
 
-interface LaserSecurityGate {
+interface SectorThreshold {
   id: string
   owner: RoleId
   x: number
   y: number
   orientation: 'vertical' | 'horizontal'
   size: number
-  blockRect: Rect
   roomLabel: string
 }
 
@@ -174,8 +184,8 @@ const STATION_ROOMS: StationRoom[] = [
     hull: { x: 896, y: 512, w: 576, h: 448 },
     floor: { x: 928, y: 576, w: 512, h: 352 },
     color: '#ffd23f',
-    navX: 1184,
-    navY: 752,
+    navX: 1104,
+    navY: 692,
   },
   // b) LAUNCH SEGMENT (Cuadrante 1 · Hangar del Transbordador de CÓNDOR-4)
   {
@@ -187,7 +197,7 @@ const STATION_ROOMS: StationRoom[] = [
     hull: { x: 192, y: 448, w: 576, h: 480 },
     floor: { x: 224, y: 512, w: 512, h: 384 },
     color: '#ffd23f',
-    navX: 544,
+    navX: 608,
     navY: 720,
   },
   // c) ENGINE ROOM (Cuadrante 1 · Turbina Sur-Oeste de CÓNDOR-4)
@@ -200,8 +210,8 @@ const STATION_ROOMS: StationRoom[] = [
     hull: { x: 224, y: 1024, w: 512, h: 352 },
     floor: { x: 256, y: 1088, w: 448, h: 256 },
     color: '#ffd23f',
-    navX: 480,
-    navY: 1216,
+    navX: 548,
+    navY: 1200,
   },
   // d) SPACE SEGMENT (Cuadrante 4 · Sector SERPIENTE-2)
   {
@@ -213,7 +223,7 @@ const STATION_ROOMS: StationRoom[] = [
     hull: { x: 224, y: 64, w: 544, h: 320 },
     floor: { x: 256, y: 128, w: 480, h: 224 },
     color: '#74b9ff',
-    navX: 512,
+    navX: 544,
     navY: 240,
   },
   // e) COMMUNICATIONS (Cuadrante 4 · Sector SERPIENTE-2)
@@ -227,7 +237,7 @@ const STATION_ROOMS: StationRoom[] = [
     floor: { x: 896, y: 128, w: 416, h: 224 },
     color: '#74b9ff',
     navX: 1104,
-    navY: 240,
+    navY: 266,
   },
   // f) USER SEGMENT (Cuadrante 3 · Sector PUMA-3)
   {
@@ -252,8 +262,8 @@ const STATION_ROOMS: StationRoom[] = [
     hull: { x: 1568, y: 448, w: 480, h: 288 },
     floor: { x: 1600, y: 512, w: 416, h: 192 },
     color: '#55efc4',
-    navX: 1792,
-    navY: 608,
+    navX: 1784,
+    navY: 616,
   },
   // h) POWER MGD & REACTOR (Cuadrante 2 · Sector ALPACA-1)
   {
@@ -265,8 +275,8 @@ const STATION_ROOMS: StationRoom[] = [
     hull: { x: 1568, y: 768, w: 576, h: 384 },
     floor: { x: 1600, y: 832, w: 512, h: 288 },
     color: '#ff9f43',
-    navX: 1824,
-    navY: 960,
+    navX: 1836,
+    navY: 1004,
   },
   // i) LIFE SUPPORT & ELECTRICAL (ALPACA-1)
   {
@@ -301,8 +311,8 @@ const CORRIDORS: CorridorSegment[] = [
   { id: 'cor_eng_link_h', rect: { x: 1504, y: 1184, w: 192, h: 96 }, orientation: 'horizontal' },
 ]
 
-// Compuertas Láser de Seguridad en las entradas a los sectores exclusivos de cada rol
-const LASER_GATES: LaserSecurityGate[] = [
+// Marcos de transición abiertos entre sectores (paso físico 100% libre para los 4 personajes)
+const SECTOR_THRESHOLDS: SectorThreshold[] = [
   {
     id: 'gate_director',
     owner: 'director',
@@ -310,7 +320,6 @@ const LASER_GATES: LaserSecurityGate[] = [
     y: 720,
     orientation: 'vertical',
     size: 96,
-    blockRect: { x: 814, y: 672, w: 36, h: 96 },
     roomLabel: 'LAUNCH SEGMENT & ENGINE ROOM',
   },
   {
@@ -320,7 +329,6 @@ const LASER_GATES: LaserSecurityGate[] = [
     y: 464,
     orientation: 'horizontal',
     size: 96,
-    blockRect: { x: 1056, y: 446, w: 96, h: 36 },
     roomLabel: 'COMMUNICATIONS & SPACE SEGMENT',
   },
   {
@@ -330,7 +338,6 @@ const LASER_GATES: LaserSecurityGate[] = [
     y: 624,
     orientation: 'vertical',
     size: 96,
-    blockRect: { x: 1502, y: 576, w: 36, h: 96 },
     roomLabel: 'LABORATORY & USER SEGMENT',
   },
   {
@@ -340,7 +347,6 @@ const LASER_GATES: LaserSecurityGate[] = [
     y: 880,
     orientation: 'vertical',
     size: 96,
-    blockRect: { x: 1502, y: 832, w: 36, h: 96 },
     roomLabel: 'POWER MGD & REACTOR',
   },
   {
@@ -350,304 +356,702 @@ const LASER_GATES: LaserSecurityGate[] = [
     y: 1024,
     orientation: 'horizontal',
     size: 96,
-    blockRect: { x: 1136, y: 1006, w: 96, h: 36 },
     roomLabel: 'LIFE SUPPORT & ELECTRICAL',
   },
 ]
 
+// Puertas automáticas en TODAS las conexiones entre pasillos y las 9 áreas (se abren al paso de cualquier personaje)
 const SLIDING_DOORS: SlidingDoor[] = [
+  { id: 'door_launch_west', x: 744, y: 720, orientation: 'vertical', size: 96 },
+  { id: 'door_ground_west', x: 920, y: 720, orientation: 'vertical', size: 96 },
   { id: 'door_engine', x: 480, y: 992, orientation: 'horizontal', size: 96 },
+  { id: 'door_ground_north', x: 1104, y: 564, orientation: 'horizontal', size: 96 },
+  { id: 'door_comms_south', x: 1104, y: 364, orientation: 'horizontal', size: 96 },
   { id: 'door_space_comm', x: 816, y: 240, orientation: 'vertical', size: 96 },
+  { id: 'door_ground_east_lab', x: 1448, y: 624, orientation: 'vertical', size: 96 },
+  { id: 'door_lab_west', x: 1592, y: 624, orientation: 'vertical', size: 96 },
   { id: 'door_user_lab', x: 1792, y: 432, orientation: 'horizontal', size: 96 },
+  { id: 'door_ground_east_pwr', x: 1448, y: 880, orientation: 'vertical', size: 96 },
+  { id: 'door_pwr_west', x: 1592, y: 880, orientation: 'vertical', size: 96 },
+  { id: 'door_ground_south', x: 1184, y: 940, orientation: 'horizontal', size: 96 },
+  { id: 'door_life_north', x: 1184, y: 1108, orientation: 'horizontal', size: 96 },
+  { id: 'door_pwr_south', x: 1648, y: 1128, orientation: 'horizontal', size: 96 },
+  { id: 'door_life_east', x: 1512, y: 1232, orientation: 'vertical', size: 96 },
   { id: 'door_life_elec', x: 1248, y: 1264, orientation: 'vertical', size: 96 },
 ]
 
 const ROLE_SPAWNS: Record<RoleId, { x: number; y: number }> = {
-  director: { x: 1184, y: 740 },
+  director: { x: 1184, y: 696 },
   comms: { x: 544, y: 240 },
-  science: { x: 1760, y: 240 },
-  engineer: { x: 1792, y: 960 },
+  science: { x: 1764, y: 240 },
+  engineer: { x: 1836, y: 984 },
 }
 
 // ============================================================================
-// ESTACIONES INTERACTIVAS DISTRIBUIDAS EN LAS 9 SALAS OFICIALES
+// 16 ESTACIONES INTERACTIVAS DISTRIBUIDAS EN LAS 9 SALAS (4 POR ROL, 1-A-1)
 // ============================================================================
 const CONSOLES: ConsoleStation[] = [
-  // 🦅 ROL 1: CÓNDOR-4 (GROUND SEGMENT + LAUNCH SEGMENT + ENGINE ROOM)
+  // 🦅 ROL 1: CÓNDOR-4 (GROUND SEGMENT x2 + LAUNCH SEGMENT + ENGINE ROOM)
   {
     id: 'dir_orbit',
     role: 'director',
     roomId: 'ground_segment',
     zoneName: 'GROUND SEGMENT (CENTRO)',
-    subsystemLabel: 'CONTROL DE ACTITUD Y ÓRBITA',
-    title: 'Consola Curva de 5 Pantallas Mundiales',
-    shortLabel: '5 PANTALLAS MANDO',
-    icon: '🧭',
+    subsystemLabel: 'ACOPLAMIENTO ESPACIAL 6-DOF APAS',
+    title: 'Consola Curva de 5 Pantallas y Acoplamiento APAS',
+    shortLabel: 'ACOPLAMIENTO APAS',
+    icon: '🚀',
     x: 1184,
-    y: 624,
+    y: 628,
     standX: 1184,
-    standY: 688,
-    hint: 'Estabiliza la altitud y actitud orbital al 100% desde el puente de mando central.',
+    standY: 692,
+    hint: 'Ejecuta maniobra 6-DOF de acoplamiento espacial APAS desde el puente central.',
   },
   {
     id: 'dir_shield',
     role: 'director',
-    roomId: 'launch_segment',
-    zoneName: 'LAUNCH SEGMENT (HANGAR OESTE)',
-    subsystemLabel: 'TORRETA TÁCTICA Y RADAR COMETA',
-    title: 'Brazo Hidráulico, Escudos y Radar de Intercepción',
-    shortLabel: 'RADAR COMETA',
+    roomId: 'ground_segment',
+    zoneName: 'GROUND SEGMENT (RADAR NORESTE)',
+    subsystemLabel: 'DEFENSA ORBITAL CONTRA METEORITOS',
+    title: 'Estación Radar Polar de Defensa Orbital',
+    shortLabel: 'DEFENSA COMETA',
     icon: '☄️',
-    x: 608,
+    x: 1330,
+    y: 580,
+    standX: 1330,
+    standY: 634,
+    hint: 'Intercepta con láser orbital los meteoritos entrantes para proteger el Casco al 100%.',
+  },
+  {
+    id: 'dir_gyro',
+    role: 'director',
+    roomId: 'launch_segment',
+    zoneName: 'LAUNCH SEGMENT (BRAZO HIDRÁULICO)',
+    subsystemLabel: 'CALIBRACIÓN DE GIROSCOPIO 3D ADCS',
+    title: 'Brazo Hidráulico y Calibrador Giroscópico 3D',
+    shortLabel: 'GIROSCOPIO 3D',
+    icon: '🎯',
+    x: 618,
     y: 816,
-    standX: 608,
+    standX: 618,
     standY: 760,
-    hint: 'Ejecuta el reencuentro e intercepción táctica del cometa para proteger el Casco al 100%.',
+    hint: 'Aplica pulsos RCS opuestos en Pitch/Roll/Yaw hasta estabilizar el giroscopio (<0.05 rad/s).',
   },
   {
     id: 'dir_engine',
     role: 'director',
     roomId: 'engine_room',
     zoneName: 'ENGINE ROOM (TURBINA SUR-OESTE)',
-    subsystemLabel: 'PROPULSIÓN PRINCIPAL DELTA-V',
-    title: 'Turbina Horizontal Pesada y Tobera Orbital',
-    shortLabel: 'TURBINA DELTA-V',
-    icon: '🔥',
-    x: 480,
-    y: 1168,
+    subsystemLabel: 'RADAR KESSLER Y EYECCIÓN DE ESCOMBROS',
+    title: 'Turbina Pesada y Radar de Eyección Kessler',
+    shortLabel: 'EVASIÓN ESCOMBROS',
+    icon: '💥',
+    x: 392,
+    y: 1246,
     standX: 480,
-    standY: 1236,
-    hint: 'Ejecuta maniobra de acoplamiento y empuje Delta-V para estabilizar la órbita.',
+    standY: 1284,
+    hint: 'Maniobra con propulsores y deflector EMP para esquivar el cinturón de escombros Kessler.',
   },
 
-  // 🐍 ROL 4: SERPIENTE-2 (SPACE SEGMENT + COMMUNICATIONS)
+  // 🦙 ROL 2: ALPACA-1 (POWER MGD & REACTOR x2 + LIFE SUPPORT + ENGINE ROOM)
   {
-    id: 'com_align',
-    role: 'comms',
-    roomId: 'space_segment',
-    zoneName: 'SPACE SEGMENT (NOROESTE)',
-    subsystemLabel: 'CIBERDEFENSA Y FIREWALL SATELITAL',
-    title: 'Estación Óptica y Firewall de Red Espacial',
-    shortLabel: 'FIREWALL SATELITAL',
-    icon: '🛡️',
-    x: 448,
-    y: 224,
-    standX: 448,
-    standY: 284,
-    hint: 'Bloquea intrusiones y paquetes corruptos para asegurar la red satelital al 100%.',
+    id: 'eng_solar',
+    role: 'engineer',
+    roomId: 'power_reactor',
+    zoneName: 'POWER MGD (PANELES Y BUSES EPS)',
+    subsystemLabel: 'DISTRIBUCIÓN ELÉCTRICA EPS',
+    title: 'Racks de Carga Solar y Matriz de Buses EPS',
+    shortLabel: 'BUSES EPS SOLAR',
+    icon: '⚡',
+    x: 1968,
+    y: 920,
+    standX: 1968,
+    standY: 992,
+    hint: 'Balancea los Buses A/B/C y regula las cargas críticas durante eclipses (+100% Batería).',
   },
   {
-    id: 'com_filter',
-    role: 'comms',
-    roomId: 'space_segment',
-    zoneName: 'SPACE SEGMENT (SOPORTES CUBESAT)',
-    subsystemLabel: 'SEGURIDAD DE TELEMETRÍA',
-    title: 'Servidor Firewall y Soportes CubeSat',
-    shortLabel: 'NODO CIBERDEFENSA',
-    icon: '🔐',
-    x: 640,
-    y: 192,
-    standX: 608,
-    standY: 248,
-    hint: 'Defiende la constelación CubeSat contra ciberataques y limpia la interferencia.',
+    id: 'eng_cool',
+    role: 'engineer',
+    roomId: 'power_reactor',
+    zoneName: 'POWER MGD & REACTOR (NÚCLEO)',
+    subsystemLabel: 'REFRIGERACIÓN CRIOGÉNICA DEL REACTOR',
+    title: 'Reactor Cilíndrico Naranja y Bombas NH3',
+    shortLabel: 'REFRIGERACIÓN NH3',
+    icon: '☢️',
+    x: 1836,
+    y: 910,
+    standX: 1836,
+    standY: 978,
+    hint: 'Activa radiadores y bombas de amoníaco para enfriar el reactor debajo de 400°C.',
   },
   {
-    id: 'com_tx',
-    role: 'comms',
-    roomId: 'communications',
-    zoneName: 'COMMUNICATIONS (DOMO PARABÓLICO)',
-    subsystemLabel: 'REPARACIÓN TELECOM Y ENLACE DSN',
-    title: 'Osciloscopio DSN y Plato Parabólico Giratorio',
-    shortLabel: 'TELECOM / PLATO DSN',
-    icon: '📡',
-    x: 1104,
-    y: 176,
-    standX: 1104,
-    standY: 240,
-    hint: 'Repara el enlace de telecomunicaciones y transmite los paquetes del Buffer a la Tierra.',
+    id: 'eng_o2',
+    role: 'engineer',
+    roomId: 'life_electrical',
+    zoneName: 'LIFE SUPPORT (TANQUES O2)',
+    subsystemLabel: 'SOPORTE VITAL ECLSS Y PRESIÓN O2',
+    title: '2 Tanques Azules O2 con Válvulas ECLSS',
+    shortLabel: 'SOPORTE VITAL O2',
+    icon: '🫧',
+    x: 980,
+    y: 1184,
+    standX: 980,
+    standY: 1264,
+    hint: 'Regula O2, N2, depuradores de CO2 y climatización en tiempo real en cabina.',
+  },
+  {
+    id: 'eng_pcb',
+    role: 'engineer',
+    roomId: 'engine_room',
+    zoneName: 'ENGINE ROOM (BAHÍA ELÉCTRICA ESTE)',
+    subsystemLabel: 'REPARACIÓN DE CIRCUITOS PCB',
+    title: 'Banco de Diagnóstico PCB y Microsoldadura',
+    shortLabel: 'CIRCUITOS PCB',
+    icon: '🔌',
+    x: 634,
+    y: 1112,
+    standX: 576,
+    standY: 1126,
+    hint: 'Rota pistas de cobre y aplica bypass en capacitores quemados para energizar las 3 salidas.',
   },
 
-  // 🐆 ROL 3: PUMA-3 (USER SEGMENT + LABORATORY)
+  // 🐆 ROL 3: PUMA-3 (USER SEGMENT x2 + LABORATORY + LAUNCH SEGMENT)
   {
     id: 'sci_scan',
     role: 'science',
     roomId: 'user_segment',
     zoneName: 'USER SEGMENT (NORESTE)',
-    subsystemLabel: 'SONDA DE ATERRIZAJE Y BIO-ÓPTICA',
-    title: 'Simulador de Sonda Planetaria y Microscopios',
+    subsystemLabel: 'ATERRIZAJE PLANETARIO DE SONDA',
+    title: 'Simulador de Descenso de Sonda Planetaria',
     shortLabel: 'ATERRIZAJE SONDA',
     icon: '🛬',
     x: 1744,
     y: 168,
     standX: 1744,
     standY: 228,
-    hint: 'Pilota el descenso de la sonda planetaria para recolectar muestras (+40% Buffer · +45 PTS).',
-  },
-  {
-    id: 'sci_holo',
-    role: 'science',
-    roomId: 'user_segment',
-    zoneName: 'USER SEGMENT (MESA HOLOGRÁFICA)',
-    subsystemLabel: 'TELEMETRÍA DE DESCENSO 3D',
-    title: 'Mesa Holográfica y Simulador Planetario',
-    shortLabel: 'DESCENSO HOLO 3D',
-    icon: '🧬',
-    x: 1936,
-    y: 256,
-    standX: 1872,
-    standY: 264,
-    hint: 'Ejecuta el aterrizaje planetario asistido por holograma y carga datos en el Buffer.',
-  },
-  {
-    id: 'sci_lab',
-    role: 'science',
-    roomId: 'laboratory',
-    zoneName: 'LABORATORY (SUB-LAB PROCESADO)',
-    subsystemLabel: 'NAVEGACIÓN SAT-02 INTI-SCIENCE',
-    title: 'Terminal de Laboratorio y Telemetría SAT-02',
-    shortLabel: 'LAB / ÓRBITA SAT-02',
-    icon: '🛰️',
-    x: 1792,
-    y: 552,
-    standX: 1792,
-    standY: 616,
-    hint: 'Controla la órbita del SAT-02 INTI-SCIENCE desde el sub-laboratorio científico.',
-  },
-
-  // 🦙 ROL 2: ALPACA-1 (POWER MGD & REACTOR + LIFE SUPPORT & ELECTRICAL)
-  {
-    id: 'eng_cool',
-    role: 'engineer',
-    roomId: 'power_reactor',
-    zoneName: 'POWER MGD & REACTOR (ESTE)',
-    subsystemLabel: 'DISTRIBUCIÓN ELÉCTRICA EPS Y REACTOR',
-    title: 'Reactor Cilíndrico Naranja y Buses EPS',
-    shortLabel: 'NÚCLEO REACTOR EPS',
-    icon: '☢️',
-    x: 1760,
-    y: 912,
-    standX: 1760,
-    standY: 984,
-    hint: 'Balancea los buses eléctricos del reactor y lleva la Batería Global al 100%.',
-  },
-  {
-    id: 'eng_solar',
-    role: 'engineer',
-    roomId: 'power_reactor',
-    zoneName: 'POWER MGD (PANELES EXTERIORES)',
-    subsystemLabel: 'ARREGLOS SOLARES Y RACKS LED',
-    title: 'Racks de Carga y Distribución Eléctrica',
-    shortLabel: 'RACKS Y PANELES',
-    icon: '⚡',
-    x: 1968,
-    y: 912,
-    standX: 1936,
-    standY: 968,
-    hint: 'Distribuye la energía de los paneles solares entre los módulos (+100% Batería).',
-  },
-  {
-    id: 'eng_o2',
-    role: 'engineer',
-    roomId: 'life_electrical',
-    zoneName: 'LIFE SUPPORT (TANQUES O2 SUR-OESTE)',
-    subsystemLabel: 'SOPORTE VITAL ECLSS Y PRESIÓN O2',
-    title: '2 Tanques Azules O2 con Válvulas ECLSS',
-    shortLabel: 'SOPORTE VITAL O2',
-    icon: '🫧',
-    x: 1040,
-    y: 1184,
-    standX: 1040,
-    standY: 1256,
-    hint: 'Regula O2, CO2, presión y humedad en los 2 tanques azules al 100% (ALPACA-1).',
-  },
-  {
-    id: 'eng_switch',
-    role: 'engineer',
-    roomId: 'life_electrical',
-    zoneName: 'ELECTRICAL (CUARTO CONTIGUO SURESTE)',
-    subsystemLabel: 'DISTRIBUCIÓN ELÉCTRICA CENTRAL',
-    title: 'Palanca Gigante MASTER SWITCH Eléctrico',
-    shortLabel: 'MASTER SWITCH',
-    icon: '🕹️',
-    x: 1384,
-    y: 1184,
-    standX: 1384,
-    standY: 1256,
-    hint: 'Acciona el interruptor maestro de alta tensión para estabilizar todos los módulos.',
-  },
-
-  // 🛰️ CENTROS DE CONTROL SATELITAL (navegación dual SAT-01 / SAT-02)
-  {
-    id: 'sat_ctrl_1',
-    role: 'comms',
-    roomId: 'space_segment',
-    zoneName: 'SPACE SEGMENT (CENTRO SATELITAL 1)',
-    subsystemLabel: 'ENLACE EN VIVO · SAT-01 AMARU-COMMS',
-    title: 'Estación de Mando Doble con Hologramas Dorados',
-    shortLabel: 'CONTROL SAT-01/02',
-    icon: '🛰️',
-    x: 340,
-    y: 296,
-    standX: 340,
-    standY: 332,
-    hint: 'Maniobra el SAT-01 AMARU-COMMS y el SAT-02 INTI-SCIENCE con Delta-V y transferencia de Hohmann.',
+    hint: 'Pilota el retro-frenado de la sonda científica hasta tocar superficie (<5.0 m/s).',
   },
   {
     id: 'sat_ctrl_2',
     role: 'science',
     roomId: 'user_segment',
     zoneName: 'USER SEGMENT (CENTRO SATELITAL 2)',
-    subsystemLabel: 'ENLACE EN VIVO · SAT-02 INTI-SCIENCE',
-    title: 'Estación de Mando con Pantallas Duales y Radar',
-    shortLabel: 'CONTROL SAT-02/01',
+    subsystemLabel: 'NAVEGACIÓN ORBITAL HOHMANN DUAL',
+    title: 'Estación Orbital SAT-02 INTI-SCIENCE',
+    shortLabel: 'ÓRBITA HOHMANN',
+    icon: '🛰️',
+    x: 1628,
+    y: 298,
+    standX: 1718,
+    standY: 298,
+    hint: 'Calcula e igniciona el impulso Δv de Hohmann para alinear SAT-02 INTI-SCIENCE.',
+  },
+  {
+    id: 'sci_lab',
+    role: 'science',
+    roomId: 'laboratory',
+    zoneName: 'LABORATORY (SUB-LAB CIENTÍFICO)',
+    subsystemLabel: 'ESPECTROMETRÍA DE MASAS GLACIAR',
+    title: 'Taladro Láser y Espectrómetro de Masas',
+    shortLabel: 'ESPECTRÓMETRO m/z',
+    icon: '🔬',
+    x: 1875,
+    y: 552,
+    standX: 1852,
+    standY: 598,
+    hint: 'Sintoniza frecuencia láser y energía térmica para aislar H2O, O-18 y Helio-3.',
+  },
+  {
+    id: 'sci_thermal',
+    role: 'science',
+    roomId: 'launch_segment',
+    zoneName: 'LAUNCH SEGMENT (MÓDULO DE CARGA ÚTIL)',
+    subsystemLabel: 'TELEMETRÍA MULTIESPECTRAL IR/UV',
+    title: 'Coronógrafo Solar y Visor Multibanda IR/UV/X',
+    shortLabel: 'VISOR IR / UV / X',
+    icon: '🌞',
+    x: 640,
+    y: 580,
+    standX: 640,
+    standY: 632,
+    hint: 'Calibra el filtro espectral (IR, UV, Rayos-X), enfoque y ganancia sobre anomalías solares.',
+  },
+
+  // 🐍 ROL 4: SERPIENTE-2 (SPACE SEGMENT x2 + COMMUNICATIONS x2)
+  {
+    id: 'sat_ctrl_1',
+    role: 'comms',
+    roomId: 'space_segment',
+    zoneName: 'SPACE SEGMENT (FIREWALL SATELITAL)',
+    subsystemLabel: 'CIBERDEFENSA Y FIREWALL PUERTO 8080',
+    title: 'Estación Firewall y Defensa SAT-01 AMARU',
+    shortLabel: 'CIBERDEFENSA 8080',
+    icon: '🛡️',
+    x: 362,
+    y: 286,
+    standX: 362,
+    standY: 336,
+    hint: 'Inspecciona tramas de red en tiempo real para bloquear inyecciones SQL y exfiltraciones.',
+  },
+  {
+    id: 'com_decrypt',
+    role: 'comms',
+    roomId: 'space_segment',
+    zoneName: 'SPACE SEGMENT (CUBESAT CRIPTOGRAFÍA)',
+    subsystemLabel: 'DESENCRIPTACIÓN CUÁNTICA CRC',
+    title: 'Matriz Hexadecimal CRC y Descifrador Cuántico',
+    shortLabel: 'DESENCRIPTACIÓN CRC',
+    icon: '🔐',
+    x: 644,
+    y: 194,
+    standX: 644,
+    standY: 248,
+    hint: 'Detecta bytes corruptos por radiación cósmica en filas/columnas rojas y repara su paridad CRC.',
+  },
+  {
+    id: 'com_tx',
+    role: 'comms',
+    roomId: 'communications',
+    zoneName: 'COMMUNICATIONS (DOMO PARABÓLICO)',
+    subsystemLabel: 'SINTONIZACIÓN DE TELECOMUNICACIONES DSN',
+    title: 'Osciloscopio DSN y Sintonizador de Onda',
+    shortLabel: 'TELECOM DSN',
     icon: '📡',
-    x: 1780,
-    y: 296,
-    standX: 1780,
-    standY: 332,
-    hint: 'Maniobra el SAT-02 INTI-SCIENCE y el SAT-01 AMARU-COMMS desde tu estación de ciencia.',
+    x: 1104,
+    y: 194,
+    standX: 1104,
+    standY: 260,
+    hint: 'Iguala frecuencia (Hz) y ganancia (%) respecto a la onda objetivo verde del enlace satelital.',
+  },
+  {
+    id: 'com_hga',
+    role: 'comms',
+    roomId: 'communications',
+    zoneName: 'COMMUNICATIONS (SEGUIMIENTO HGA NORESTE)',
+    subsystemLabel: 'ALINEACIÓN DE ANTENA DE ALTA GANANCIA',
+    title: 'Radar Polar de Seguimiento Antena HGA / DSN',
+    shortLabel: 'ANTENA ALTA GAN.',
+    icon: '📶',
+    x: 1244,
+    y: 156,
+    standX: 1244,
+    standY: 210,
+    hint: 'Rastrea el satélite en Acimut, Elevación y Polarización manteniendo SNR >= 90% hasta completar descarga.',
   },
 ]
 
-// Minijuego que abre cada consola al presionar "E" (2 minijuegos por personaje)
+// Mapeo estricto 1-a-1: 16 consolas físicas <-> 16 minijuegos únicos (4 por personaje)
 const CONSOLE_MINIGAME: Record<string, MinigameId> = {
-  // 🦅 CÓNDOR-4: Acoplamiento Espacial + Reencuentro Cometa
+  // 🦅 CÓNDOR-4 (4)
   dir_orbit: 'dock',
-  dir_engine: 'dock',
   dir_shield: 'comet',
-  // 🦙 ALPACA-1: Distribución Eléctrica + Soporte Vital O2
+  dir_gyro: 'gyro',
+  dir_engine: 'debris',
+  // 🦙 ALPACA-1 (4)
   eng_solar: 'eps',
-  eng_switch: 'eps',
-  eng_cool: 'eps',
   eng_o2: 'eclss',
-  // 🐆 PUMA-3: Aterrizaje Planetario + Navegación Orbital (SAT-02 INTI-SCIENCE)
+  eng_cool: 'reactor',
+  eng_pcb: 'pcb',
+  // 🐆 PUMA-3 (4)
   sci_scan: 'lander',
-  sci_holo: 'lander',
   sat_ctrl_2: 'nav',
-  sci_lab: 'nav',
-  // 🐍 SERPIENTE-2: Reparación Telecom + Ciberdefensa Satelital (+ SAT-01 AMARU-COMMS)
+  sci_lab: 'spectro',
+  sci_thermal: 'thermal',
+  // 🐍 SERPIENTE-2 (4)
   com_tx: 'telecom',
-  com_align: 'cyber',
-  com_filter: 'cyber',
-  sat_ctrl_1: 'nav',
+  sat_ctrl_1: 'cyber',
+  com_hga: 'hga',
+  com_decrypt: 'decrypt',
 }
 
-// Consolas cuyas tareas se completan al ganar cada minijuego
-const MINIGAME_CONSOLES: Record<MinigameId, string[]> = {
-  dock: ['dir_orbit', 'dir_engine'],
-  comet: ['dir_shield'],
-  eps: ['eng_solar', 'eng_switch', 'eng_cool'],
-  eclss: ['eng_o2'],
-  lander: ['sci_scan', 'sci_holo'],
-  nav: ['sat_ctrl_1', 'sat_ctrl_2', 'sci_lab'],
-  telecom: ['com_tx'],
-  cyber: ['com_align', 'com_filter'],
+interface UniqueMinigameDef {
+  game: MinigameId
+  role: RoleId
+  primaryConsoleId: string
+  title: string
+  threatTitle: string
+  actionHint: string
+  quadrantTag: string
+  metricLabel: string
+}
+
+const UNIQUE_MINIGAME_DEFS: Record<MinigameId, UniqueMinigameDef> = {
+  dock: {
+    game: 'dock',
+    role: 'director',
+    primaryConsoleId: 'dir_orbit',
+    title: 'Acoplamiento Espacial APAS',
+    threatTitle: 'Cápsula deriva · Órbita -1.0%/s',
+    actionHint: 'Cápsula desalineada en APAS — Ve a corregir el acoplamiento orbital',
+    quadrantTag: 'GROUND SEG',
+    metricLabel: 'ÓRBITA',
+  },
+  comet: {
+    game: 'comet',
+    role: 'director',
+    primaryConsoleId: 'dir_shield',
+    title: 'Defensa Orbital / Meteoritos',
+    threatTitle: 'Meteoritos activos · Casco -1.2%/s',
+    actionHint: 'Enjambre de meteoritos entrante — Ve a interceptar desde la torreta',
+    quadrantTag: 'GROUND SEG',
+    metricLabel: 'CASCO',
+  },
+  gyro: {
+    game: 'gyro',
+    role: 'director',
+    primaryConsoleId: 'dir_gyro',
+    title: 'Calibración Giroscopio 3D ADCS',
+    threatTitle: 'Par multieje ADCS · Órbita -1.0%/s',
+    actionHint: 'Giroscopio ADCS fuera de eje — Ve a estabilizar los volantes CMG',
+    quadrantTag: 'LAUNCH SEG',
+    metricLabel: 'ACTITUD',
+  },
+  debris: {
+    game: 'debris',
+    role: 'director',
+    primaryConsoleId: 'dir_engine',
+    title: 'Eyección Escombros Kessler',
+    threatTitle: 'Nube Kessler · Casco -1.3%/s',
+    actionHint: 'Basura espacial en corredor — Ve a activar el radar y escudo deflector',
+    quadrantTag: 'ENGINE ROOM',
+    metricLabel: 'CASCO',
+  },
+  eps: {
+    game: 'eps',
+    role: 'engineer',
+    primaryConsoleId: 'eng_solar',
+    title: 'Distribución Eléctrica EPS',
+    threatTitle: 'Eclipse solar · Batería -1.5%/s',
+    actionHint: 'Eclipse Solar drenando batería — Ve a balancear los generadores G1/G2/G3',
+    quadrantTag: 'POWER MGD',
+    metricLabel: 'BATERÍA',
+  },
+  eclss: {
+    game: 'eclss',
+    role: 'engineer',
+    primaryConsoleId: 'eng_o2',
+    title: 'Soporte Vital O2 / CO2',
+    threatTitle: 'CO2 alto · O2 baja -1.5%/s',
+    actionHint: 'Concentración de CO2 elevada — Ve a purificar O2 y sellar presurización',
+    quadrantTag: 'LIFE SUPPORT',
+    metricLabel: 'OXÍGENO',
+  },
+  reactor: {
+    game: 'reactor',
+    role: 'engineer',
+    primaryConsoleId: 'eng_cool',
+    title: 'Refrigeración de Reactor NH3',
+    threatTitle: 'Sobrecalentamiento · Batería -1.2%/s',
+    actionHint: 'Núcleos térmicos >750°C — Ve a bombear refrigerante NH3 al reactor',
+    quadrantTag: 'REACTOR CORE',
+    metricLabel: 'NÚCLEO',
+  },
+  pcb: {
+    game: 'pcb',
+    role: 'engineer',
+    primaryConsoleId: 'eng_pcb',
+    title: 'Reparación de Circuitos PCB',
+    threatTitle: 'Bus PCB en corto · Batería -1.4%/s',
+    actionHint: 'Cortocircuito en bus maestro — Ve a puentear capacitores y disyuntores PCB',
+    quadrantTag: 'ENGINE BAY',
+    metricLabel: 'BUSES',
+  },
+  lander: {
+    game: 'lander',
+    role: 'science',
+    primaryConsoleId: 'sci_scan',
+    title: 'Sonda Planetaria PUMA-3',
+    threatTitle: 'Sonda descendiendo (500m → 0m)',
+    actionHint: 'Sonda científica en caída libre — Ve a encender retropropulsores de aterrizaje',
+    quadrantTag: 'USER SEG',
+    metricLabel: 'ALTITUD',
+  },
+  nav: {
+    game: 'nav',
+    role: 'science',
+    primaryConsoleId: 'sat_ctrl_2',
+    title: 'Órbita SAT-02 INTI-SCIENCE',
+    threatTitle: 'SAT-02 fuera de órbita · Señal ↓',
+    actionHint: 'SAT-02 INTI-SCIENCE desviado — Ve a ejecutar maniobra de transferencia Hohmann',
+    quadrantTag: 'USER SEG',
+    metricLabel: 'SAT-02',
+  },
+  spectro: {
+    game: 'spectro',
+    role: 'science',
+    primaryConsoleId: 'sci_lab',
+    title: 'Espectrometría de Masas Glaciar',
+    threatTitle: 'Buffer análisis m/z ↑ · Muestras',
+    actionHint: 'Muestras glaciares sin sintonizar — Ve a capturar los picos espectrales',
+    quadrantTag: 'LABORATORY',
+    metricLabel: 'BUFFER',
+  },
+  thermal: {
+    game: 'thermal',
+    role: 'science',
+    primaryConsoleId: 'sci_thermal',
+    title: 'Telemetría Multiespectral IR/UV',
+    threatTitle: 'Anomalía coronal · Señal ↓',
+    actionHint: 'Anomalías térmicas solares sin enfoque — Ve al sensor IR/UV a escanear',
+    quadrantTag: 'LAUNCH LAB',
+    metricLabel: 'ÓPTICA',
+  },
+  telecom: {
+    game: 'telecom',
+    role: 'comms',
+    primaryConsoleId: 'com_tx',
+    title: 'Reparación Telecom DSN',
+    threatTitle: 'Antena desfasada · Buffer ↑ 100%',
+    actionHint: 'Enlace DSN desfasado y buffer llenándose — Ve a sintonizar frecuencia y ganancia',
+    quadrantTag: 'COMMS DSN',
+    metricLabel: 'BUFFER',
+  },
+  cyber: {
+    game: 'cyber',
+    role: 'comms',
+    primaryConsoleId: 'sat_ctrl_1',
+    title: 'Ciberdefensa Firewall 8080',
+    threatTitle: 'Hackeo puerto 8080 · Señal ↓',
+    actionHint: 'Intrusión activa en puerto 8080 — Ve a filtrar tramas maliciosas en firewall',
+    quadrantTag: 'SPACE SEG',
+    metricLabel: 'SEÑAL',
+  },
+  hga: {
+    game: 'hga',
+    role: 'comms',
+    primaryConsoleId: 'com_hga',
+    title: 'Alineación Antena Alta Ganancia',
+    threatTitle: 'Satélite sin lock HGA · Buffer ↑',
+    actionHint: 'Pérdida de haz Ka en antena HGA — Ve a fijar azimut, elevación y polarización',
+    quadrantTag: 'COMMS HGA',
+    metricLabel: 'SNR HGA',
+  },
+  decrypt: {
+    game: 'decrypt',
+    role: 'comms',
+    primaryConsoleId: 'com_decrypt',
+    title: 'Desencriptación Cuántica CRC',
+    threatTitle: 'Paquetes corruptos · Señal -1.4%/s',
+    actionHint: 'Rayos cósmicos corrompen matriz CRC — Ve a reparar bits de paridad cuántica',
+    quadrantTag: 'SPACE CRC',
+    metricLabel: 'CRC RED',
+  },
+}
+
+interface ActiveThreat {
+  id: string
+  game: MinigameId
+  role: RoleId
+  consoleId: string
+  title: string
+  urgency: number
+  probeAlt: number
+  startedAt: number
+  attempt?: number
+  seed?: number
 }
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
 
-function isPointInsideWalkableGeometry(px: number, py: number): boolean {
-  const margin = 16
+const DIRECTION_ARROWS_8 = ['➡', '↘', '⬇', '↙', '⬅', '↖', '⬆', '↗'] as const
+function getDirectionArrow(dx: number, dy: number): string {
+  const angle = Math.atan2(dy, dx)
+  const octant = Math.round((8 * angle) / (2 * Math.PI) + 8) % 8
+  return DIRECTION_ARROWS_8[octant] ?? '➡'
+}
+
+type SolidObstacle =
+  | {
+      id: string
+      roomId: RoomId
+      kind: 'rect'
+      x: number
+      y: number
+      w: number
+      h: number
+      shadow?: boolean
+    }
+  | {
+      id: string
+      roomId: RoomId
+      kind: 'circle'
+      cx: number
+      cy: number
+      r: number
+      shadow?: boolean
+    }
+  | {
+      id: string
+      roomId: RoomId
+      kind: 'ellipse'
+      cx: number
+      cy: number
+      rx: number
+      ry: number
+      shadow?: boolean
+    }
+
+const PLAYER_COLLISION_RADIUS = 11
+
+// Obstáculos sólidos con masa física real para las 9 salas de la estación
+const SOLID_OBSTACLES: SolidObstacle[] = [
+  // a) GROUND SEGMENT
+  { id: 'gs_rack_nw', roomId: 'ground_segment', kind: 'rect', x: 932, y: 584, w: 38, h: 76 },
+  { id: 'gs_rack_sw', roomId: 'ground_segment', kind: 'rect', x: 932, y: 780, w: 38, h: 114 },
+  { id: 'gs_rack_e', roomId: 'ground_segment', kind: 'rect', x: 1394, y: 686, w: 38, h: 134 },
+  { id: 'gs_bookshelf', roomId: 'ground_segment', kind: 'rect', x: 988, y: 576, w: 52, h: 42 },
+  { id: 'gs_holo', roomId: 'ground_segment', kind: 'ellipse', cx: 1184, cy: 630, rx: 32, ry: 17 },
+  { id: 'gs_ring_desk', roomId: 'ground_segment', kind: 'ellipse', cx: 1184, cy: 796, rx: 86, ry: 62 },
+  { id: 'gs_mon_sw', roomId: 'ground_segment', kind: 'rect', x: 978, y: 888, w: 44, h: 36 },
+  { id: 'gs_chair_sw', roomId: 'ground_segment', kind: 'rect', x: 1024, y: 890, w: 32, h: 34 },
+
+  // b) LAUNCH SEGMENT
+  { id: 'ls_sim', roomId: 'launch_segment', kind: 'rect', x: 224, y: 514, w: 52, h: 44 },
+  { id: 'ls_bookshelf', roomId: 'launch_segment', kind: 'rect', x: 516, y: 516, w: 52, h: 44 },
+  { id: 'ls_capsules', roomId: 'launch_segment', kind: 'rect', x: 588, y: 518, w: 106, h: 76 },
+  { id: 'ls_shuttle_wings', roomId: 'launch_segment', kind: 'rect', x: 342, y: 610, w: 124, h: 140, shadow: false },
+  { id: 'ls_shuttle_nose', roomId: 'launch_segment', kind: 'rect', x: 466, y: 650, w: 78, h: 60, shadow: false },
+  { id: 'ls_tanks', roomId: 'launch_segment', kind: 'rect', x: 254, y: 784, w: 102, h: 88 },
+  { id: 'ls_robot_arm', roomId: 'launch_segment', kind: 'rect', x: 586, y: 798, w: 66, h: 48 },
+
+  // c) ENGINE ROOM
+  { id: 'er_turbine', roomId: 'engine_room', kind: 'rect', x: 264, y: 1148, w: 256, h: 110 },
+  { id: 'er_monitor', roomId: 'engine_room', kind: 'rect', x: 612, y: 1094, w: 44, h: 36 },
+  { id: 'er_chair', roomId: 'engine_room', kind: 'rect', x: 618, y: 1140, w: 32, h: 36 },
+
+  // d) SPACE SEGMENT
+  { id: 'ss_left_console', roomId: 'space_segment', kind: 'rect', x: 252, y: 174, w: 62, h: 86 },
+  { id: 'ss_center_console', roomId: 'space_segment', kind: 'ellipse', cx: 448, cy: 228, rx: 56, ry: 36 },
+  { id: 'ss_cubesat_console', roomId: 'space_segment', kind: 'rect', x: 606, y: 166, w: 96, h: 56 },
+  { id: 'ss_sat1_hub', roomId: 'space_segment', kind: 'rect', x: 298, y: 274, w: 128, h: 44 },
+  { id: 'ss_rack_mid', roomId: 'space_segment', kind: 'rect', x: 516, y: 298, w: 32, h: 48 },
+  { id: 'ss_spec_mid', roomId: 'space_segment', kind: 'rect', x: 568, y: 308, w: 48, h: 36 },
+  { id: 'ss_rack_e', roomId: 'space_segment', kind: 'rect', x: 694, y: 296, w: 32, h: 48 },
+
+  // e) COMMUNICATIONS
+  { id: 'cm_dsn_desk', roomId: 'communications', kind: 'ellipse', cx: 1104, cy: 194, rx: 76, ry: 42 },
+  { id: 'cm_rack_nw', roomId: 'communications', kind: 'rect', x: 898, y: 134, w: 32, h: 48 },
+  { id: 'cm_ant_nw', roomId: 'communications', kind: 'rect', x: 944, y: 138, w: 32, h: 40 },
+  { id: 'cm_crypto_ne', roomId: 'communications', kind: 'rect', x: 1226, y: 138, w: 36, h: 36 },
+  { id: 'cm_rack_ne', roomId: 'communications', kind: 'rect', x: 1276, y: 134, w: 32, h: 48 },
+  { id: 'cm_mon_sw', roomId: 'communications', kind: 'rect', x: 904, y: 300, w: 56, h: 36 },
+  { id: 'cm_spec_se', roomId: 'communications', kind: 'rect', x: 1226, y: 304, w: 48, h: 36 },
+
+  // f) USER SEGMENT
+  { id: 'us_bio_tubes', roomId: 'user_segment', kind: 'rect', x: 1545, y: 142, w: 128, h: 104 },
+  { id: 'us_curve_console', roomId: 'user_segment', kind: 'rect', x: 1686, y: 128, w: 162, h: 66 },
+  { id: 'us_holo_pod', roomId: 'user_segment', kind: 'rect', x: 1898, y: 224, w: 76, h: 56 },
+  { id: 'us_sat2_hub', roomId: 'user_segment', kind: 'rect', x: 1558, y: 286, w: 140, h: 42 },
+  { id: 'us_incubator', roomId: 'user_segment', kind: 'rect', x: 1944, y: 298, w: 36, h: 44 },
+  { id: 'us_glacier', roomId: 'user_segment', kind: 'rect', x: 1994, y: 298, w: 48, h: 44 },
+
+  // g) LABORATORY
+  { id: 'lb_hood', roomId: 'laboratory', kind: 'rect', x: 1618, y: 512, w: 118, h: 34 },
+  { id: 'lb_desk', roomId: 'laboratory', kind: 'rect', x: 1846, y: 532, w: 58, h: 42 },
+  { id: 'lb_rack_e', roomId: 'laboratory', kind: 'rect', x: 1912, y: 558, w: 96, h: 62 },
+  { id: 'lb_incubator', roomId: 'laboratory', kind: 'rect', x: 1768, y: 652, w: 36, h: 44 },
+  { id: 'lb_glacier', roomId: 'laboratory', kind: 'rect', x: 1922, y: 646, w: 48, h: 44 },
+
+  // h) POWER MGD & REACTOR
+  { id: 'pr_rack_w1', roomId: 'power_reactor', kind: 'rect', x: 1604, y: 944, w: 28, h: 52 },
+  { id: 'pr_robot', roomId: 'power_reactor', kind: 'rect', x: 1608, y: 1012, w: 26, h: 28 },
+  { id: 'pr_reactor', roomId: 'power_reactor', kind: 'circle', cx: 1712, cy: 972, r: 46 },
+  { id: 'pr_console', roomId: 'power_reactor', kind: 'rect', x: 1772, y: 868, w: 128, h: 78 },
+  { id: 'pr_crystals', roomId: 'power_reactor', kind: 'rect', x: 1924, y: 884, w: 174, h: 86 },
+  { id: 'pr_cabinet', roomId: 'power_reactor', kind: 'rect', x: 1756, y: 1068, w: 40, h: 44 },
+  { id: 'pr_battery', roomId: 'power_reactor', kind: 'rect', x: 1814, y: 1072, w: 48, h: 32 },
+  { id: 'pr_toolbox', roomId: 'power_reactor', kind: 'rect', x: 1876, y: 1072, w: 36, h: 26 },
+  { id: 'pr_osc', roomId: 'power_reactor', kind: 'rect', x: 1936, y: 1058, w: 48, h: 36 },
+  { id: 'pr_thermal', roomId: 'power_reactor', kind: 'rect', x: 2028, y: 1060, w: 48, h: 28 },
+
+  // i) LIFE SUPPORT & ELECTRICAL
+  { id: 'le_divider_top', roomId: 'life_electrical', kind: 'rect', x: 1240, y: 1120, w: 16, h: 96, shadow: false },
+  { id: 'le_divider_bot', roomId: 'life_electrical', kind: 'rect', x: 1240, y: 1312, w: 16, h: 96, shadow: false },
+  { id: 'le_o2_tanks', roomId: 'life_electrical', kind: 'rect', x: 916, y: 1130, w: 126, h: 110 },
+  { id: 'le_bio_pod', roomId: 'life_electrical', kind: 'rect', x: 1054, y: 1130, w: 56, h: 106 },
+  { id: 'le_master_sw', roomId: 'life_electrical', kind: 'rect', x: 1310, y: 1132, w: 148, h: 92 },
+  { id: 'le_incubator', roomId: 'life_electrical', kind: 'rect', x: 908, y: 1332, w: 36, h: 44 },
+  { id: 'le_glacier', roomId: 'life_electrical', kind: 'rect', x: 1134, y: 1332, w: 48, h: 44 },
+  { id: 'le_cabinet', roomId: 'life_electrical', kind: 'rect', x: 1278, y: 1332, w: 40, h: 44 },
+  { id: 'le_bunk', roomId: 'life_electrical', kind: 'rect', x: 1416, y: 1340, w: 52, h: 36 },
+]
+
+function isPointInsideSolidObstacle(
+  px: number,
+  py: number,
+  radius = PLAYER_COLLISION_RADIUS
+): boolean {
+  for (const ob of SOLID_OBSTACLES) {
+    if (ob.kind === 'rect') {
+      if (
+        px >= ob.x - radius &&
+        px <= ob.x + ob.w + radius &&
+        py >= ob.y - radius &&
+        py <= ob.y + ob.h + radius
+      ) {
+        return true
+      }
+    } else if (ob.kind === 'circle') {
+      const lim = ob.r + radius
+      const dx = px - ob.cx
+      const dy = py - ob.cy
+      if (dx * dx + dy * dy < lim * lim) {
+        return true
+      }
+    } else {
+      const rx = ob.rx + radius
+      const ry = ob.ry + radius
+      const nx = (px - ob.cx) / rx
+      const ny = (py - ob.cy) / ry
+      if (nx * nx + ny * ny < 1) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+function drawObstacleFloorShadow(ctx: CanvasRenderingContext2D, ob: SolidObstacle) {
+  if (ob.shadow === false) return
+  ctx.save()
+  ctx.fillStyle = 'rgba(2, 5, 14, 0.44)'
+  ctx.beginPath()
+  if (ob.kind === 'rect') {
+    ctx.ellipse(
+      ob.x + ob.w / 2,
+      ob.y + ob.h + 1,
+      ob.w * 0.48 + 3,
+      Math.max(5, Math.min(13, ob.h * 0.2)),
+      0,
+      0,
+      Math.PI * 2
+    )
+  } else if (ob.kind === 'circle') {
+    ctx.ellipse(ob.cx, ob.cy + ob.r * 0.88, ob.r * 0.96, ob.r * 0.34, 0, 0, Math.PI * 2)
+  } else {
+    ctx.ellipse(
+      ob.cx,
+      ob.cy + ob.ry * 0.85,
+      ob.rx * 0.96,
+      Math.max(8, ob.ry * 0.34),
+      0,
+      0,
+      Math.PI * 2
+    )
+  }
+  ctx.fill()
+  ctx.restore()
+}
+
+function isPointInsideWalkableGeometry(
+  px: number,
+  py: number,
+  checkObstacles = true
+): boolean {
+  if (checkObstacles && isPointInsideSolidObstacle(px, py)) {
+    return false
+  }
+  const margin = 14
   for (const rm of STATION_ROOMS) {
     const f = rm.floor
     if (
@@ -659,10 +1063,36 @@ function isPointInsideWalkableGeometry(px: number, py: number): boolean {
       return true
     }
   }
+  const inAnyRoomHull = findRoomAtPoint(px, py) !== null
   for (const cor of CORRIDORS) {
     const r = cor.rect
-    if (px >= r.x + 8 && px <= r.x + r.w - 8 && py >= r.y + 8 && py <= r.y + r.h - 8) {
-      return true
+    if (cor.orientation === 'horizontal') {
+      if (px >= r.x && px <= r.x + r.w && py >= r.y + 10 && py <= r.y + r.h - 10) {
+        return true
+      }
+      // Bocas abiertas hacia las habitaciones conectadas (elimina toda pared invisible en puertas)
+      if (
+        inAnyRoomHull &&
+        px >= r.x - 30 &&
+        px <= r.x + r.w + 30 &&
+        py >= r.y + 12 &&
+        py <= r.y + r.h - 12
+      ) {
+        return true
+      }
+    } else {
+      if (px >= r.x + 10 && px <= r.x + r.w - 10 && py >= r.y && py <= r.y + r.h) {
+        return true
+      }
+      if (
+        inAnyRoomHull &&
+        px >= r.x + 12 &&
+        px <= r.x + r.w - 12 &&
+        py >= r.y - 30 &&
+        py <= r.y + r.h + 30
+      ) {
+        return true
+      }
     }
   }
   return false
@@ -674,6 +1104,75 @@ function findRoomAtPoint(px: number, py: number): StationRoom | null {
     if (px >= h.x && px <= h.x + h.w && py >= h.y && py <= h.y + h.h) {
       return rm
     }
+  }
+  return null
+}
+
+function deriveStationEvent(
+  threats: Pick<ActiveThreat, 'game'>[],
+  defaultAmbient: StationEventId
+): StationEventId {
+  const gameSet = new Set(threats.map((t) => t.game))
+  if (gameSet.has('eps') || gameSet.has('reactor') || gameSet.has('pcb')) {
+    return 'eclipse'
+  }
+  if (gameSet.has('eclss')) {
+    return 'o2_leak'
+  }
+  if (
+    defaultAmbient === 'solar_storm' ||
+    gameSet.has('cyber') ||
+    gameSet.has('decrypt') ||
+    gameSet.has('comet') ||
+    gameSet.has('debris') ||
+    gameSet.has('telecom') ||
+    gameSet.has('hga') ||
+    gameSet.has('nav') ||
+    gameSet.has('gyro') ||
+    gameSet.has('thermal')
+  ) {
+    return 'solar_storm'
+  }
+  return 'none'
+}
+
+function findCorridorAtPoint(px: number, py: number): CorridorSegment | null {
+  for (const cor of CORRIDORS) {
+    const r = cor.rect
+    if (px >= r.x - 20 && px <= r.x + r.w + 20 && py >= r.y - 20 && py <= r.y + r.h + 20) {
+      return cor
+    }
+  }
+  return null
+}
+
+function findNearestWalkablePoint(px: number, py: number): { x: number; y: number } | null {
+  if (isPointInsideWalkableGeometry(px, py)) return { x: px, y: py }
+  const rm = findRoomAtPoint(px, py)
+  let baseX = px
+  let baseY = py
+  if (rm) {
+    baseX = clamp(px, rm.floor.x + 18, rm.floor.x + rm.floor.w - 18)
+    baseY = clamp(py, rm.floor.y + 18, rm.floor.y + rm.floor.h - 18)
+  } else {
+    const cor = findCorridorAtPoint(px, py)
+    if (!cor) return null
+    baseX = clamp(px, cor.rect.x + 14, cor.rect.x + cor.rect.w - 14)
+    baseY = clamp(py, cor.rect.y + 14, cor.rect.y + cor.rect.h - 14)
+  }
+  if (isPointInsideWalkableGeometry(baseX, baseY)) return { x: baseX, y: baseY }
+  for (const dist of [14, 28, 42, 58, 76, 96, 120]) {
+    for (let i = 0; i < 16; i++) {
+      const ang = (i * Math.PI * 2) / 16
+      const tx = baseX + Math.cos(ang) * dist
+      const ty = baseY + Math.sin(ang) * dist
+      if (isPointInsideWalkableGeometry(tx, ty)) {
+        return { x: tx, y: ty }
+      }
+    }
+  }
+  if (rm && isPointInsideWalkableGeometry(rm.navX, rm.navY)) {
+    return { x: rm.navX, y: rm.navY }
   }
   return null
 }
@@ -690,7 +1189,7 @@ interface QuadrantDef {
   roomsSummary: string
   entryPoint: { x: number; y: number }
   cameraFocus: { x: number; y: number; zoom: number }
-  miniRooms: { x: number; y: number; w: number; h: number; accent?: boolean }[]
+  miniRooms: { roomId: RoomId; x: number; y: number; w: number; h: number; accent?: boolean }[]
 }
 
 const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
@@ -699,12 +1198,12 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
     sectorNum: 1,
     title: 'CUADRANTE 1 · MANDO Y HANGAR',
     roomsSummary: 'GROUND · LAUNCH · ENGINE',
-    entryPoint: { x: 1184, y: 848 },
+    entryPoint: { x: 1184, y: 692 },
     cameraFocus: { x: 1184, y: 736, zoom: 0.72 },
     miniRooms: [
-      { x: 42, y: 12, w: 50, h: 28, accent: true }, // Ground
-      { x: 8, y: 8, w: 28, h: 28 }, // Launch
-      { x: 10, y: 40, w: 30, h: 18 }, // Engine
+      { roomId: 'ground_segment', x: 42, y: 12, w: 50, h: 28, accent: true }, // Ground
+      { roomId: 'launch_segment', x: 8, y: 8, w: 28, h: 28 }, // Launch
+      { roomId: 'engine_room', x: 10, y: 40, w: 30, h: 18 }, // Engine
     ],
   },
   engineer: {
@@ -712,11 +1211,11 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
     sectorNum: 2,
     title: 'CUADRANTE 2 · POTENCIA Y SOPORTE O2',
     roomsSummary: 'POWER · LIFE SUPPORT · ELEC',
-    entryPoint: { x: 1760, y: 1012 },
+    entryPoint: { x: 1836, y: 1004 },
     cameraFocus: { x: 1856, y: 960, zoom: 0.72 },
     miniRooms: [
-      { x: 38, y: 10, w: 54, h: 28, accent: true }, // Power/Reactor
-      { x: 12, y: 38, w: 54, h: 20 }, // Life Support + Electrical
+      { roomId: 'power_reactor', x: 38, y: 10, w: 54, h: 28, accent: true }, // Power/Reactor
+      { roomId: 'life_electrical', x: 12, y: 38, w: 54, h: 20 }, // Life Support + Electrical
     ],
   },
   science: {
@@ -727,8 +1226,8 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
     entryPoint: { x: 1792, y: 244 },
     cameraFocus: { x: 1792, y: 224, zoom: 0.74 },
     miniRooms: [
-      { x: 10, y: 6, w: 56, h: 24, accent: true }, // User Segment
-      { x: 16, y: 33, w: 46, h: 20 }, // Laboratory
+      { roomId: 'user_segment', x: 10, y: 6, w: 56, h: 24, accent: true }, // User Segment
+      { roomId: 'laboratory', x: 16, y: 33, w: 46, h: 20 }, // Laboratory
     ],
   },
   comms: {
@@ -739,8 +1238,8 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
     entryPoint: { x: 512, y: 244 },
     cameraFocus: { x: 800, y: 224, zoom: 0.58 },
     miniRooms: [
-      { x: 6, y: 14, w: 44, h: 36, accent: true }, // Space Segment
-      { x: 54, y: 14, w: 40, h: 36 }, // Communications
+      { roomId: 'space_segment', x: 6, y: 14, w: 44, h: 36, accent: true }, // Space Segment
+      { roomId: 'communications', x: 54, y: 14, w: 40, h: 36 }, // Communications
     ],
   },
 }
@@ -749,6 +1248,7 @@ const MINIMAP_SPATIAL_ORDER: QuadrantId[] = ['comms', 'science', 'director', 'en
 
 interface BacklogMissionDef {
   id: string
+  game: MinigameId
   role: RoleId
   consoleIds: string[]
   title: string
@@ -756,61 +1256,137 @@ interface BacklogMissionDef {
 }
 
 const MISSION_BACKLOG: BacklogMissionDef[] = [
-  {
-    id: 'm_sci_lander',
-    role: 'science',
-    consoleIds: ['sci_scan', 'sci_holo'],
-    title: 'Aterrizaje Sonda y Muestras Planetarias',
-    quadrantTag: 'USER SEG',
-  },
-  {
-    id: 'm_sci_nav',
-    role: 'science',
-    consoleIds: ['sat_ctrl_2', 'sci_lab'],
-    title: 'Navegación Orbital SAT-02 INTI-SCIENCE',
-    quadrantTag: 'USER / LAB',
-  },
-  {
-    id: 'm_com_telecom',
-    role: 'comms',
-    consoleIds: ['com_tx'],
-    title: 'Reparación Telecom y Enlace DSN',
-    quadrantTag: 'COMMS',
-  },
-  {
-    id: 'm_com_cyber',
-    role: 'comms',
-    consoleIds: ['com_align', 'com_filter', 'sat_ctrl_1'],
-    title: 'Ciberdefensa Satelital y SAT-01',
-    quadrantTag: 'SPACE SEG',
-  },
-  {
-    id: 'm_eng_eps',
-    role: 'engineer',
-    consoleIds: ['eng_switch', 'eng_solar', 'eng_cool'],
-    title: 'Distribución Eléctrica EPS / Reactor',
-    quadrantTag: 'POWER / ELEC',
-  },
-  {
-    id: 'm_eng_eclss',
-    role: 'engineer',
-    consoleIds: ['eng_o2'],
-    title: 'Soporte Vital O2 (Tanques Azules)',
-    quadrantTag: 'LIFE SUPPORT',
-  },
+  // 🦅 CÓNDOR-4 (4)
   {
     id: 'm_dir_dock',
+    game: 'dock',
     role: 'director',
-    consoleIds: ['dir_orbit', 'dir_engine'],
-    title: 'Acoplamiento APAS / Control Orbital',
+    consoleIds: ['dir_orbit'],
+    title: 'Acoplamiento Espacial APAS',
     quadrantTag: 'GROUND SEG',
   },
   {
     id: 'm_dir_comet',
+    game: 'comet',
     role: 'director',
     consoleIds: ['dir_shield'],
-    title: 'Reencuentro Cometa / Escudo Hangar',
+    title: 'Defensa Cometa y Meteoritos',
+    quadrantTag: 'GROUND SEG',
+  },
+  {
+    id: 'm_dir_gyro',
+    game: 'gyro',
+    role: 'director',
+    consoleIds: ['dir_gyro'],
+    title: 'Calibración Giroscopio 3D ADCS',
     quadrantTag: 'LAUNCH SEG',
+  },
+  {
+    id: 'm_dir_debris',
+    game: 'debris',
+    role: 'director',
+    consoleIds: ['dir_engine'],
+    title: 'Eyección Escombros Kessler',
+    quadrantTag: 'ENGINE ROOM',
+  },
+  // 🦙 ALPACA-1 (4)
+  {
+    id: 'm_eng_eps',
+    game: 'eps',
+    role: 'engineer',
+    consoleIds: ['eng_solar'],
+    title: 'Distribución Eléctrica EPS',
+    quadrantTag: 'POWER MGD',
+  },
+  {
+    id: 'm_eng_eclss',
+    game: 'eclss',
+    role: 'engineer',
+    consoleIds: ['eng_o2'],
+    title: 'Soporte Vital ECLSS (O2 / CO2)',
+    quadrantTag: 'LIFE SUPPORT',
+  },
+  {
+    id: 'm_eng_reactor',
+    game: 'reactor',
+    role: 'engineer',
+    consoleIds: ['eng_cool'],
+    title: 'Refrigeración del Reactor NH3',
+    quadrantTag: 'REACTOR CORE',
+  },
+  {
+    id: 'm_eng_pcb',
+    game: 'pcb',
+    role: 'engineer',
+    consoleIds: ['eng_pcb'],
+    title: 'Reparación Circuitos PCB',
+    quadrantTag: 'ENGINE BAY',
+  },
+  // 🐆 PUMA-3 (4)
+  {
+    id: 'm_sci_lander',
+    game: 'lander',
+    role: 'science',
+    consoleIds: ['sci_scan'],
+    title: 'Aterrizaje Sonda Planetaria',
+    quadrantTag: 'USER SEG',
+  },
+  {
+    id: 'm_sci_nav',
+    game: 'nav',
+    role: 'science',
+    consoleIds: ['sat_ctrl_2'],
+    title: 'Navegación Orbital Hohmann SAT-02',
+    quadrantTag: 'USER SEG',
+  },
+  {
+    id: 'm_sci_spectro',
+    game: 'spectro',
+    role: 'science',
+    consoleIds: ['sci_lab'],
+    title: 'Espectrometría de Masas Glaciar',
+    quadrantTag: 'LABORATORY',
+  },
+  {
+    id: 'm_sci_thermal',
+    game: 'thermal',
+    role: 'science',
+    consoleIds: ['sci_thermal'],
+    title: 'Telemetría Multiespectral IR/UV',
+    quadrantTag: 'LAUNCH LAB',
+  },
+  // 🐍 SERPIENTE-2 (4)
+  {
+    id: 'm_com_telecom',
+    game: 'telecom',
+    role: 'comms',
+    consoleIds: ['com_tx'],
+    title: 'Reparación Telecom y Enlace DSN',
+    quadrantTag: 'COMMS DSN',
+  },
+  {
+    id: 'm_com_cyber',
+    game: 'cyber',
+    role: 'comms',
+    consoleIds: ['sat_ctrl_1'],
+    title: 'Ciberdefensa Firewall 8080',
+    quadrantTag: 'SPACE SEG',
+  },
+  {
+    id: 'm_com_hga',
+    game: 'hga',
+    role: 'comms',
+    consoleIds: ['com_hga'],
+    title: 'Alineación Antena Alta Ganancia DSN',
+    quadrantTag: 'COMMS HGA',
+  },
+  {
+    id: 'm_com_decrypt',
+    game: 'decrypt',
+    role: 'comms',
+    consoleIds: ['com_decrypt'],
+    title: 'Desencriptación Cuántica CRC',
+    quadrantTag: 'SPACE CRC',
   },
 ]
 
@@ -843,33 +1419,69 @@ interface NavNode {
 const NAV_NODES: Record<string, NavNode> = {
   ground_segment: {
     id: 'ground_segment',
+    x: 1104,
+    y: 692,
+    neighbors: ['j_west', 'j_north', 'j_ground_ne', 'j_ground_sw'],
+  },
+  j_ground_ne: {
+    id: 'j_ground_ne',
+    x: 1324,
+    y: 656,
+    neighbors: ['ground_segment', 'j_east_lab', 'j_ground_se'],
+  },
+  j_ground_se: {
+    id: 'j_ground_se',
+    x: 1324,
+    y: 880,
+    neighbors: ['j_ground_ne', 'j_east_pwr', 'j_ground_s'],
+  },
+  j_ground_sw: {
+    id: 'j_ground_sw',
+    x: 1068,
+    y: 874,
+    neighbors: ['ground_segment', 'j_west', 'j_ground_s'],
+  },
+  j_ground_s: {
+    id: 'j_ground_s',
     x: 1184,
-    y: 752,
-    neighbors: ['j_west', 'j_north', 'j_east_lab', 'j_east_pwr', 'j_south'],
+    y: 888,
+    neighbors: ['j_ground_sw', 'j_ground_se', 'j_south'],
   },
   j_west: {
     id: 'j_west',
     x: 800,
     y: 720,
-    neighbors: ['ground_segment', 'launch_segment'],
+    neighbors: ['ground_segment', 'j_ground_sw', 'launch_segment'],
   },
   launch_segment: {
     id: 'launch_segment',
-    x: 512,
+    x: 608,
     y: 720,
-    neighbors: ['j_west', 'j_engine'],
+    neighbors: ['j_west', 'j_launch_south'],
+  },
+  j_launch_south: {
+    id: 'j_launch_south',
+    x: 480,
+    y: 804,
+    neighbors: ['launch_segment', 'j_engine'],
   },
   j_engine: {
     id: 'j_engine',
     x: 480,
     y: 992,
-    neighbors: ['launch_segment', 'engine_room'],
+    neighbors: ['j_launch_south', 'j_engine_entry'],
+  },
+  j_engine_entry: {
+    id: 'j_engine_entry',
+    x: 548,
+    y: 1116,
+    neighbors: ['j_engine', 'engine_room'],
   },
   engine_room: {
     id: 'engine_room',
-    x: 480,
-    y: 1216,
-    neighbors: ['j_engine'],
+    x: 548,
+    y: 1200,
+    neighbors: ['j_engine_entry'],
   },
   j_north: {
     id: 'j_north',
@@ -880,7 +1492,7 @@ const NAV_NODES: Record<string, NavNode> = {
   communications: {
     id: 'communications',
     x: 1104,
-    y: 240,
+    y: 266,
     neighbors: ['j_north', 'j_space'],
   },
   j_space: {
@@ -899,12 +1511,12 @@ const NAV_NODES: Record<string, NavNode> = {
     id: 'j_east_lab',
     x: 1504,
     y: 624,
-    neighbors: ['ground_segment', 'laboratory'],
+    neighbors: ['j_ground_ne', 'laboratory'],
   },
   laboratory: {
     id: 'laboratory',
-    x: 1792,
-    y: 624,
+    x: 1784,
+    y: 616,
     neighbors: ['j_east_lab', 'j_user'],
   },
   j_user: {
@@ -923,25 +1535,37 @@ const NAV_NODES: Record<string, NavNode> = {
     id: 'j_east_pwr',
     x: 1504,
     y: 880,
-    neighbors: ['ground_segment', 'power_reactor'],
+    neighbors: ['j_ground_se', 'j_pwr_nw'],
+  },
+  j_pwr_nw: {
+    id: 'j_pwr_nw',
+    x: 1648,
+    y: 880,
+    neighbors: ['j_east_pwr', 'j_pwr_sw'],
+  },
+  j_pwr_sw: {
+    id: 'j_pwr_sw',
+    x: 1648,
+    y: 1082,
+    neighbors: ['j_pwr_nw', 'power_reactor', 'j_eng_link'],
   },
   power_reactor: {
     id: 'power_reactor',
-    x: 1760,
-    y: 960,
-    neighbors: ['j_east_pwr', 'j_eng_link'],
+    x: 1836,
+    y: 1004,
+    neighbors: ['j_pwr_sw'],
   },
   j_eng_link: {
     id: 'j_eng_link',
     x: 1648,
     y: 1232,
-    neighbors: ['power_reactor', 'life_electrical'],
+    neighbors: ['j_pwr_sw', 'life_electrical'],
   },
   j_south: {
     id: 'j_south',
     x: 1184,
     y: 1000,
-    neighbors: ['ground_segment', 'life_electrical'],
+    neighbors: ['j_ground_s', 'life_electrical'],
   },
   life_electrical: {
     id: 'life_electrical',
@@ -1006,6 +1630,14 @@ function buildWaypointPath(
   }
 
   const waypoints: { x: number; y: number; consoleId?: string }[] = []
+  if (
+    startRoom &&
+    (!endRoom || startRoom.id !== endRoom.id) &&
+    NAV_NODES[startId] &&
+    Math.hypot(NAV_NODES[startId].x - sx, NAV_NODES[startId].y - sy) > 36
+  ) {
+    waypoints.push({ x: NAV_NODES[startId].x, y: NAV_NODES[startId].y })
+  }
   for (let i = 1; i < foundPath.length; i++) {
     const node = NAV_NODES[foundPath[i]]
     if (node) {
@@ -1082,452 +1714,6 @@ function createPixelGridSprite(
     painter(p, sctx)
   }
   return c
-}
-
-function drawHelmetDomeToCtx(
-  ctx: CanvasRenderingContext2D,
-  dx: number,
-  dy: number,
-  dw: number,
-  dh: number,
-  ringColor: string,
-  tintFill: string
-) {
-  ctx.fillStyle = ATLAS_OUTLINE
-  ctx.fillRect(dx + 1, dy - 1, dw - 2, 1)
-  ctx.fillRect(dx + 1, dy + dh, dw - 2, 1)
-  ctx.fillRect(dx - 1, dy + 1, 1, dh - 2)
-  ctx.fillRect(dx + dw, dy + 1, 1, dh - 2)
-  ctx.fillRect(dx, dy, 1, 1)
-  ctx.fillRect(dx + dw - 1, dy, 1, 1)
-  ctx.fillRect(dx, dy + dh - 1, 1, 1)
-  ctx.fillRect(dx + dw - 1, dy + dh - 1, 1, 1)
-
-  ctx.fillStyle = tintFill
-  ctx.fillRect(dx + 1, dy + 1, dw - 2, dh - 2)
-
-  ctx.fillStyle = ringColor
-  ctx.fillRect(dx + 2, dy, dw - 4, 1)
-  ctx.fillRect(dx + 2, dy + dh - 1, dw - 4, 1)
-  ctx.fillRect(dx, dy + 2, 1, dh - 4)
-  ctx.fillRect(dx + dw - 1, dy + 2, 1, dh - 4)
-  ctx.fillRect(dx + 1, dy + 1, 1, 1)
-  ctx.fillRect(dx + dw - 2, dy + 1, 1, 1)
-  ctx.fillRect(dx + 1, dy + dh - 2, 1, 1)
-  ctx.fillRect(dx + dw - 2, dy + dh - 2, 1, 1)
-
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(dx + 2, dy + 2, 4, 1)
-  ctx.fillRect(dx + 2, dy + 3, 2, 3)
-  ctx.fillStyle = 'rgba(224, 242, 254, 0.72)'
-  ctx.fillRect(dx + 3, dy + 6, 1, 2)
-  ctx.fillRect(dx + dw - 4, dy + dh - 4, 2, 1)
-}
-
-function paintAstronautPoseToAtlas(
-  ctx: CanvasRenderingContext2D,
-  role: RoleId,
-  poseKind: 'idle' | 'walk' | 'work',
-  poseIdx: number
-) {
-  const isWalking = poseKind === 'walk'
-  const isInteracting = poseKind === 'work'
-  const walkAngles = [0.7, 0.25, -0.7, -0.25]
-  const stride = isWalking ? walkAngles[poseIdx % 4] : 0
-  const walkBob = isWalking ? (poseIdx % 2 === 0 ? -1 : 0) : 0
-  const breath = (poseKind === 'idle' && poseIdx === 1 ? -1 : 0) + (isInteracting && poseIdx === 1 ? -1 : 0) + walkBob
-  const wavePhase = isWalking ? poseIdx * 1.3 : poseIdx * 1.7
-
-  // Sombra suave en suelo
-  ctx.fillStyle = 'rgba(2, 6, 16, 0.45)'
-  ctx.fillRect(-11, 13, 22, 4)
-  ctx.fillRect(-8, 12, 16, 6)
-
-  if (role === 'engineer') {
-    const legL = Math.round(stride * 3.5)
-    const legR = Math.round(-stride * 3.5)
-    const earTwitch = poseKind !== 'idle' && poseIdx % 2 === 1 ? -1 : 0
-
-    // Mochila de soporte vital con contorno oscuro
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-12, -12 + breath, 8, 17)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(-11, -11 + breath, 6, 15)
-    ctx.fillStyle = '#94a3b8'
-    ctx.fillRect(-10, -10 + breath, 4, 12)
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(-9, -8 + breath, 2, 3)
-    ctx.fillStyle = poseIdx % 2 === 0 ? '#4ade80' : '#16a34a'
-    ctx.fillRect(-9, -3 + breath, 2, 2)
-
-    // Colita de alpaca blanca contorneada
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-13, 0 + breath, 5, 6)
-    ctx.fillStyle = '#fff8e7'
-    ctx.fillRect(-12, 1 + breath, 3, 4)
-
-    // Pierna trasera (izquierda) + bota espacial
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(Math.round(-7 + legL * 0.5), 3, 7, 13 + Math.max(0, legL))
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(Math.round(-6 + legL * 0.5), 4, 5, 8 + Math.max(0, legL))
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(Math.round(-6 + legL * 0.5), 7, 5, 2)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(Math.round(-7 + legL * 0.5), 11 + Math.max(0, legL), 6, 3)
-    ctx.fillStyle = '#94a3b8'
-    ctx.fillRect(Math.round(-6 + legL * 0.5), 11 + Math.max(0, legL), 4, 1)
-
-    // Pierna delantera (derecha) + bota
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(Math.round(0 + legR * 0.5), 3, 7, 13 + Math.max(0, legR))
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(Math.round(1 + legR * 0.5), 4, 5, 8 + Math.max(0, legR))
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(Math.round(1 + legR * 0.5), 7, 5, 2)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(Math.round(0 + legR * 0.5), 11 + Math.max(0, legR), 7, 3)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(Math.round(1 + legR * 0.5), 11 + Math.max(0, legR), 5, 1)
-
-    // Torso del traje con contorno + luces + cinturón
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-8, -10 + breath, 16, 16)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(-7, -9 + breath, 14, 14)
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(-6, -8 + breath, 12, 11)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(-7, 2 + breath, 14, 3)
-    ctx.fillStyle = '#fbbf24'
-    ctx.fillRect(-2, 2 + breath, 4, 3)
-    ctx.fillStyle = '#ef4444'
-    ctx.fillRect(-5, -6 + breath, 3, 2)
-    ctx.fillStyle = '#2563eb'
-    ctx.fillRect(2, -6 + breath, 3, 2)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(-3, -3 + breath, 6, 4)
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(-2, -2 + breath, 4, 2)
-
-    // Anillo metálico del cuello
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-7, -12 + breath, 14, 4)
-    ctx.fillStyle = '#64748b'
-    ctx.fillRect(-6, -11 + breath, 12, 2)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(-4, -11 + breath, 8, 1)
-
-    // Cuello y cabeza peluda de Alpaca dentro del casco
-    ctx.fillStyle = '#fff8e7'
-    ctx.fillRect(-4, -22 + breath, 8, 11)
-    ctx.fillStyle = '#f3d5b5'
-    ctx.fillRect(-4, -16 + breath, 2, 2)
-    ctx.fillRect(2, -19 + breath, 2, 2)
-
-    // Orejas con contorno oscuro
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-6, -32 + breath + earTwitch, 5, 6)
-    ctx.fillRect(1, -32 + breath - earTwitch, 5, 6)
-    ctx.fillStyle = '#fff8e7'
-    ctx.fillRect(-5, -31 + breath + earTwitch, 3, 5)
-    ctx.fillRect(2, -31 + breath - earTwitch, 3, 5)
-    ctx.fillStyle = '#f4a261'
-    ctx.fillRect(-4, -30 + breath + earTwitch, 1, 3)
-    ctx.fillRect(3, -30 + breath - earTwitch, 1, 3)
-
-    // Cabeza y hocico de Alpaca
-    ctx.fillStyle = '#fff8e7'
-    ctx.fillRect(-6, -27 + breath, 12, 9)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-5, -28 + breath, 10, 3)
-    ctx.fillStyle = '#f3d5b5'
-    ctx.fillRect(-2, -23 + breath, 6, 4)
-    ctx.fillStyle = '#78350f'
-    ctx.fillRect(1, -23 + breath, 2, 1)
-    ctx.fillRect(0, -21 + breath, 3, 1)
-
-    // Ojos vivos con brillo blanco
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(-3, -25 + breath, 2, 2)
-    ctx.fillRect(3, -25 + breath, 2, 2)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-3, -25 + breath, 1, 1)
-    ctx.fillRect(3, -25 + breath, 1, 1)
-
-    drawHelmetDomeToCtx(ctx, -9, -31 + breath, 18, 20, '#5ef0ff', 'rgba(94, 240, 255, 0.16)')
-
-    const armSwing = isInteracting ? 6 : Math.round(-stride * 3)
-    const armY = isInteracting ? -6 + breath : -5 + breath
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(2, armY - 1, 10 + (isInteracting ? 4 : Math.max(0, Math.round(armSwing * 0.4))), 6)
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(3, armY, 5 + (isInteracting ? 4 : 0), 4)
-    ctx.fillStyle = '#ef4444'
-    ctx.fillRect(3, armY, 3, 2)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(7 + (isInteracting ? 4 : Math.round(armSwing * 0.4)), armY, 3, 4)
-  } else if (role === 'comms') {
-    for (let seg = 24; seg >= 0; seg--) {
-      const tNorm = seg / 24
-      const wave = Math.sin(seg * 0.5 - wavePhase) * (isWalking ? 5.5 : 3.4)
-      const sx = -tNorm * 16 + wave * (0.35 + tNorm * 0.65)
-      const sy =
-        seg < 8
-          ? -10 + seg * 2.2 + breath
-          : 7 + Math.sin(seg * 0.35 - wavePhase * 0.7) * 2.2 + (seg - 8) * 0.38
-      const radius = Math.max(2.5, 6.2 - tNorm * 3.8)
-      const rx = Math.round(sx - radius)
-      const ry = Math.round(sy - radius * 0.8)
-      const rw = Math.round(radius * 2)
-      const rh = Math.round(radius * 1.6)
-
-      ctx.fillStyle = ATLAS_OUTLINE
-      ctx.fillRect(rx - 1, ry - 1, rw + 2, rh + 2)
-
-      const isDarkBand = seg % 4 === 0
-      ctx.fillStyle = isDarkBand ? '#1e293b' : seg % 2 === 0 ? '#ea580c' : '#f97316'
-      ctx.fillRect(rx, ry, rw, rh)
-      if (!isDarkBand) {
-        ctx.fillStyle = '#fdba74'
-        ctx.fillRect(
-          Math.round(sx - radius * 0.4),
-          Math.round(sy - radius * 0.4),
-          Math.round(radius),
-          Math.round(radius * 0.8)
-        )
-      }
-    }
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-7, -13 + breath, 15, 10)
-    ctx.fillStyle = '#64748b'
-    ctx.fillRect(-6, -12 + breath, 13, 8)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(-5, -11 + breath, 11, 6)
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(-3, -10 + breath, 7, 4)
-    ctx.fillStyle = poseIdx % 2 === 0 ? '#38bdf8' : '#22c55e'
-    ctx.fillRect(-2, -9 + breath, 2, 2)
-    ctx.fillStyle = '#fbbf24'
-    ctx.fillRect(1, -9 + breath, 2, 2)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-7, -24 + breath, 15, 11)
-    ctx.fillStyle = '#ea580c'
-    ctx.fillRect(-6, -23 + breath, 13, 9)
-    ctx.fillStyle = '#fb923c'
-    ctx.fillRect(-5, -22 + breath, 12, 6)
-    ctx.fillStyle = '#9a3412'
-    ctx.fillRect(-4, -23 + breath, 8, 2)
-
-    ctx.fillStyle = '#fde047'
-    ctx.fillRect(-2, -20 + breath, 3, 3)
-    ctx.fillRect(3, -20 + breath, 3, 3)
-    ctx.fillStyle = '#000000'
-    ctx.fillRect(-1, -20 + breath, 1, 3)
-    ctx.fillRect(4, -20 + breath, 1, 3)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-2, -20 + breath, 1, 1)
-    ctx.fillRect(3, -20 + breath, 1, 1)
-
-    if (poseIdx % 2 === 1 || isInteracting) {
-      const ext = isInteracting ? 2 : 1
-      ctx.fillStyle = '#ef4444'
-      ctx.fillRect(7, -17 + breath, 4 + ext, 2)
-      ctx.fillRect(10 + ext, -18 + breath, 2, 1)
-      ctx.fillRect(10 + ext, -15 + breath, 2, 1)
-    }
-
-    drawHelmetDomeToCtx(ctx, -9, -26 + breath, 19, 15, '#74b9ff', 'rgba(116, 185, 255, 0.17)')
-  } else if (role === 'science') {
-    const legL = Math.round(stride * 4)
-    const legR = Math.round(-stride * 4)
-
-    for (let s = 0; s < 10; s++) {
-      const tx = -7 - s * 1.7
-      const ty = 2 + Math.sin(wavePhase - s * 0.45) * 3.0 - s * 0.3
-      ctx.fillStyle = ATLAS_OUTLINE
-      ctx.fillRect(Math.round(tx) - 1, Math.round(ty) - 1, 5, 5)
-      ctx.fillStyle = s > 7 ? '#451a03' : s % 2 === 0 ? '#d97706' : '#f59e0b'
-      ctx.fillRect(Math.round(tx), Math.round(ty), 3, 3)
-    }
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-12, -13 + breath, 8, 17)
-    ctx.fillStyle = '#64748b'
-    ctx.fillRect(-11, -12 + breath, 6, 15)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(-10, -11 + breath, 4, 12)
-    ctx.fillStyle = '#55efc4'
-    ctx.fillRect(-9, -8 + breath, 2, 4)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(Math.round(-8 + legL * 0.6), 2, 8, 14 + Math.max(0, legL))
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(Math.round(-6 + legL * 0.6), 3, 5, 9 + Math.max(0, legL))
-    ctx.fillStyle = '#ef4444'
-    ctx.fillRect(Math.round(-6 + legL * 0.6), 5, 5, 2)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(Math.round(-7 + legL * 0.6), 11 + Math.max(0, legL), 7, 4)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(Math.round(0 + legR * 0.6), 2, 8, 14 + Math.max(0, legR))
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(Math.round(1 + legR * 0.6), 3, 6, 9 + Math.max(0, legR))
-    ctx.fillStyle = '#ef4444'
-    ctx.fillRect(Math.round(1 + legR * 0.6), 5, 6, 2)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(Math.round(1 + legR * 0.6), 11 + Math.max(0, legR), 6, 4)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-9, -12 + breath, 18, 17)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(-8, -11 + breath, 16, 15)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-7, -10 + breath, 14, 12)
-    ctx.fillStyle = '#2563eb'
-    ctx.fillRect(-8, -9 + breath, 4, 4)
-    ctx.fillStyle = '#ef4444'
-    ctx.fillRect(4, -9 + breath, 4, 3)
-    ctx.fillStyle = '#1e3a8a'
-    ctx.fillRect(-3, -7 + breath, 6, 5)
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(-2, -6 + breath, 4, 3)
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(-8, 1 + breath, 16, 3)
-    ctx.fillStyle = '#94a3b8'
-    ctx.fillRect(-2, 1 + breath, 4, 3)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-7, -26 + breath, 5, 5)
-    ctx.fillRect(2, -26 + breath, 5, 5)
-    ctx.fillStyle = '#b45309'
-    ctx.fillRect(-6, -25 + breath, 3, 3)
-    ctx.fillRect(3, -25 + breath, 3, 3)
-    ctx.fillStyle = '#d97706'
-    ctx.fillRect(-6, -23 + breath, 12, 11)
-    ctx.fillStyle = '#f59e0b'
-    ctx.fillRect(-5, -22 + breath, 10, 9)
-    ctx.fillStyle = '#fef3c7'
-    ctx.fillRect(-3, -17 + breath, 7, 4)
-    ctx.fillStyle = '#451a03'
-    ctx.fillRect(0, -17 + breath, 3, 2)
-    ctx.fillStyle = '#bef264'
-    ctx.fillRect(-4, -20 + breath, 3, 2)
-    ctx.fillRect(2, -20 + breath, 3, 2)
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(-3, -20 + breath, 1, 2)
-    ctx.fillRect(3, -20 + breath, 1, 2)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-4, -20 + breath, 1, 1)
-    ctx.fillRect(2, -20 + breath, 1, 1)
-
-    drawHelmetDomeToCtx(ctx, -9, -26 + breath, 18, 16, '#55efc4', 'rgba(85, 239, 196, 0.16)')
-
-    const armAngle = isInteracting ? -4 : Math.round(stride * 2)
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(4, -6 + breath, 7, 6)
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(5, -5 + breath, 5, 4)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(8, -4 + breath, 3, 3)
-
-    ctx.strokeStyle = ATLAS_OUTLINE
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.moveTo(9, -3 + breath)
-    ctx.lineTo(15, 6 + armAngle)
-    ctx.stroke()
-    ctx.strokeStyle = '#cbd5e1'
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.moveTo(9, -3 + breath)
-    ctx.lineTo(15, 6 + armAngle)
-    ctx.stroke()
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(11, 3 + armAngle, 8, 5)
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(12, 4 + armAngle, 6, 3)
-  } else {
-    const legL = Math.round(stride * 3.5)
-    const legR = Math.round(-stride * 3.5)
-    const wingFlap = isWalking
-      ? (poseIdx % 2 === 0 ? 4 : -2)
-      : isInteracting
-      ? (poseIdx % 2 === 0 ? 5 : -1)
-      : poseIdx % 2 === 0
-      ? 1
-      : -1
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-7, 4 + breath, 14, 8)
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(-6, 5 + breath, 12, 6)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(-4, 6 + breath, 8, 4)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(Math.round(-8 + legL * 0.5), 6, 8, 9 + Math.max(0, legL))
-    ctx.fillRect(Math.round(0 + legR * 0.5), 6, 8, 9 + Math.max(0, legR))
-    ctx.fillStyle = '#94a3b8'
-    ctx.fillRect(Math.round(-5 + legL * 0.5), 7, 3, 6 + Math.max(0, legL))
-    ctx.fillRect(Math.round(2 + legR * 0.5), 7, 3, 6 + Math.max(0, legR))
-    ctx.fillStyle = '#eab308'
-    ctx.fillRect(Math.round(-7 + legL * 0.5), 12 + Math.max(0, legL), 6, 2)
-    ctx.fillRect(Math.round(1 + legR * 0.5), 12 + Math.max(0, legR), 6, 2)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-22, -8 + breath - wingFlap, 16, 17)
-    ctx.fillRect(6, -8 + breath - wingFlap, 16, 17)
-    ctx.fillStyle = '#ea580c'
-    ctx.fillRect(-17, Math.round(-7 + breath - wingFlap * 0.6), 11, 6)
-    ctx.fillRect(6, Math.round(-7 + breath - wingFlap * 0.6), 11, 6)
-    ctx.fillStyle = '#f8fafc'
-    ctx.fillRect(-19, Math.round(-2 + breath - wingFlap * 0.8), 12, 4)
-    ctx.fillRect(7, Math.round(-2 + breath - wingFlap * 0.8), 12, 4)
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(-21, 1 + breath - wingFlap, 13, 6)
-    ctx.fillRect(8, 1 + breath - wingFlap, 13, 6)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-8, -10 + breath, 16, 17)
-    ctx.fillStyle = '#c2410c'
-    ctx.fillRect(-7, -9 + breath, 14, 15)
-    ctx.fillStyle = '#f97316'
-    ctx.fillRect(-6, -8 + breath, 12, 13)
-    ctx.fillStyle = '#fdba74'
-    ctx.fillRect(-5, -8 + breath, 4, 5)
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(-6, -2 + breath, 12, 3)
-    ctx.fillStyle = '#ffd23f'
-    ctx.fillRect(-2, -5 + breath, 4, 4)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-8, -14 + breath, 16, 6)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(-7, -13 + breath, 14, 5)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(-6, -10 + breath, 12, 2)
-
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(-5, -25 + breath, 10, 13)
-    ctx.fillStyle = '#be123c'
-    ctx.fillRect(-4, -22 + breath, 8, 9)
-    ctx.fillStyle = '#e11d48'
-    ctx.fillRect(-3, -24 + breath, 5, 3)
-    ctx.fillStyle = ATLAS_OUTLINE
-    ctx.fillRect(3, -20 + breath, 6, 5)
-    ctx.fillStyle = '#fde047'
-    ctx.fillRect(3, -19 + breath, 5, 3)
-    ctx.fillRect(6, -17 + breath, 2, 2)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, -20 + breath, 2, 2)
-    ctx.fillStyle = '#000000'
-    ctx.fillRect(1, -20 + breath, 1, 1)
-
-    drawHelmetDomeToCtx(ctx, -8, -26 + breath, 17, 15, '#ffd23f', 'rgba(255, 210, 63, 0.16)')
-  }
 }
 
 function createStationSpriteAtlas(): StationSpriteAtlas {
@@ -2350,13 +2536,13 @@ function drawClippedRoomInteriorAnd3LayerHull(
 
   ctx.restore()
 
-  // En vista mapa completo, etiqueta nítida con contorno 2px fuera de cada sala
+  // En vista mapa completo, etiqueta nítida con contorno 2px centrada en el interior del piso de cada sala
   if (overviewMode) {
     ctx.save()
-    ctx.font = 'bold 18px "Press Start 2P", monospace'
+    ctx.font = 'bold 15px "Press Start 2P", monospace'
     ctx.textAlign = 'center'
-    const tx = Math.round(x + w / 2)
-    const ty = Math.round(y - 12)
+    const tx = Math.round(rm.floor.x + rm.floor.w * (rm.id === 'engine_room' ? 0.56 : 0.5))
+    const ty = Math.round(rm.floor.y + Math.min(72, Math.max(28, rm.floor.h * 0.24)))
     ctx.fillStyle = '#000000'
     for (const [ox, oy] of [
       [-2, 0],
@@ -2390,9 +2576,26 @@ function drawSpaceStationWorld(
     nearestConsoleId: string | null
     hoveredConsoleId: string | null
     activeTaskConsoleIds: Set<string>
+    activeThreats: ActiveThreat[]
+    completedMinigames: Set<MinigameId>
+    consoleCooldowns: Partial<Record<MinigameId, number>>
+    serverNowMs: number
+    missionCompleted: boolean
+    missionGames: Set<MinigameId>
     doorOpenMap: Record<string, number>
+    activePlayerPos: { x: number; y: number }
+    astronauts: Record<RoleId, AstronautEntity>
   }
 ) {
+  const threatMap = new Map(state.activeThreats.map((t) => [t.game, t]))
+  const isEclipseActive = state.activeEvent === 'eclipse' || threatMap.has('eps')
+  const activeRoom = findRoomAtPoint(state.activePlayerPos.x, state.activePlayerPos.y)
+  const activeCorridor = findCorridorAtPoint(state.activePlayerPos.x, state.activePlayerPos.y)
+  const depthItems: { sortY: number; draw: () => void }[] = []
+  const pushDepth = (sortY: number, draw: () => void) => {
+    depthItems.push({ sortY, draw })
+  }
+
   // 1. FONDO DE ESPACIO PROFUNDO Y ESTRELLAS PARPADEANTES
   ctx.fillStyle = '#040711'
   ctx.fillRect(-600, -600, WORLD_W + 1200, WORLD_H + 1200)
@@ -2468,8 +2671,11 @@ function drawSpaceStationWorld(
         ctx.fillStyle = '#0f172a'
         ctx.fillRect(px - 2, py - 2, cellW + 4, cellH + 4)
         const shimmer = Math.sin(time * 2.5 + r * 0.7 + c * 0.5) > 0.65
-        ctx.fillStyle =
-          state.activeEvent === 'eclipse' ? '#172554' : shimmer ? '#3b82f6' : '#1d4ed8'
+        ctx.fillStyle = isEclipseActive
+          ? '#172554'
+          : shimmer
+          ? '#3b82f6'
+          : '#1d4ed8'
         ctx.fillRect(px, py, cellW, cellH)
         ctx.fillStyle = '#60a5fa'
         ctx.fillRect(px + Math.floor(cellW / 2), py, 2, cellH)
@@ -2489,9 +2695,12 @@ function drawSpaceStationWorld(
     const ory = 860
     const angleSat1 = time * 0.4
     const angleSat2 = time * 0.4 + Math.PI
+    const navThreat = threatMap.has('nav')
+    const sat2DriftRx = navThreat ? orx + 125 + Math.sin(time * 2.4) * 32 : orx
+    const sat2DriftRy = navThreat ? ory + 78 + Math.cos(time * 2.0) * 24 : ory
 
     ctx.save()
-    ctx.strokeStyle = 'rgba(125, 211, 252, 0.2)'
+    ctx.strokeStyle = navThreat ? 'rgba(248, 113, 113, 0.35)' : 'rgba(125, 211, 252, 0.2)'
     ctx.lineWidth = 2
     ctx.setLineDash([14, 12])
     ctx.beginPath()
@@ -2502,7 +2711,10 @@ function drawSpaceStationWorld(
 
     // SAT-01 nace en el lado occidental (izquierda); SAT-02 en el oriental (derecha)
     const sat1 = { x: ocx - Math.cos(angleSat1) * orx, y: ocy - Math.sin(angleSat1) * ory }
-    const sat2 = { x: ocx - Math.cos(angleSat2) * orx, y: ocy - Math.sin(angleSat2) * ory }
+    const sat2 = {
+      x: ocx - Math.cos(angleSat2) * sat2DriftRx,
+      y: ocy - Math.sin(angleSat2) * sat2DriftRy,
+    }
 
     // ---- SAT-01 AMARU-COMMS: cuerpo hexagonal dorado, plato HGA blanco, 2 paneles solares verticales
     {
@@ -2628,29 +2840,82 @@ function drawSpaceStationWorld(
       ctx.fill()
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(15, -8, 3, 3)
-      // Haz láser verde escaneando el planeta
+      // Haz láser escaneando el planeta (verde nominal, naranja parpadeante si SAT-02 deriva)
+      const sat2OffOrbit = threatMap.has('nav')
       const flick = 0.55 + 0.45 * Math.abs(Math.sin(time * 9))
-      ctx.strokeStyle = `rgba(74, 222, 128, ${flick.toFixed(2)})`
+      ctx.strokeStyle = sat2OffOrbit
+        ? `rgba(248, 113, 113, ${flick.toFixed(2)})`
+        : `rgba(74, 222, 128, ${flick.toFixed(2)})`
       ctx.lineWidth = 3
       ctx.beginPath()
       ctx.moveTo(36, 0)
-      ctx.lineTo(260, Math.sin(time * 2) * 26)
+      ctx.lineTo(sat2OffOrbit ? 165 : 260, Math.sin(time * (sat2OffOrbit ? 7 : 2)) * 28)
       ctx.stroke()
-      ctx.fillStyle = '#bbf7d0'
-      ctx.fillRect(256, Math.sin(time * 2) * 26 - 3, 6, 6)
+      ctx.fillStyle = sat2OffOrbit ? '#fca5a5' : '#bbf7d0'
+      ctx.fillRect(sat2OffOrbit ? 162 : 256, Math.sin(time * (sat2OffOrbit ? 7 : 2)) * 28 - 3, 6, 6)
       ctx.restore()
 
       ctx.save()
       ctx.font = 'bold 10px "Press Start 2P", monospace'
       ctx.textAlign = 'center'
-      const t2 = 'SAT-02 INTI-SCIENCE'
+      const t2 = sat2OffOrbit ? 'SAT-02 INTI-SCIENCE [DERIVA!]' : 'SAT-02 INTI-SCIENCE'
       const w2 = ctx.measureText(t2).width + 12
-      ctx.fillStyle = 'rgba(9, 13, 26, 0.85)'
+      ctx.fillStyle = sat2OffOrbit ? 'rgba(69, 10, 10, 0.92)' : 'rgba(9, 13, 26, 0.85)'
       ctx.fillRect(sat2.x - w2 / 2, sat2.y + 78, w2, 18)
-      ctx.fillStyle = '#67e8f9'
+      ctx.fillStyle = sat2OffOrbit ? '#fca5a5' : '#67e8f9'
       ctx.fillText(t2, sat2.x, sat2.y + 91)
       ctx.restore()
     }
+  }
+
+  // 3c. EFECTOS EXTERIORES EN TIEMPO REAL DE AMENAZAS (METEORITOS / CÁPSULA DERIVA)
+  if (threatMap.has('comet')) {
+    for (let m = 0; m < 7; m++) {
+      const spd = 280 + (m % 3) * 110
+      const spanW = WORLD_W + 600
+      const mx = WORLD_W + 300 - ((time * spd + m * 410) % spanW)
+      const my = 90 + ((m * 235 + time * 75) % (WORLD_H - 180))
+      ctx.save()
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.45)'
+      ctx.fillRect(mx + 12, my - 4, 34, 8)
+      ctx.fillStyle = 'rgba(253, 224, 71, 0.7)'
+      ctx.fillRect(mx + 6, my - 2, 18, 4)
+      ctx.fillStyle = '#475569'
+      ctx.fillRect(mx - 10, my - 10, 20, 20)
+      ctx.fillStyle = '#94a3b8'
+      ctx.fillRect(mx - 7, my - 7, 14, 12)
+      ctx.fillStyle = '#f97316'
+      ctx.fillRect(mx - 5, my - 3, 5, 5)
+      ctx.restore()
+    }
+  }
+
+  if (threatMap.has('dock')) {
+    const capX = 195 + Math.sin(time * 1.15) * 32
+    const capY = 665 + Math.cos(time * 0.95) * 26
+    ctx.save()
+    ctx.translate(capX, capY)
+    ctx.rotate(Math.sin(time * 1.4) * 0.22)
+    ctx.fillStyle = '#1e293b'
+    ctx.fillRect(-30, -18, 60, 36)
+    ctx.fillStyle = '#e2e8f0'
+    ctx.fillRect(-26, -15, 52, 30)
+    ctx.fillStyle = '#f97316'
+    ctx.fillRect(14, -12, 10, 24)
+    if (Math.sin(time * 12) > 0) {
+      ctx.fillStyle = '#fde047'
+      ctx.fillRect(-38, -6, 8, 5)
+      ctx.fillRect(-38, 2, 8, 5)
+    }
+    ctx.restore()
+    ctx.save()
+    ctx.font = 'bold 8px "Press Start 2P", monospace'
+    ctx.textAlign = 'center'
+    ctx.fillStyle = 'rgba(69, 10, 10, 0.9)'
+    ctx.fillRect(capX - 58, capY + 26, 116, 15)
+    ctx.fillStyle = '#fde047'
+    ctx.fillText('CÁPSULA EN DERIVA', capX, capY + 37)
+    ctx.restore()
   }
 
   // 4. PROPULSORES RCS NARANJAS Y GRISES EN LOS BORDES EXTERIORES DEL CASCO
@@ -2753,8 +3018,49 @@ function drawSpaceStationWorld(
   }
 
   // ==========================================================================
-  // 7. OBJETOS INTERIORES EN PIXEL-ART DETALLADO (LAS 9 SALAS)
+  // 7. OBJETOS INTERIORES EN PIXEL-ART DETALLADO + SOMBRAS + Y-SORTING (LAS 9 SALAS)
   // ==========================================================================
+
+  // Sombras elípticas suaves en el suelo debajo de cada obstáculo y de los 4 personajes
+  for (const ob of SOLID_OBSTACLES) {
+    drawObstacleFloorShadow(ctx, ob)
+  }
+  ctx.save()
+  ctx.fillStyle = 'rgba(2, 5, 14, 0.44)'
+  ctx.beginPath()
+  ctx.ellipse(438, 696, 98, 46, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+
+  for (const r of ROLE_ORDER) {
+    const a = state.astronauts[r]
+    const info = ROLE_INFO[r]
+    const isMe = r === state.activeRole
+    ctx.save()
+    ctx.fillStyle = 'rgba(2, 5, 14, 0.46)'
+    ctx.beginPath()
+    ctx.ellipse(a.x, a.y + 18, isMe ? 18 : 14, isMe ? 7 : 5, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = info.color
+    ctx.lineWidth = isMe ? 3 : 1.5
+    ctx.globalAlpha = isMe ? 0.95 : 0.45
+    ctx.beginPath()
+    ctx.ellipse(a.x, a.y + 18, isMe ? 20 : 16, isMe ? 8 : 6, 0, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+    pushDepth(a.y + 16, () => {
+      drawAnimatedAstronaut(
+        ctx,
+        r,
+        a.x,
+        a.y,
+        a.dir,
+        a.walkFrame,
+        a.isInteracting,
+        time
+      )
+    })
+  }
 
   // --------------------------------------------------------------------------
   // a) GROUND SEGMENT (Proyector holográfico octogonal isométrico + anillo octogonal
@@ -2974,189 +3280,152 @@ function drawSpaceStationWorld(
         ctx.fillRect(rx + 18, sy + 2, Math.max(4, rw - 32), 2)
       }
     }
-    drawServerRack(932, 584, 38, 76, 1)
-    drawServerRack(932, 780, 38, 114, 2)
-    drawServerRack(1394, 686, 38, 134, 3)
+    pushDepth(660, () => drawServerRack(932, 584, 38, 76, 1))
+    pushDepth(894, () => drawServerRack(932, 780, 38, 114, 2))
+    pushDepth(820, () => drawServerRack(1394, 686, 38, 134, 3))
 
     // Proyector Holográfico Octogonal Superior (1184, 628) + Mapa Isométrico nítido flotante
     const hx = 1184
     const hy = 628
-
-    // Cono de luz cian volumétrico con haces laterales definidos
-    const coneGrad = ctx.createLinearGradient(hx, hy - 8, hx, hy - 86)
-    coneGrad.addColorStop(0, 'rgba(56, 189, 248, 0.36)')
-    coneGrad.addColorStop(0.55, 'rgba(34, 211, 238, 0.18)')
-    coneGrad.addColorStop(1, 'rgba(56, 189, 248, 0.03)')
-    ctx.fillStyle = coneGrad
-    ctx.beginPath()
-    ctx.moveTo(hx - 20, hy - 6)
-    ctx.lineTo(hx + 20, hy - 6)
-    ctx.lineTo(hx + 54, hy - 84)
-    ctx.lineTo(hx - 54, hy - 84)
-    ctx.closePath()
-    ctx.fill()
-
-    // Haces diagonales internos finos del proyector
-    ctx.strokeStyle = 'rgba(186, 230, 253, 0.25)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(hx - 14, hy - 6)
-    ctx.lineTo(hx - 48, hy - 82)
-    ctx.moveTo(hx + 14, hy - 6)
-    ctx.lineTo(hx + 48, hy - 82)
-    ctx.moveTo(hx, hy - 6)
-    ctx.lineTo(hx, hy - 82)
-    ctx.stroke()
-
-    // Base octogonal escalonada metálica con biseles y pernos
-    ctx.fillStyle = '#05070d'
-    traceOctagonPath(ctx, hx - 32, hy - 14, 64, 32, 10)
-    ctx.fill()
-    ctx.fillStyle = '#4b596e'
-    traceOctagonPath(ctx, hx - 30, hy - 12, 60, 28, 9)
-    ctx.fill()
-    ctx.fillStyle = '#2a3342'
-    traceOctagonPath(ctx, hx - 26, hy - 9, 52, 22, 8)
-    ctx.fill()
-    ctx.fillStyle = '#18202c'
-    traceOctagonPath(ctx, hx - 20, hy - 6, 40, 16, 6)
-    ctx.fill()
-
-    // Lente óptico multicapa + LEDs de perímetro
-    ctx.fillStyle = '#0284c7'
-    traceOctagonPath(ctx, hx - 14, hy - 3, 28, 10, 4)
-    ctx.fill()
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(hx - 10, hy - 1, 20, 6)
-    ctx.fillStyle = '#e0f2fe'
-    ctx.fillRect(hx - 5, hy + 1, 10, 2)
-    for (const [bxOff, byOff, col] of [
-      [-23, -1, '#38bdf8'],
-      [21, -1, '#38bdf8'],
-      [-23, 5, '#fbbf24'],
-      [21, 5, '#4ade80'],
-    ] as const) {
-      ctx.fillStyle = col
-      ctx.fillRect(hx + bxOff, hy + byOff, 2, 2)
-    }
-
-    // Mapa Isométrico nítido flotando dentro del haz de luz cian
-    const mapY = hy - 50 + Math.round(Math.sin(time * 2.4) * 2)
-    ctx.save()
-    // Plano romboidal isométrico de base + cuadrícula fina
-    ctx.fillStyle = 'rgba(14, 165, 233, 0.22)'
-    ctx.strokeStyle = '#67e8f9'
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.moveTo(hx, mapY - 18)
-    ctx.lineTo(hx + 40, mapY)
-    ctx.lineTo(hx, mapY + 18)
-    ctx.lineTo(hx - 40, mapY)
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-
-    ctx.strokeStyle = 'rgba(103, 232, 249, 0.45)'
-    ctx.lineWidth = 1
-    for (const u of [-0.5, 0, 0.5]) {
+    pushDepth(646, () => {
+      // Cono de luz cian volumétrico con haces laterales definidos
+      const coneGrad = ctx.createLinearGradient(hx, hy - 8, hx, hy - 86)
+      coneGrad.addColorStop(0, 'rgba(56, 189, 248, 0.36)')
+      coneGrad.addColorStop(0.55, 'rgba(34, 211, 238, 0.18)')
+      coneGrad.addColorStop(1, 'rgba(56, 189, 248, 0.03)')
+      ctx.fillStyle = coneGrad
       ctx.beginPath()
-      ctx.moveTo(hx + (u + 1) * 20, mapY + (u - 1) * 9)
-      ctx.lineTo(hx + (u - 1) * 20, mapY + (u + 1) * 9)
-      ctx.stroke()
-    }
-    for (const v of [-0.5, 0, 0.5]) {
-      ctx.beginPath()
-      ctx.moveTo(hx + (-1 - v) * 20, mapY + (-1 + v) * 9)
-      ctx.lineTo(hx + (1 - v) * 20, mapY + (1 + v) * 9)
-      ctx.stroke()
-    }
-
-    // Relieves topográficos isométricos por capas con líneas de elevación
-    const drawIsoTerrainPeak = (px: number, py: number, rw: number, rh: number, elev: number, col: string) => {
-      ctx.strokeStyle = 'rgba(125, 211, 252, 0.65)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(px - rw, py)
-      ctx.lineTo(px - rw, py - elev)
-      ctx.moveTo(px + rw, py)
-      ctx.lineTo(px + rw, py - elev)
-      ctx.moveTo(px, py + rh)
-      ctx.lineTo(px, py + rh - elev)
-      ctx.stroke()
-
-      ctx.fillStyle = col
-      ctx.beginPath()
-      ctx.moveTo(px, py - rh - elev)
-      ctx.lineTo(px + rw, py - elev)
-      ctx.lineTo(px, py + rh - elev)
-      ctx.lineTo(px - rw, py - elev)
+      ctx.moveTo(hx - 20, hy - 6)
+      ctx.lineTo(hx + 20, hy - 6)
+      ctx.lineTo(hx + 54, hy - 84)
+      ctx.lineTo(hx - 54, hy - 84)
       ctx.closePath()
       ctx.fill()
-      ctx.strokeStyle = '#e0f2fe'
+
+      // Haces diagonales internos finos del proyector
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.25)'
       ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(hx - 14, hy - 6)
+      ctx.lineTo(hx - 48, hy - 82)
+      ctx.moveTo(hx + 14, hy - 6)
+      ctx.lineTo(hx + 48, hy - 82)
+      ctx.moveTo(hx, hy - 6)
+      ctx.lineTo(hx, hy - 82)
       ctx.stroke()
-    }
-    drawIsoTerrainPeak(hx - 12, mapY + 1, 12, 6, 6, 'rgba(34, 211, 238, 0.85)')
-    drawIsoTerrainPeak(hx + 8, mapY - 2, 13, 7, 10, 'rgba(74, 222, 128, 0.85)')
-    drawIsoTerrainPeak(hx + 8, mapY - 2, 7, 4, 15, 'rgba(190, 242, 100, 0.92)')
 
-    // Anillos orbitales inclinados + satélite dorado orbitando
-    ctx.strokeStyle = 'rgba(186, 230, 253, 0.72)'
-    ctx.lineWidth = 1.2
-    ctx.beginPath()
-    ctx.ellipse(hx, mapY - 4, 44, 14, -0.14, 0, Math.PI * 2)
-    ctx.stroke()
-    const orbAng = time * 1.9
-    const sxOrb = hx + Math.cos(orbAng) * 44
-    const syOrb = mapY - 4 + Math.sin(orbAng) * 14
-    ctx.fillStyle = '#fde047'
-    ctx.fillRect(Math.round(sxOrb) - 2, Math.round(syOrb) - 2, 4, 4)
+      // Base octogonal escalonada metálica con biseles y pernos
+      ctx.fillStyle = '#05070d'
+      traceOctagonPath(ctx, hx - 32, hy - 14, 64, 32, 10)
+      ctx.fill()
+      ctx.fillStyle = '#4b596e'
+      traceOctagonPath(ctx, hx - 30, hy - 12, 60, 28, 9)
+      ctx.fill()
+      ctx.fillStyle = '#2a3342'
+      traceOctagonPath(ctx, hx - 26, hy - 9, 52, 22, 8)
+      ctx.fill()
+      ctx.fillStyle = '#18202c'
+      traceOctagonPath(ctx, hx - 20, hy - 6, 40, 16, 6)
+      ctx.fill()
 
-    // Línea de escaneo vertical holográfica
-    const scanLineY = hy - 80 + ((time * 30) % 68)
-    ctx.fillStyle = 'rgba(224, 242, 254, 0.45)'
-    ctx.fillRect(hx - 42, Math.round(scanLineY), 84, 1.5)
-    ctx.restore()
+      // Lente óptico multicapa + LEDs de perímetro
+      ctx.fillStyle = '#0284c7'
+      traceOctagonPath(ctx, hx - 14, hy - 3, 28, 10, 4)
+      ctx.fill()
+      ctx.fillStyle = '#38bdf8'
+      ctx.fillRect(hx - 10, hy - 1, 20, 6)
+      ctx.fillStyle = '#e0f2fe'
+      ctx.fillRect(hx - 5, hy + 1, 10, 2)
+      for (const [bxOff, byOff, col] of [
+        [-23, -1, '#38bdf8'],
+        [21, -1, '#38bdf8'],
+        [-23, 5, '#fbbf24'],
+        [21, 5, '#4ade80'],
+      ] as const) {
+        ctx.fillStyle = col
+        ctx.fillRect(hx + bxOff, hy + byOff, 2, 2)
+      }
+
+      // Mapa Isométrico nítido flotando dentro del haz de luz cian
+      const mapY = hy - 50 + Math.round(Math.sin(time * 2.4) * 2)
+      ctx.save()
+      ctx.fillStyle = 'rgba(14, 165, 233, 0.22)'
+      ctx.strokeStyle = '#67e8f9'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(hx, mapY - 18)
+      ctx.lineTo(hx + 40, mapY)
+      ctx.lineTo(hx, mapY + 18)
+      ctx.lineTo(hx - 40, mapY)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+
+      ctx.strokeStyle = 'rgba(103, 232, 249, 0.45)'
+      ctx.lineWidth = 1
+      for (const u of [-0.5, 0, 0.5]) {
+        ctx.beginPath()
+        ctx.moveTo(hx + (u + 1) * 20, mapY + (u - 1) * 9)
+        ctx.lineTo(hx + (u - 1) * 20, mapY + (u + 1) * 9)
+        ctx.stroke()
+      }
+      for (const v of [-0.5, 0, 0.5]) {
+        ctx.beginPath()
+        ctx.moveTo(hx + (-1 - v) * 20, mapY + (-1 + v) * 9)
+        ctx.lineTo(hx + (1 - v) * 20, mapY + (1 + v) * 9)
+        ctx.stroke()
+      }
+
+      const drawIsoTerrainPeak = (px: number, py: number, rw: number, rh: number, elev: number, col: string) => {
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.65)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(px - rw, py)
+        ctx.lineTo(px - rw, py - elev)
+        ctx.moveTo(px + rw, py)
+        ctx.lineTo(px + rw, py - elev)
+        ctx.moveTo(px, py + rh)
+        ctx.lineTo(px, py + rh - elev)
+        ctx.stroke()
+
+        ctx.fillStyle = col
+        ctx.beginPath()
+        ctx.moveTo(px, py - rh - elev)
+        ctx.lineTo(px + rw, py - elev)
+        ctx.lineTo(px, py + rh - elev)
+        ctx.lineTo(px - rw, py - elev)
+        ctx.closePath()
+        ctx.fill()
+        ctx.strokeStyle = '#e0f2fe'
+        ctx.lineWidth = 1
+        ctx.stroke()
+      }
+      drawIsoTerrainPeak(hx - 12, mapY + 1, 12, 6, 6, 'rgba(34, 211, 238, 0.85)')
+      drawIsoTerrainPeak(hx + 8, mapY - 2, 13, 7, 10, 'rgba(74, 222, 128, 0.85)')
+      drawIsoTerrainPeak(hx + 8, mapY - 2, 7, 4, 15, 'rgba(190, 242, 100, 0.92)')
+
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.72)'
+      ctx.lineWidth = 1.2
+      ctx.beginPath()
+      ctx.ellipse(hx, mapY - 4, 44, 14, -0.14, 0, Math.PI * 2)
+      ctx.stroke()
+      const orbAng = time * 1.9
+      const sxOrb = hx + Math.cos(orbAng) * 44
+      const syOrb = mapY - 4 + Math.sin(orbAng) * 14
+      ctx.fillStyle = '#fde047'
+      ctx.fillRect(Math.round(sxOrb) - 2, Math.round(syOrb) - 2, 4, 4)
+
+      const scanLineY = hy - 80 + ((time * 30) % 68)
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.45)'
+      ctx.fillRect(hx - 42, Math.round(scanLineY), 84, 1.5)
+      ctx.restore()
+    })
 
     // Anillo Central Octogonal de Consolas (escritorio biselado, monitores onda/radar, teclados y sillas)
     const ringX = 1184
-    const ringY = 804
+    const ringY = 796
 
-    // Sillas de operador estilizadas orientadas hacia el escritorio central
-    const chairAngles = [
-      -Math.PI * 0.84,
-      -Math.PI * 0.16,
-      Math.PI * 0.14,
-      Math.PI * 0.39,
-      Math.PI * 0.61,
-      Math.PI * 0.86,
-    ]
-    for (const ang of chairAngles) {
-      const chx = Math.round(ringX + Math.cos(ang) * 98)
-      const chy = Math.round(ringY + Math.sin(ang) * 72)
-      ctx.save()
-      ctx.translate(chx, chy)
-      ctx.rotate(ang + Math.PI / 2)
-      // Base de silla + cojín asiento + apoyabrazos + respaldo estilizado con LED
-      ctx.fillStyle = '#070b12'
-      ctx.fillRect(-13, -10, 26, 20)
-      ctx.fillStyle = '#252c37'
-      ctx.fillRect(-11, -8, 22, 14)
-      ctx.fillStyle = '#384252'
-      ctx.fillRect(-9, -7, 18, 9)
-      // Apoyabrazos laterales
-      ctx.fillStyle = '#64748b'
-      ctx.fillRect(-12, -6, 3, 11)
-      ctx.fillRect(9, -6, 3, 11)
-      // Respaldo y franja LED cian lumbar
-      ctx.fillStyle = '#475569'
-      ctx.fillRect(-10, 4, 20, 5)
-      ctx.fillStyle = '#38bdf8'
-      ctx.fillRect(-7, 6, 14, 2)
-      ctx.restore()
-    }
-
-    // Escritorio octogonal con biseles metálicos claros y oscuros y plataforma circular de puente de mando
+    // Plataforma circular de piso y anillo de mamparo en GROUND SEGMENT
     ctx.strokeStyle = '#334155'
     ctx.lineWidth = 4
     ctx.beginPath()
@@ -3168,52 +3437,81 @@ function drawSpaceStationWorld(
     ctx.ellipse(ringX, ringY, 126, 90, 0, 0, Math.PI * 2)
     ctx.stroke()
 
-    // Anillo curvo de iluminación de mamparo circular superior en GROUND SEGMENT
     ctx.strokeStyle = '#384252'
     ctx.lineWidth = 3
     ctx.beginPath()
     ctx.arc(1184, 720, 260, Math.PI * 1.16, Math.PI * 1.84)
     ctx.stroke()
 
-    ctx.fillStyle = '#05070d'
-    traceOctagonPath(ctx, ringX - 84, ringY - 62, 168, 124, 38)
-    ctx.fill()
-    ctx.fillStyle = '#4b596e'
-    traceOctagonPath(ctx, ringX - 81, ringY - 59, 162, 118, 36)
-    ctx.fill()
-    ctx.fillStyle = '#364152'
-    traceOctagonPath(ctx, ringX - 78, ringY - 56, 156, 112, 34)
-    ctx.fill()
-    ctx.fillStyle = '#232b38'
-    traceOctagonPath(ctx, ringX - 68, ringY - 48, 136, 96, 29)
-    ctx.fill()
+    pushDepth(ringY + 62, () => {
+      const chairAngles = [
+        -Math.PI * 0.84,
+        -Math.PI * 0.16,
+        Math.PI * 0.14,
+        Math.PI * 0.39,
+        Math.PI * 0.61,
+        Math.PI * 0.86,
+      ]
+      for (const ang of chairAngles) {
+        const chx = Math.round(ringX + Math.cos(ang) * 86)
+        const chy = Math.round(ringY + Math.sin(ang) * 62)
+        ctx.save()
+        ctx.translate(chx, chy)
+        ctx.rotate(ang + Math.PI / 2)
+        ctx.fillStyle = '#070b12'
+        ctx.fillRect(-13, -10, 26, 20)
+        ctx.fillStyle = '#252c37'
+        ctx.fillRect(-11, -8, 22, 14)
+        ctx.fillStyle = '#384252'
+        ctx.fillRect(-9, -7, 18, 9)
+        ctx.fillStyle = '#64748b'
+        ctx.fillRect(-12, -6, 3, 11)
+        ctx.fillRect(9, -6, 3, 11)
+        ctx.fillStyle = '#475569'
+        ctx.fillRect(-10, 4, 20, 5)
+        ctx.fillStyle = '#38bdf8'
+        ctx.fillRect(-7, 6, 14, 2)
+        ctx.restore()
+      }
 
-    // Pozo interior táctico del escritorio con radar polar animado
-    ctx.fillStyle = '#070b12'
-    traceOctagonPath(ctx, ringX - 40, ringY - 28, 80, 56, 18)
-    ctx.fill()
-    ctx.fillStyle = '#08131f'
-    traceOctagonPath(ctx, ringX - 37, ringY - 25, 74, 50, 16)
-    ctx.fill()
-    ctx.strokeStyle = '#0ea5e9'
-    ctx.lineWidth = 1.5
-    traceOctagonPath(ctx, ringX - 37, ringY - 25, 74, 50, 16)
-    ctx.stroke()
+      ctx.fillStyle = '#05070d'
+      traceOctagonPath(ctx, ringX - 84, ringY - 62, 168, 124, 38)
+      ctx.fill()
+      ctx.fillStyle = '#4b596e'
+      traceOctagonPath(ctx, ringX - 81, ringY - 59, 162, 118, 36)
+      ctx.fill()
+      ctx.fillStyle = '#364152'
+      traceOctagonPath(ctx, ringX - 78, ringY - 56, 156, 112, 34)
+      ctx.fill()
+      ctx.fillStyle = '#232b38'
+      traceOctagonPath(ctx, ringX - 68, ringY - 48, 136, 96, 29)
+      ctx.fill()
 
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(ringX - 34, ringY)
-    ctx.lineTo(ringX + 34, ringY)
-    ctx.moveTo(ringX, ringY - 22)
-    ctx.lineTo(ringX, ringY + 22)
-    ctx.stroke()
-    for (const rr of [9, 17, 25]) {
-      ctx.strokeStyle = rr === 17 ? 'rgba(74, 222, 128, 0.55)' : 'rgba(56, 189, 248, 0.45)'
-      ctx.beginPath()
-      ctx.ellipse(ringX, ringY, rr * 1.25, rr * 0.85, 0, 0, Math.PI * 2)
+      ctx.fillStyle = '#070b12'
+      traceOctagonPath(ctx, ringX - 40, ringY - 28, 80, 56, 18)
+      ctx.fill()
+      ctx.fillStyle = '#08131f'
+      traceOctagonPath(ctx, ringX - 37, ringY - 25, 74, 50, 16)
+      ctx.fill()
+      ctx.strokeStyle = '#0ea5e9'
+      ctx.lineWidth = 1.5
+      traceOctagonPath(ctx, ringX - 37, ringY - 25, 74, 50, 16)
       ctx.stroke()
-    }
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(ringX - 34, ringY)
+      ctx.lineTo(ringX + 34, ringY)
+      ctx.moveTo(ringX, ringY - 22)
+      ctx.lineTo(ringX, ringY + 22)
+      ctx.stroke()
+      for (const rr of [9, 17, 25]) {
+        ctx.strokeStyle = rr === 17 ? 'rgba(74, 222, 128, 0.55)' : 'rgba(56, 189, 248, 0.45)'
+        ctx.beginPath()
+        ctx.ellipse(ringX, ringY, rr * 1.25, rr * 0.85, 0, 0, Math.PI * 2)
+        ctx.stroke()
+      }
     const ringSweep = time * 2.2
     ctx.strokeStyle = '#4ade80'
     ctx.lineWidth = 1.5
@@ -3318,14 +3616,14 @@ function drawSpaceStationWorld(
       ctx.fillStyle = '#38bdf8'
       ctx.fillRect(mx + 7, my + 9, 5, 1.5)
     })
+    })
 
     // Mobiliario temático del Director (estantería NASA, silla de mando, monitor orbital)
     const atlasGround = getStationSpriteAtlas()
     if (atlasGround) {
-      drawAtlasSprite(ctx, atlasGround.furniture.nasaBookshelf, 1054, 574)
-      drawAtlasSprite(ctx, atlasGround.furniture.secondaryOrbitalMonitor, 1344, 868)
-      drawAtlasSprite(ctx, atlasGround.furniture.commanderChair, 1168, 866)
-      drawAtlasSprite(ctx, atlasGround.furniture.commanderChair, 1086, 728)
+      pushDepth(618, () => drawAtlasSprite(ctx, atlasGround.furniture.nasaBookshelf, 988, 574))
+      pushDepth(924, () => drawAtlasSprite(ctx, atlasGround.furniture.secondaryOrbitalMonitor, 978, 888))
+      pushDepth(924, () => drawAtlasSprite(ctx, atlasGround.furniture.commanderChair, 1024, 890))
     }
   }
 
@@ -3343,138 +3641,146 @@ function drawSpaceStationWorld(
     ctx.fillRect(560, 785, 48, 7)
     ctx.fillRect(601, 744, 7, 48)
 
-    ctx.save()
-    ctx.translate(448, 680)
-    ctx.scale(1.85, 1.85)
-    // Contorno negro + sombra delta
-    ctx.fillStyle = '#070b12'
-    ctx.beginPath()
-    ctx.moveTo(-59, -39)
-    ctx.lineTo(13, -16)
-    ctx.lineTo(52, 0)
-    ctx.lineTo(13, 16)
-    ctx.lineTo(-59, 39)
-    ctx.closePath()
-    ctx.fill()
+    pushDepth(750, () => {
+      ctx.save()
+      ctx.translate(448, 680)
+      ctx.scale(1.85, 1.85)
+      // Contorno negro + sombra delta
+      ctx.fillStyle = '#070b12'
+      ctx.beginPath()
+      ctx.moveTo(-59, -39)
+      ctx.lineTo(13, -16)
+      ctx.lineTo(52, 0)
+      ctx.lineTo(13, 16)
+      ctx.lineTo(-59, 39)
+      ctx.closePath()
+      ctx.fill()
 
-    // Sombreado térmico de alas
-    ctx.fillStyle = '#cbd5e1'
-    ctx.beginPath()
-    ctx.moveTo(-53, -34)
-    ctx.lineTo(10, -12)
-    ctx.lineTo(44, 0)
-    ctx.lineTo(10, 12)
-    ctx.lineTo(-53, 34)
-    ctx.closePath()
-    ctx.fill()
+      // Sombreado térmico de alas
+      ctx.fillStyle = '#cbd5e1'
+      ctx.beginPath()
+      ctx.moveTo(-53, -34)
+      ctx.lineTo(10, -12)
+      ctx.lineTo(44, 0)
+      ctx.lineTo(10, 12)
+      ctx.lineTo(-53, 34)
+      ctx.closePath()
+      ctx.fill()
 
-    ctx.fillStyle = '#f8fafc'
-    ctx.beginPath()
-    ctx.moveTo(-51, -31)
-    ctx.lineTo(9, -11)
-    ctx.lineTo(42, 0)
-    ctx.lineTo(9, 11)
-    ctx.lineTo(-51, 31)
-    ctx.closePath()
-    ctx.fill()
+      ctx.fillStyle = '#f8fafc'
+      ctx.beginPath()
+      ctx.moveTo(-51, -31)
+      ctx.lineTo(9, -11)
+      ctx.lineTo(42, 0)
+      ctx.lineTo(9, 11)
+      ctx.lineTo(-51, 31)
+      ctx.closePath()
+      ctx.fill()
 
-    // Fuselaje con compuertas de carga y cabinas cristal
-    ctx.fillStyle = '#e2e8f0'
-    ctx.fillRect(-48, -11, 76, 22)
-    ctx.strokeStyle = '#64748b'
-    ctx.lineWidth = 0.8
-    ctx.strokeRect(-44, -9, 54, 18)
-    ctx.beginPath()
-    ctx.moveTo(-44, 0)
-    ctx.lineTo(10, 0)
-    ctx.stroke()
+      // Fuselaje con compuertas de carga y cabinas cristal
+      ctx.fillStyle = '#e2e8f0'
+      ctx.fillRect(-48, -11, 76, 22)
+      ctx.strokeStyle = '#64748b'
+      ctx.lineWidth = 0.8
+      ctx.strokeRect(-44, -9, 54, 18)
+      ctx.beginPath()
+      ctx.moveTo(-44, 0)
+      ctx.lineTo(10, 0)
+      ctx.stroke()
 
-    // Parabrisas oscuro + reflejo azul
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(18, -7, 12, 14)
-    ctx.fillRect(34, -5, 10, 10)
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(20, -5, 4, 4)
-    ctx.fillRect(20, 2, 4, 4)
-    // Toberas traseras OMS + brillo sutil
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(-62, -9, 9, 6)
-    ctx.fillRect(-62, 3, 9, 6)
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(-63, -7, 2, 2)
-    ctx.fillRect(-63, 5, 2, 2)
-    ctx.restore()
+      // Parabrisas oscuro + reflejo azul
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(18, -7, 12, 14)
+      ctx.fillRect(34, -5, 10, 10)
+      ctx.fillStyle = '#38bdf8'
+      ctx.fillRect(20, -5, 4, 4)
+      ctx.fillRect(20, 2, 4, 4)
+      // Toberas traseras OMS + brillo sutil
+      ctx.fillStyle = '#1e293b'
+      ctx.fillRect(-62, -9, 9, 6)
+      ctx.fillRect(-62, 3, 9, 6)
+      ctx.fillStyle = '#38bdf8'
+      ctx.fillRect(-63, -7, 2, 2)
+      ctx.fillRect(-63, 5, 2, 2)
+      ctx.restore()
+    })
 
     // 2 Cápsulas cian superiores con tapas metálicas atornilladas y brillo cilíndrico
-    for (const capX of [592, 648]) {
-      ctx.fillStyle = '#070b12'
-      ctx.fillRect(capX - 3, 517, 44, 78)
-      ctx.fillStyle = '#334155'
-      ctx.fillRect(capX - 1, 519, 40, 11)
-      ctx.fillRect(capX - 1, 583, 40, 11)
-      ctx.fillStyle = '#64748b'
-      ctx.fillRect(capX + 1, 521, 36, 3)
-      ctx.fillRect(capX + 1, 585, 36, 3)
-      ctx.fillStyle = '#0891b2'
-      ctx.fillRect(capX + 2, 530, 34, 53)
-      ctx.fillStyle = '#22d3ee'
-      ctx.fillRect(capX + 5, 532, 22, 49)
-      ctx.fillStyle = '#cffafe'
-      ctx.fillRect(capX + 7, 534, 5, 44)
-    }
+    pushDepth(594, () => {
+      for (const capX of [592, 648]) {
+        ctx.fillStyle = '#070b12'
+        ctx.fillRect(capX - 3, 517, 44, 78)
+        ctx.fillStyle = '#334155'
+        ctx.fillRect(capX - 1, 519, 40, 11)
+        ctx.fillRect(capX - 1, 583, 40, 11)
+        ctx.fillStyle = '#64748b'
+        ctx.fillRect(capX + 1, 521, 36, 3)
+        ctx.fillRect(capX + 1, 585, 36, 3)
+        ctx.fillStyle = '#0891b2'
+        ctx.fillRect(capX + 2, 530, 34, 53)
+        ctx.fillStyle = '#22d3ee'
+        ctx.fillRect(capX + 5, 532, 22, 49)
+        ctx.fillStyle = '#cffafe'
+        ctx.fillRect(capX + 7, 534, 5, 44)
+      }
+    })
 
     // 2 Tanques grises inferiores con manómetro, válvulas y franjas
-    for (const tankX of [256, 312]) {
-      ctx.fillStyle = '#070b12'
-      ctx.fillRect(tankX - 2, 794, 44, 80)
-      ctx.fillStyle = '#475569'
-      ctx.fillRect(tankX + 10, 786, 20, 10)
-      ctx.fillStyle = '#dc2626'
-      ctx.fillRect(tankX + 13, 782, 14, 4)
-      ctx.fillStyle = '#64748b'
-      ctx.fillRect(tankX, 796, 40, 76)
-      ctx.fillStyle = '#94a3b8'
-      ctx.fillRect(tankX + 4, 799, 26, 70)
-      ctx.fillStyle = '#e2e8f0'
-      ctx.fillRect(tankX + 7, 804, 8, 60)
-      ctx.fillStyle = '#ef4444'
-      ctx.fillRect(tankX, 822, 40, 6)
-      ctx.fillStyle = '#0f172a'
-      ctx.fillRect(tankX + 25, 804, 10, 10)
-      ctx.fillStyle = '#fde047'
-      ctx.fillRect(tankX + 27, 806, 6, 6)
-    }
+    pushDepth(872, () => {
+      for (const tankX of [256, 312]) {
+        ctx.fillStyle = '#070b12'
+        ctx.fillRect(tankX - 2, 794, 44, 80)
+        ctx.fillStyle = '#475569'
+        ctx.fillRect(tankX + 10, 786, 20, 10)
+        ctx.fillStyle = '#dc2626'
+        ctx.fillRect(tankX + 13, 782, 14, 4)
+        ctx.fillStyle = '#64748b'
+        ctx.fillRect(tankX, 796, 40, 76)
+        ctx.fillStyle = '#94a3b8'
+        ctx.fillRect(tankX + 4, 799, 26, 70)
+        ctx.fillStyle = '#e2e8f0'
+        ctx.fillRect(tankX + 7, 804, 8, 60)
+        ctx.fillStyle = '#ef4444'
+        ctx.fillRect(tankX, 822, 40, 6)
+        ctx.fillStyle = '#0f172a'
+        ctx.fillRect(tankX + 25, 804, 10, 10)
+        ctx.fillStyle = '#fde047'
+        ctx.fillRect(tankX + 27, 806, 6, 6)
+      }
+    })
 
     // Brazo robótico hidráulico naranja articulado con pistón cromado y garra
     const armRot = Math.sin(time * 1.8) * 0.24
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(590, 802, 60, 42)
-    ctx.fillStyle = '#b45309'
-    ctx.fillRect(592, 804, 56, 38)
-    ctx.fillStyle = '#f59e0b'
-    ctx.fillRect(595, 807, 50, 8)
-    ctx.save()
-    ctx.translate(616, 804)
-    ctx.rotate(armRot)
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(-76, -14, 82, 22)
-    ctx.fillStyle = '#ea580c'
-    ctx.fillRect(-74, -12, 78, 18)
-    ctx.fillStyle = '#fb923c'
-    ctx.fillRect(-72, -10, 74, 5)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(-48, 2, 42, 4)
-    ctx.fillStyle = '#facc15'
-    ctx.fillRect(-88, -18, 18, 28)
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(-86, -14, 10, 20)
-    ctx.restore()
+    pushDepth(846, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(590, 802, 60, 42)
+      ctx.fillStyle = '#b45309'
+      ctx.fillRect(592, 804, 56, 38)
+      ctx.fillStyle = '#f59e0b'
+      ctx.fillRect(595, 807, 50, 8)
+      ctx.save()
+      ctx.translate(616, 804)
+      ctx.rotate(armRot)
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(-76, -14, 82, 22)
+      ctx.fillStyle = '#ea580c'
+      ctx.fillRect(-74, -12, 78, 18)
+      ctx.fillStyle = '#fb923c'
+      ctx.fillRect(-72, -10, 74, 5)
+      ctx.fillStyle = '#cbd5e1'
+      ctx.fillRect(-48, 2, 42, 4)
+      ctx.fillStyle = '#facc15'
+      ctx.fillRect(-88, -18, 18, 28)
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(-86, -14, 10, 20)
+      ctx.restore()
+    })
 
     // Simulador APAS + manuales de vuelo en Hangar (CÓNDOR-4)
     const atlasLaunch = getStationSpriteAtlas()
     if (atlasLaunch) {
-      drawAtlasSprite(ctx, atlasLaunch.furniture.dockingSimulator, 224, 514)
-      drawAtlasSprite(ctx, atlasLaunch.furniture.nasaBookshelf, 646, 514)
+      pushDepth(558, () => drawAtlasSprite(ctx, atlasLaunch.furniture.dockingSimulator, 224, 514))
+      pushDepth(560, () => drawAtlasSprite(ctx, atlasLaunch.furniture.nasaBookshelf, 516, 516))
     }
   }
 
@@ -3482,66 +3788,68 @@ function drawSpaceStationWorld(
   // c) ENGINE ROOM (Turbina horizontal pesada con aletas, plasma y tobera Mach)
   // --------------------------------------------------------------------------
   {
-    ctx.fillStyle = '#070b12'
-    ctx.beginPath()
-    ctx.moveTo(226, 1165)
-    ctx.lineTo(162, 1133)
-    ctx.lineTo(162, 1267)
-    ctx.lineTo(226, 1235)
-    ctx.closePath()
-    ctx.fill()
+    pushDepth(1258, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.beginPath()
+      ctx.moveTo(226, 1170)
+      ctx.lineTo(162, 1138)
+      ctx.lineTo(162, 1272)
+      ctx.lineTo(226, 1240)
+      ctx.closePath()
+      ctx.fill()
 
-    ctx.fillStyle = '#1e293b'
-    ctx.beginPath()
-    ctx.moveTo(224, 1168)
-    ctx.lineTo(164, 1136)
-    ctx.lineTo(164, 1264)
-    ctx.lineTo(224, 1232)
-    ctx.closePath()
-    ctx.fill()
-    ctx.strokeStyle = '#64748b'
-    ctx.lineWidth = 2
-    ctx.stroke()
+      ctx.fillStyle = '#1e293b'
+      ctx.beginPath()
+      ctx.moveTo(224, 1173)
+      ctx.lineTo(164, 1141)
+      ctx.lineTo(164, 1269)
+      ctx.lineTo(224, 1237)
+      ctx.closePath()
+      ctx.fill()
+      ctx.strokeStyle = '#64748b'
+      ctx.lineWidth = 2
+      ctx.stroke()
 
-    const flameLen = 36 + Math.sin(time * 18) * 14
-    ctx.fillStyle = 'rgba(14, 165, 233, 0.45)'
-    ctx.beginPath()
-    ctx.moveTo(164, 1146)
-    ctx.lineTo(164 - flameLen * 1.25, 1200)
-    ctx.lineTo(164, 1254)
-    ctx.closePath()
-    ctx.fill()
-    ctx.fillStyle = 'rgba(186, 230, 253, 0.85)'
-    ctx.beginPath()
-    ctx.moveTo(164, 1168)
-    ctx.lineTo(164 - flameLen * 0.75, 1200)
-    ctx.lineTo(164, 1232)
-    ctx.closePath()
-    ctx.fill()
+      const flameLen = 36 + Math.sin(time * 18) * 14
+      ctx.fillStyle = 'rgba(14, 165, 233, 0.45)'
+      ctx.beginPath()
+      ctx.moveTo(164, 1151)
+      ctx.lineTo(164 - flameLen * 1.25, 1205)
+      ctx.lineTo(164, 1259)
+      ctx.closePath()
+      ctx.fill()
+      ctx.fillStyle = 'rgba(186, 230, 253, 0.85)'
+      ctx.beginPath()
+      ctx.moveTo(164, 1173)
+      ctx.lineTo(164 - flameLen * 0.75, 1205)
+      ctx.lineTo(164, 1237)
+      ctx.closePath()
+      ctx.fill()
 
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(270, 1134, 264, 116)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(272, 1136, 260, 112)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(288, 1150, 228, 84)
-    for (let ringX = 308; ringX <= 488; ringX += 36) {
-      ctx.fillStyle = '#161b22'
-      ctx.fillRect(ringX, 1140, 14, 104)
-      ctx.fillStyle = '#64748b'
-      ctx.fillRect(ringX + 3, 1142, 4, 100)
-    }
-    const coreGlow = 0.65 + 0.35 * Math.sin(time * 8)
-    ctx.fillStyle = `rgba(249, 115, 22, ${coreGlow})`
-    ctx.fillRect(320, 1176, 160, 32)
-    ctx.fillStyle = '#fef08a'
-    ctx.fillRect(328, 1185, 144, 14)
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(264, 1148, 256, 110)
+      ctx.fillStyle = '#334155'
+      ctx.fillRect(266, 1150, 252, 106)
+      ctx.fillStyle = '#475569'
+      ctx.fillRect(282, 1164, 220, 78)
+      for (let rx = 300; rx <= 480; rx += 36) {
+        ctx.fillStyle = '#161b22'
+        ctx.fillRect(rx, 1154, 14, 98)
+        ctx.fillStyle = '#64748b'
+        ctx.fillRect(rx + 3, 1156, 4, 94)
+      }
+      const coreGlow = 0.65 + 0.35 * Math.sin(time * 8)
+      ctx.fillStyle = `rgba(249, 115, 22, ${coreGlow})`
+      ctx.fillRect(312, 1188, 156, 30)
+      ctx.fillStyle = '#fef08a'
+      ctx.fillRect(320, 1196, 140, 14)
+    })
 
     // Telemetría de empuje en Sala de Motores (CÓNDOR-4)
     const atlasEngine = getStationSpriteAtlas()
     if (atlasEngine) {
-      drawAtlasSprite(ctx, atlasEngine.furniture.secondaryOrbitalMonitor, 612, 1094)
-      drawAtlasSprite(ctx, atlasEngine.furniture.commanderChair, 622, 1142)
+      pushDepth(1130, () => drawAtlasSprite(ctx, atlasEngine.furniture.secondaryOrbitalMonitor, 612, 1094))
+      pushDepth(1176, () => drawAtlasSprite(ctx, atlasEngine.furniture.commanderChair, 618, 1140))
     }
   }
 
@@ -3708,85 +4016,103 @@ function drawSpaceStationWorld(
     ctx.beginPath()
     ctx.ellipse(sCx, sCy, 56, 36, 0, 0, Math.PI * 2)
     ctx.fill()
-    ctx.fillStyle = '#384252'
-    ctx.beginPath()
-    ctx.ellipse(sCx, sCy, 53, 33, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#071422'
-    ctx.beginPath()
-    ctx.ellipse(sCx, sCy, 30, 18, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = '#34d399'
-    ctx.lineWidth = 1.5
-    ctx.stroke()
-    // Barrido de órbita central en pozo de consola
-    ctx.strokeStyle = '#67e8f9'
-    ctx.beginPath()
-    ctx.moveTo(sCx, sCy)
-    ctx.lineTo(sCx + Math.cos(time * 2.2) * 26, sCy + Math.sin(time * 2.2) * 15)
-    ctx.stroke()
-
-    for (let mIdx = 0; mIdx < 6; mIdx++) {
-      const mAng = (mIdx * Math.PI) / 3 - 0.3
-      const mx = Math.round(sCx + Math.cos(mAng) * 42)
-      const my = Math.round(sCy + Math.sin(mAng) * 25)
-      const isCyan = mIdx % 2 === 0
+    pushDepth(264, () => {
       ctx.fillStyle = '#05070d'
-      ctx.fillRect(mx - 12, my - 9, 24, 16)
-      ctx.fillStyle = isCyan ? '#042f49' : '#032214'
-      ctx.fillRect(mx - 10, my - 7, 20, 12)
-      ctx.strokeStyle = isCyan ? '#22d3ee' : '#4ade80'
-      ctx.lineWidth = 1
-      ctx.strokeRect(mx - 10, my - 7, 20, 12)
-      ctx.fillStyle = isCyan ? '#67e8f9' : '#4ade80'
-      ctx.fillRect(mx - 7, my - 3 + Math.round(Math.sin(time * 5 + mIdx) * 2), 14, 2)
-    }
+      ctx.beginPath()
+      ctx.ellipse(sCx, sCy, 56, 36, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#384252'
+      ctx.beginPath()
+      ctx.ellipse(sCx, sCy, 53, 33, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#071422'
+      ctx.beginPath()
+      ctx.ellipse(sCx, sCy, 30, 18, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#34d399'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+      ctx.strokeStyle = '#67e8f9'
+      ctx.beginPath()
+      ctx.moveTo(sCx, sCy)
+      ctx.lineTo(sCx + Math.cos(time * 2.2) * 26, sCy + Math.sin(time * 2.2) * 15)
+      ctx.stroke()
 
-    // Estación secundaria / Filtro de Constelación CubeSat en borde derecho (640, 192 -> com_filter)
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(606, 166, 76, 56)
-    ctx.fillStyle = '#252c37'
-    ctx.fillRect(608, 168, 72, 52)
-    ctx.strokeStyle = '#38bdf8'
-    ctx.lineWidth = 1.5
-    ctx.strokeRect(608, 168, 72, 52)
-    ctx.fillStyle = '#031d11'
-    ctx.fillRect(614, 174, 28, 20)
-    ctx.fillRect(646, 174, 28, 20)
-    ctx.fillStyle = '#4ade80'
-    ctx.fillRect(618, 182 + Math.round(Math.sin(time * 4) * 4), 20, 3)
-    ctx.fillStyle = '#67e8f9'
-    ctx.fillRect(650, 180, 18, 8)
-    // Silla derecha frente a consola lateral
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(688, 184, 18, 18)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(690, 186, 14, 14)
+      const cyberHack = threatMap.has('cyber')
+      for (let mIdx = 0; mIdx < 6; mIdx++) {
+        const mAng = (mIdx * Math.PI) / 3 - 0.3
+        const mx = Math.round(sCx + Math.cos(mAng) * 42)
+        const my = Math.round(sCy + Math.sin(mAng) * 25)
+        const glitchOn = cyberHack && Math.sin(time * 22 + mIdx * 3) > 0
+        const isCyan = mIdx % 2 === 0
+        ctx.fillStyle = '#05070d'
+        ctx.fillRect(mx - 12, my - 9, 24, 16)
+        ctx.fillStyle = glitchOn ? '#450a0a' : isCyan ? '#042f49' : '#032214'
+        ctx.fillRect(mx - 10, my - 7, 20, 12)
+        ctx.strokeStyle = glitchOn ? '#ef4444' : isCyan ? '#22d3ee' : '#4ade80'
+        ctx.lineWidth = 1
+        ctx.strokeRect(mx - 10, my - 7, 20, 12)
+        ctx.fillStyle = glitchOn ? (mIdx % 2 === 0 ? '#22d3ee' : '#ef4444') : isCyan ? '#67e8f9' : '#4ade80'
+        ctx.fillRect(mx - 7, my - 3 + Math.round(Math.sin(time * 5 + mIdx) * 2), 14, 2)
+      }
+      if (cyberHack) {
+        ctx.fillStyle = Math.sin(time * 16) > 0 ? 'rgba(239, 68, 68, 0.22)' : 'rgba(34, 211, 238, 0.22)'
+        ctx.fillRect(sCx - 54, sCy - 24, 108, 4)
+        ctx.fillRect(sCx - 42, sCy + 14, 84, 3)
+        ctx.font = 'bold 7px "Press Start 2P", monospace'
+        ctx.textAlign = 'center'
+        ctx.fillStyle = Math.sin(time * 10) > 0 ? '#ef4444' : '#22d3ee'
+        ctx.fillText('PORT 8080 HACK!', sCx, sCy - 40)
+      }
+    })
 
-    // Consola lateral izquierda con silla (x ~ 256, y ~ 200) + Racks de comunicaciones en bordes inferiores
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(248, 174, 46, 86)
-    ctx.fillStyle = '#2b3444'
-    ctx.fillRect(250, 176, 42, 82)
-    ctx.fillStyle = '#042f49'
-    ctx.fillRect(256, 184, 30, 20)
-    ctx.fillStyle = '#031d11'
-    ctx.fillRect(256, 214, 30, 20)
-    ctx.fillStyle = '#4ade80'
-    ctx.fillRect(260, 222, 22, 3)
-    ctx.fillStyle = '#22d3ee'
-    ctx.fillRect(260, 192, 22, 3)
-    // Silla lateral izquierda
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(298, 202, 18, 18)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(300, 204, 14, 14)
+    // Estación secundaria / Filtro de Constelación CubeSat en borde derecho (com_filter)
+    pushDepth(222, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(606, 166, 76, 56)
+      ctx.fillStyle = '#252c37'
+      ctx.fillRect(608, 168, 72, 52)
+      ctx.strokeStyle = '#38bdf8'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(608, 168, 72, 52)
+      ctx.fillStyle = '#031d11'
+      ctx.fillRect(614, 174, 28, 20)
+      ctx.fillRect(646, 174, 28, 20)
+      ctx.fillStyle = '#4ade80'
+      ctx.fillRect(618, 182 + Math.round(Math.sin(time * 4) * 4), 20, 3)
+      ctx.fillStyle = '#67e8f9'
+      ctx.fillRect(650, 180, 18, 8)
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(684, 184, 18, 18)
+      ctx.fillStyle = '#334155'
+      ctx.fillRect(686, 186, 14, 14)
+    })
+
+    // Consola lateral izquierda con silla
+    pushDepth(260, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(252, 174, 46, 86)
+      ctx.fillStyle = '#2b3444'
+      ctx.fillRect(254, 176, 42, 82)
+      ctx.fillStyle = '#042f49'
+      ctx.fillRect(260, 184, 30, 20)
+      ctx.fillStyle = '#031d11'
+      ctx.fillRect(260, 214, 30, 20)
+      ctx.fillStyle = '#4ade80'
+      ctx.fillRect(264, 222, 22, 3)
+      ctx.fillStyle = '#22d3ee'
+      ctx.fillRect(264, 192, 22, 3)
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(298, 202, 16, 18)
+      ctx.fillStyle = '#334155'
+      ctx.fillRect(300, 204, 12, 14)
+    })
 
     const atlasSpace = getStationSpriteAtlas()
     if (atlasSpace) {
-      drawAtlasSprite(ctx, atlasSpace.furniture.dsnServerRack, 246, 290)
-      drawAtlasSprite(ctx, atlasSpace.furniture.spectrumAnalyzer, 578, 308)
-      drawAtlasSprite(ctx, atlasSpace.furniture.dsnServerRack, 694, 296)
+      pushDepth(346, () => drawAtlasSprite(ctx, atlasSpace.furniture.dsnServerRack, 516, 298))
+      pushDepth(344, () => drawAtlasSprite(ctx, atlasSpace.furniture.spectrumAnalyzer, 568, 308))
+      pushDepth(344, () => drawAtlasSprite(ctx, atlasSpace.furniture.dsnServerRack, 694, 296))
     }
 
     // ------------------------------------------------------------------------
@@ -3795,51 +4121,65 @@ function drawSpaceStationWorld(
     drawPanoramicSat01Window(896, 80, 416, 74)
 
     const cCx = 1104
-    const cCy = 204
+    const cCy = 194
     ctx.strokeStyle = '#334155'
     ctx.lineWidth = 3
     ctx.beginPath()
     ctx.ellipse(cCx, cCy, 98, 56, 0, 0, Math.PI * 2)
     ctx.stroke()
 
-    ctx.fillStyle = '#05070d'
-    ctx.beginPath()
-    ctx.ellipse(cCx, cCy, 76, 42, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#252c37'
-    ctx.beginPath()
-    ctx.ellipse(cCx, cCy, 73, 39, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = '#38bdf8'
-    ctx.lineWidth = 1.5
-    ctx.stroke()
+    pushDepth(cCy + 42, () => {
+      ctx.fillStyle = '#05070d'
+      ctx.beginPath()
+      ctx.ellipse(cCx, cCy, 76, 42, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#252c37'
+      ctx.beginPath()
+      ctx.ellipse(cCx, cCy, 73, 39, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#38bdf8'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
 
-    for (let cm = 0; cm < 5; cm++) {
-      const ang = -Math.PI * 0.88 + cm * (Math.PI * 0.44)
-      const mx = Math.round(cCx + Math.cos(ang) * 52)
-      const my = Math.round(cCy + Math.sin(ang) * 26)
-      const gMon = cm % 2 === 0
-      ctx.fillStyle = '#070b12'
-      ctx.fillRect(mx - 14, my - 10, 28, 18)
-      ctx.fillStyle = gMon ? '#032214' : '#042f49'
-      ctx.fillRect(mx - 12, my - 8, 24, 14)
-      ctx.strokeStyle = gMon ? '#4ade80' : '#22d3ee'
-      ctx.strokeRect(mx - 12, my - 8, 24, 14)
-      ctx.fillStyle = gMon ? '#4ade80' : '#67e8f9'
-      for (let b = 0; b < 4; b++) {
-        const bh = 3 + Math.round(((Math.sin(time * 5 + b + cm) + 1) / 2) * 7)
-        ctx.fillRect(mx - 9 + b * 5, my + 4 - bh, 3, bh)
+      const telecomDesync = threatMap.has('telecom')
+      for (let cm = 0; cm < 5; cm++) {
+        const ang = -Math.PI * 0.88 + cm * (Math.PI * 0.44)
+        const mx = Math.round(cCx + Math.cos(ang) * 52)
+        const my = Math.round(cCy + Math.sin(ang) * 26)
+        const gMon = cm % 2 === 0
+        ctx.fillStyle = '#070b12'
+        ctx.fillRect(mx - 14, my - 10, 28, 18)
+        ctx.fillStyle = telecomDesync ? '#2a0b09' : gMon ? '#032214' : '#042f49'
+        ctx.fillRect(mx - 12, my - 8, 24, 14)
+        ctx.strokeStyle = telecomDesync ? '#f97316' : gMon ? '#4ade80' : '#22d3ee'
+        ctx.strokeRect(mx - 12, my - 8, 24, 14)
+        if (telecomDesync) {
+          ctx.strokeStyle = cm % 2 === 0 ? '#ef4444' : '#f59e0b'
+          ctx.beginPath()
+          for (let wx = -10; wx <= 10; wx += 2) {
+            const wy = my + Math.sin((wx + time * 14) * 0.7 + cm) * 5
+            if (wx === -10) ctx.moveTo(mx + wx, wy)
+            else ctx.lineTo(mx + wx, wy)
+          }
+          ctx.stroke()
+        } else {
+          ctx.fillStyle = gMon ? '#4ade80' : '#67e8f9'
+          for (let b = 0; b < 4; b++) {
+            const bh = 3 + Math.round(((Math.sin(time * 5 + b + cm) + 1) / 2) * 7)
+            ctx.fillRect(mx - 9 + b * 5, my + 4 - bh, 3, bh)
+          }
+        }
       }
-    }
+    })
 
     const atlasComms = getStationSpriteAtlas()
     if (atlasComms) {
-      drawAtlasSprite(ctx, atlasComms.furniture.dsnServerRack, 892, 166)
-      drawAtlasSprite(ctx, atlasComms.furniture.receiverAntenna, 944, 170)
-      drawAtlasSprite(ctx, atlasComms.furniture.cryptoDevice, 1226, 170)
-      drawAtlasSprite(ctx, atlasComms.furniture.dsnServerRack, 1278, 166)
-      drawAtlasSprite(ctx, atlasComms.furniture.dualSatTrackMonitors, 902, 290)
-      drawAtlasSprite(ctx, atlasComms.furniture.spectrumAnalyzer, 1226, 290)
+      pushDepth(182, () => drawAtlasSprite(ctx, atlasComms.furniture.dsnServerRack, 898, 134))
+      pushDepth(178, () => drawAtlasSprite(ctx, atlasComms.furniture.receiverAntenna, 944, 138))
+      pushDepth(174, () => drawAtlasSprite(ctx, atlasComms.furniture.cryptoDevice, 1226, 138))
+      pushDepth(182, () => drawAtlasSprite(ctx, atlasComms.furniture.dsnServerRack, 1276, 134))
+      pushDepth(336, () => drawAtlasSprite(ctx, atlasComms.furniture.dualSatTrackMonitors, 904, 300))
+      pushDepth(340, () => drawAtlasSprite(ctx, atlasComms.furniture.spectrumAnalyzer, 1226, 304))
     }
   }
 
@@ -3915,9 +4255,11 @@ function drawSpaceStationWorld(
       ctx.lineWidth = 1.2
       ctx.strokeRect(cx - 13.5, cy - 35.5, 27, 71)
     }
-    drawBioCylinder(1564, 194, 'green', 1)
-    drawBioCylinder(1608, 194, 'cyan', 2)
-    drawBioCylinder(1652, 194, 'green', 3)
+    pushDepth(246, () => {
+      drawBioCylinder(1564, 194, 'green', 1)
+      drawBioCylinder(1608, 194, 'cyan', 2)
+      drawBioCylinder(1652, 194, 'green', 3)
+    })
 
     // Centro: Plataforma hexagonal elevada con anillos de luz dorados girando bajo los pies de PUMA (1764, 240)
     {
@@ -3971,7 +4313,7 @@ function drawSpaceStationWorld(
     }
 
     // Centro superior: Consola curva panorámica con pantallas verdes/cian de gráficas y ADN (1758, 152)
-    {
+    pushDepth(194, () => {
       ctx.fillStyle = '#070b12'
       ctx.beginPath()
       ctx.moveTo(1686, 174)
@@ -4006,7 +4348,6 @@ function drawSpaceStationWorld(
         ctx.strokeRect(sc.x, sc.y, sc.w, sc.h)
 
         if (sc.kind === 'dna') {
-          // Doble hélice de ADN animada verde/cian
           for (let dx = 4; dx < sc.w - 4; dx += 5) {
             const p = time * 4 + dx * 0.28
             const y1 = sc.y + sc.h / 2 + Math.sin(p) * 8
@@ -4036,7 +4377,7 @@ function drawSpaceStationWorld(
           }
         }
       }
-    }
+    })
 
     // Derecha: Enorme ventanal espacial biselado con planeta bandeado y satélite científico SAT-02
     {
@@ -4152,7 +4493,7 @@ function drawSpaceStationWorld(
     }
 
     // Pod holográfico compacto en (1936, 256) para sci_holo sin tapar el ventanal ni la plataforma hexagonal
-    {
+    pushDepth(280, () => {
       ctx.fillStyle = '#070b12'
       ctx.fillRect(1898, 224, 76, 56)
       ctx.fillStyle = '#252c37'
@@ -4171,13 +4512,13 @@ function drawSpaceStationWorld(
       ctx.closePath()
       ctx.fill()
       ctx.stroke()
-    }
+    })
 
     // Estantería glaciar e incubadora botánica en los zócalos inferiores de PUMA-3
     const atlasUser = getStationSpriteAtlas()
     if (atlasUser) {
-      drawAtlasSprite(ctx, atlasUser.furniture.botanicalIncubator, 1554, 286)
-      drawAtlasSprite(ctx, atlasUser.furniture.geoGlacierShelf, 1998, 272)
+      pushDepth(342, () => drawAtlasSprite(ctx, atlasUser.furniture.botanicalIncubator, 1944, 298))
+      pushDepth(342, () => drawAtlasSprite(ctx, atlasUser.furniture.geoGlacierShelf, 1994, 298))
     }
   }
 
@@ -4214,54 +4555,60 @@ function drawSpaceStationWorld(
       ctx.restore()
     }
 
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(1622, 486, 132, 60)
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillRect(1624, 488, 128, 56)
-    ctx.fillStyle = 'rgba(125, 211, 252, 0.35)'
-    ctx.fillRect(1634, 498, 108, 36)
-    ctx.fillStyle = '#ec4899'
-    ctx.fillRect(1652, 516, 14, 14)
-    ctx.fillStyle = '#22c55e'
-    ctx.fillRect(1682, 514, 14, 16)
-    ctx.fillStyle = '#38bdf8'
-    ctx.fillRect(1712, 516, 14, 14)
+    pushDepth(546, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(1618, 486, 118, 60)
+      ctx.fillStyle = '#cbd5e1'
+      ctx.fillRect(1620, 488, 114, 56)
+      ctx.fillStyle = 'rgba(125, 211, 252, 0.35)'
+      ctx.fillRect(1628, 498, 98, 36)
+      ctx.fillStyle = '#ec4899'
+      ctx.fillRect(1642, 516, 14, 14)
+      ctx.fillStyle = '#22c55e'
+      ctx.fillRect(1670, 514, 14, 16)
+      ctx.fillStyle = '#38bdf8'
+      ctx.fillRect(1698, 516, 14, 14)
+    })
 
-    // Mesa curva científica para sci_lab (1792, 552)
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(1760, 526, 68, 44)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(1762, 528, 64, 40)
-    ctx.fillStyle = '#032014'
-    ctx.fillRect(1768, 533, 52, 22)
-    ctx.strokeStyle = '#55efc4'
-    ctx.lineWidth = 1.2
-    ctx.strokeRect(1768, 533, 52, 22)
-    ctx.fillStyle = '#55efc4'
-    for (let dx = 4; dx < 46; dx += 6) {
-      const yy = 544 + Math.round(Math.sin(time * 4 + dx * 0.4) * 5)
-      ctx.fillRect(1768 + dx, yy, 4, 3)
-    }
+    // Mesa curva científica para sci_lab (1875, 552, despejando puerta Norte)
+    pushDepth(574, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(1846, 532, 58, 42)
+      ctx.fillStyle = '#334155'
+      ctx.fillRect(1848, 534, 54, 38)
+      ctx.fillStyle = '#032014'
+      ctx.fillRect(1852, 539, 46, 21)
+      ctx.strokeStyle = '#55efc4'
+      ctx.lineWidth = 1.2
+      ctx.strokeRect(1852, 539, 46, 21)
+      ctx.fillStyle = '#55efc4'
+      for (let dx = 4; dx < 40; dx += 6) {
+        const yy = 549 + Math.round(Math.sin(time * 4 + dx * 0.4) * 5)
+        ctx.fillRect(1852 + dx, yy, 4, 3)
+      }
+    })
 
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(1880, 558, 104, 62)
-    ctx.strokeStyle = '#55efc4'
-    ctx.lineWidth = 2
-    ctx.strokeRect(1880, 558, 104, 62)
-    for (let r = 0; r < 4; r++) {
-      ctx.fillStyle = '#1e293b'
-      ctx.fillRect(1890, 566 + r * 12, 84, 8)
-      ctx.fillStyle = (Math.floor(time * 6) + r) % 2 === 0 ? '#55efc4' : '#0284c7'
-      ctx.fillRect(1894, 568 + r * 12, 42, 4)
-      ctx.fillStyle = '#fbbf24'
-      ctx.fillRect(1962, 568 + r * 12, 6, 4)
-    }
+    pushDepth(620, () => {
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(1912, 558, 96, 62)
+      ctx.strokeStyle = '#55efc4'
+      ctx.lineWidth = 2
+      ctx.strokeRect(1912, 558, 96, 62)
+      for (let r = 0; r < 4; r++) {
+        ctx.fillStyle = '#1e293b'
+        ctx.fillRect(1920, 566 + r * 12, 80, 8)
+        ctx.fillStyle = (Math.floor(time * 6) + r) % 2 === 0 ? '#55efc4' : '#0284c7'
+        ctx.fillRect(1924, 568 + r * 12, 38, 4)
+        ctx.fillStyle = '#fbbf24'
+        ctx.fillRect(1988, 568 + r * 12, 6, 4)
+      }
+    })
 
     const atlasLab = getStationSpriteAtlas()
     if (atlasLab) {
       drawAtlasSprite(ctx, atlasLab.furniture.scienceWhiteboard, 1768, 464)
-      drawAtlasSprite(ctx, atlasLab.furniture.botanicalIncubator, 1768, 652)
-      drawAtlasSprite(ctx, atlasLab.furniture.geoGlacierShelf, 1922, 646)
+      pushDepth(696, () => drawAtlasSprite(ctx, atlasLab.furniture.botanicalIncubator, 1768, 652))
+      pushDepth(690, () => drawAtlasSprite(ctx, atlasLab.furniture.geoGlacierShelf, 1922, 646))
     }
   }
 
@@ -4269,99 +4616,97 @@ function drawSpaceStationWorld(
   // h) POWER MGD & REACTOR (Sala ALPACA-1: Reactor abierto vórtice plasma azul/blanco + robot asistente + caja herramientas + estación doble nivel ⚡ + ventana Tierra + 3 vitrinas cristales 98%/97%/99%)
   // --------------------------------------------------------------------------
   {
-    // Cables blindados bronce/cobre y cian conectando el Reactor (1668, 912) con la estación de doble nivel (1804, 910)
+    // Cables blindados bronce/cobre y cian conectando el Reactor (1712, 972) con la estación de doble nivel (1836, 910)
     ctx.strokeStyle = '#92400e'
     ctx.lineWidth = 6
     ctx.beginPath()
-    ctx.moveTo(1668, 912)
-    ctx.lineTo(1752, 912)
+    ctx.moveTo(1712, 972)
+    ctx.lineTo(1790, 922)
     ctx.stroke()
     ctx.strokeStyle = '#38bdf8'
     ctx.lineWidth = 2
     ctx.beginPath()
-    ctx.moveTo(1668, 912)
-    ctx.lineTo(1752, 912)
+    ctx.moveTo(1712, 972)
+    ctx.lineTo(1790, 922)
     ctx.stroke()
 
-    // 1) IZQUIERDA: Imponente Reactor Circular abierto con bobinas naranjas y vórtice de plasma azul/blanco girando
+    // 1) IZQUIERDA: Reactor Circular abierto despejando acceso Oeste (1712, 972, r=46)
     {
-      const rx = 1668
-      const ry = 912
-      const halo = ctx.createRadialGradient(rx, ry, 10, rx, ry, 68 + Math.sin(time * 4) * 3)
-      halo.addColorStop(0, 'rgba(224, 242, 254, 0.9)')
-      halo.addColorStop(0.35, 'rgba(56, 189, 248, 0.55)')
-      halo.addColorStop(0.7, 'rgba(234, 88, 12, 0.25)')
-      halo.addColorStop(1, 'rgba(15, 23, 42, 0)')
-      ctx.fillStyle = halo
-      ctx.beginPath()
-      ctx.arc(rx, ry, 68, 0, Math.PI * 2)
-      ctx.fill()
+      const rx = 1712
+      const ry = 972
+      pushDepth(1018, () => {
+        const halo = ctx.createRadialGradient(rx, ry, 8, rx, ry, 58 + Math.sin(time * 4) * 3)
+        halo.addColorStop(0, 'rgba(224, 242, 254, 0.9)')
+        halo.addColorStop(0.35, 'rgba(56, 189, 248, 0.55)')
+        halo.addColorStop(0.7, 'rgba(234, 88, 12, 0.25)')
+        halo.addColorStop(1, 'rgba(15, 23, 42, 0)')
+        ctx.fillStyle = halo
+        ctx.beginPath()
+        ctx.arc(rx, ry, 58, 0, Math.PI * 2)
+        ctx.fill()
 
-      // Anillo exterior pesado en acero + bronce/cobre grabado
-      ctx.fillStyle = '#070b12'
-      ctx.beginPath()
-      ctx.arc(rx, ry, 54, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = '#78350f'
-      ctx.beginPath()
-      ctx.arc(rx, ry, 50, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.strokeStyle = '#d97706'
-      ctx.lineWidth = 3
-      ctx.stroke()
-      ctx.fillStyle = '#1e293b'
-      ctx.beginPath()
-      ctx.arc(rx, ry, 42, 0, Math.PI * 2)
-      ctx.fill()
+        ctx.fillStyle = '#070b12'
+        ctx.beginPath()
+        ctx.arc(rx, ry, 46, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#78350f'
+        ctx.beginPath()
+        ctx.arc(rx, ry, 42, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = '#d97706'
+        ctx.lineWidth = 3
+        ctx.stroke()
+        ctx.fillStyle = '#1e293b'
+        ctx.beginPath()
+        ctx.arc(rx, ry, 35, 0, Math.PI * 2)
+        ctx.fill()
 
-      // 8 Bobinas naranjas / cobre radiales con bridas metálicas
-      for (let k = 0; k < 8; k++) {
-        const ang = (k * Math.PI) / 4 + 0.12
+        for (let k = 0; k < 8; k++) {
+          const ang = (k * Math.PI) / 4 + 0.12
+          ctx.save()
+          ctx.translate(rx, ry)
+          ctx.rotate(ang)
+          ctx.fillStyle = '#070b12'
+          ctx.fillRect(24, -6, 16, 12)
+          ctx.fillStyle = '#ea580c'
+          ctx.fillRect(25, -4, 12, 8)
+          ctx.fillStyle = '#fb923c'
+          ctx.fillRect(27, -3, 3, 6)
+          ctx.fillRect(32, -3, 3, 6)
+          ctx.fillStyle = '#94a3b8'
+          ctx.fillRect(38, -5, 3, 10)
+          ctx.restore()
+        }
+
+        ctx.fillStyle = '#041326'
+        ctx.beginPath()
+        ctx.arc(rx, ry, 25, 0, Math.PI * 2)
+        ctx.fill()
+
         ctx.save()
         ctx.translate(rx, ry)
-        ctx.rotate(ang)
-        ctx.fillStyle = '#070b12'
-        ctx.fillRect(30, -7, 18, 14)
-        ctx.fillStyle = '#ea580c'
-        ctx.fillRect(31, -5, 14, 10)
-        ctx.fillStyle = '#fb923c'
-        ctx.fillRect(33, -4, 3, 8)
-        ctx.fillRect(39, -4, 3, 8)
-        ctx.fillStyle = '#94a3b8'
-        ctx.fillRect(45, -6, 4, 12)
+        ctx.rotate(time * 3.4)
+        for (let arm = 0; arm < 4; arm++) {
+          ctx.rotate(Math.PI / 2)
+          ctx.strokeStyle = arm % 2 === 0 ? '#38bdf8' : '#e0f2fe'
+          ctx.lineWidth = 3
+          ctx.beginPath()
+          ctx.arc(8, 0, 12, 0, Math.PI * 0.85)
+          ctx.stroke()
+        }
         ctx.restore()
-      }
 
-      // Pozo interior + Vórtice de plasma azul/blanco girando en su núcleo
-      ctx.fillStyle = '#041326'
-      ctx.beginPath()
-      ctx.arc(rx, ry, 30, 0, Math.PI * 2)
-      ctx.fill()
-
-      ctx.save()
-      ctx.translate(rx, ry)
-      ctx.rotate(time * 3.4)
-      for (let arm = 0; arm < 4; arm++) {
-        ctx.rotate(Math.PI / 2)
-        ctx.strokeStyle = arm % 2 === 0 ? '#38bdf8' : '#e0f2fe'
-        ctx.lineWidth = 3
+        const coreR = 9 + Math.sin(time * 8) * 2
+        ctx.fillStyle = '#38bdf8'
         ctx.beginPath()
-        ctx.arc(10, 0, 14, 0, Math.PI * 0.85)
-        ctx.stroke()
-      }
-      ctx.restore()
+        ctx.arc(rx, ry, coreR + 3, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.arc(rx, ry, coreR - 2, 0, Math.PI * 2)
+        ctx.fill()
+      })
 
-      const coreR = 11 + Math.sin(time * 8) * 2
-      ctx.fillStyle = '#38bdf8'
-      ctx.beginPath()
-      ctx.arc(rx, ry, coreR + 4, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = '#ffffff'
-      ctx.beginPath()
-      ctx.arc(rx, ry, coreR - 2, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Racks industriales pequeños al lado izquierdo del reactor + caja herramientas abierta + llaves + robot asistente
       const drawReactorSideRack = (sx: number, sy: number, sh: number) => {
         ctx.fillStyle = '#070b12'
         ctx.fillRect(sx - 2, sy - 2, 30, sh + 4)
@@ -4379,45 +4724,38 @@ function drawSpaceStationWorld(
           ctx.fillRect(sx + 16, row + 1, 4, 3)
         }
       }
-      drawReactorSideRack(1594, 838, 68)
-      drawReactorSideRack(1594, 916, 68)
+      pushDepth(996, () => drawReactorSideRack(1604, 944, 52))
 
-      // Pequeño robot asistente blanco/azul con ojo luminoso cian junto al reactor
-      {
-        const bx = 1624
-        const by = 1006 + Math.round(Math.sin(time * 3.5) * 1.5)
+      // Pequeño robot asistente blanco/azul con ojo luminoso cian bajo puerta Oeste
+      pushDepth(1038, () => {
+        const bx = 1621
+        const by = 1024 + Math.round(Math.sin(time * 3.5) * 1.5)
         ctx.fillStyle = '#070b12'
         ctx.fillRect(bx - 13, by - 15, 26, 30)
-        // Antena superior
         ctx.fillStyle = '#94a3b8'
         ctx.fillRect(bx - 1, by - 21, 2, 6)
         ctx.fillStyle = '#22d3ee'
         ctx.fillRect(bx - 2, by - 23, 4, 3)
-        // Cuerpo blanco & franja azul cobalto
         ctx.fillStyle = '#f8fafc'
         ctx.fillRect(bx - 11, by - 13, 22, 22)
         ctx.fillStyle = '#2563eb'
         ctx.fillRect(bx - 11, by - 2, 22, 6)
-        // Visor oscuro + ojo luminoso cian
         ctx.fillStyle = '#0f172a'
         ctx.fillRect(bx - 8, by - 11, 16, 8)
         ctx.fillStyle = Math.sin(time * 5) > -0.7 ? '#22d3ee' : '#a5f3fc'
         ctx.fillRect(bx - 2 + Math.round(Math.sin(time * 1.8) * 3), by - 9, 5, 4)
-        // Orugas metálicas
         ctx.fillStyle = '#334155'
         ctx.fillRect(bx - 12, by + 9, 24, 5)
-      }
+      })
 
-      // Caja de herramientas abierta roja/acero y llaves sobre la rejilla del piso
-      {
-        const tx = 1678
-        const ty = 1046
+      // Caja de herramientas abierta roja/acero sin obstruir salida Sur
+      pushDepth(1098, () => {
+        const tx = 1894
+        const ty = 1085
         ctx.fillStyle = '#070b12'
         ctx.fillRect(tx - 18, ty - 14, 36, 26)
-        // Tapa abierta inclinada hacia atrás
         ctx.fillStyle = '#991b1b'
         ctx.fillRect(tx - 16, ty - 12, 32, 9)
-        // Base roja de caja + bandejas metálicas y herramienta interior
         ctx.fillStyle = '#dc2626'
         ctx.fillRect(tx - 16, ty - 3, 32, 13)
         ctx.fillStyle = '#cbd5e1'
@@ -4425,97 +4763,89 @@ function drawSpaceStationWorld(
         ctx.fillStyle = '#facc15'
         ctx.fillRect(tx - 3, ty + 1, 6, 3)
 
-        // Llaves y destornilladores sueltos en la rejilla del piso
         ctx.fillStyle = '#cbd5e1'
-        ctx.fillRect(1716, 1054, 16, 4)
-        ctx.fillRect(1714, 1052, 4, 8)
-        ctx.fillRect(1729, 1052, 4, 8)
+        ctx.fillRect(tx + 20, ty + 6, 12, 4)
         ctx.fillStyle = '#f97316'
-        ctx.fillRect(1656, 1064, 7, 4)
-        ctx.fillStyle = '#94a3b8'
-        ctx.fillRect(1663, 1065, 11, 2)
-      }
+        ctx.fillRect(tx - 10, ty + 14, 7, 3)
+      })
     }
 
-    // 2) CENTRO: Estación de control de doble nivel con monitores de circuitos verdes, botones rojos/verdes y gran rayo amarillo ⚡
+    // 2) CENTRO: Estación de control de doble nivel con monitores de circuitos verdes y gran rayo ⚡
     {
-      const cx = 1796
+      const cx = 1836
       const cy = 910
-      // Nivel superior inclinado (monitores de circuitos verdes + emblemático rayo amarillo ⚡ arriba)
-      ctx.fillStyle = '#070b12'
-      ctx.fillRect(cx - 56, cy - 42, 112, 54)
-      ctx.fillStyle = '#2c3442'
-      ctx.fillRect(cx - 54, cy - 40, 108, 50)
-      ctx.strokeStyle = '#d97706'
-      ctx.lineWidth = 2
-      ctx.strokeRect(cx - 54, cy - 40, 108, 50)
+      pushDepth(946, () => {
+        ctx.fillStyle = '#070b12'
+        ctx.fillRect(cx - 56, cy - 42, 112, 54)
+        ctx.fillStyle = '#2c3442'
+        ctx.fillRect(cx - 54, cy - 40, 108, 50)
+        ctx.strokeStyle = '#d97706'
+        ctx.lineWidth = 2
+        ctx.strokeRect(cx - 54, cy - 40, 108, 50)
 
-      // 2 Monitores verdes de circuitos de potencia en el nivel superior
-      for (const mxOff of [-44, 6]) {
-        ctx.fillStyle = '#031d11'
-        ctx.fillRect(cx + mxOff, cy - 33, 38, 28)
-        ctx.strokeStyle = '#4ade80'
-        ctx.lineWidth = 1.2
-        ctx.strokeRect(cx + mxOff, cy - 33, 38, 28)
-        ctx.strokeStyle = '#22c55e'
+        for (const mxOff of [-44, 6]) {
+          ctx.fillStyle = '#031d11'
+          ctx.fillRect(cx + mxOff, cy - 33, 38, 28)
+          ctx.strokeStyle = '#4ade80'
+          ctx.lineWidth = 1.2
+          ctx.strokeRect(cx + mxOff, cy - 33, 38, 28)
+          ctx.strokeStyle = '#22c55e'
+          ctx.beginPath()
+          ctx.moveTo(cx + mxOff + 4, cy - 19)
+          ctx.lineTo(cx + mxOff + 14, cy - 19)
+          ctx.lineTo(cx + mxOff + 18, cy - 26)
+          ctx.lineTo(cx + mxOff + 34, cy - 26)
+          ctx.moveTo(cx + mxOff + 14, cy - 19)
+          ctx.lineTo(cx + mxOff + 18, cy - 12)
+          ctx.lineTo(cx + mxOff + 34, cy - 12)
+          ctx.stroke()
+          ctx.fillStyle = '#bbf7d0'
+          ctx.fillRect(cx + mxOff + 10 + Math.round(((time * 22) % 22)), cy - 27, 3, 3)
+        }
+
+        ctx.fillStyle = '#070b12'
+        ctx.fillRect(cx - 64, cy + 6, 128, 30)
+        ctx.fillStyle = '#334155'
+        ctx.fillRect(cx - 62, cy + 8, 124, 26)
+        ctx.fillStyle = '#92400e'
+        ctx.fillRect(cx - 62, cy + 8, 124, 4)
+        for (let b = 0; b < 8; b++) {
+          ctx.fillStyle = b % 2 === 0 ? '#ef4444' : '#22c55e'
+          ctx.fillRect(cx - 50 + b * 13, cy + 16, 8, 6)
+          ctx.fillStyle = '#f8fafc'
+          ctx.fillRect(cx - 48 + b * 13, cy + 17, 3, 2)
+        }
+        ctx.fillStyle = '#0f172a'
+        ctx.fillRect(cx - 44, cy + 25, 88, 6)
+
+        const bx = cx
+        const by = cy - 60
+        ctx.fillStyle = '#070b12'
         ctx.beginPath()
-        ctx.moveTo(cx + mxOff + 4, cy - 19)
-        ctx.lineTo(cx + mxOff + 14, cy - 19)
-        ctx.lineTo(cx + mxOff + 18, cy - 26)
-        ctx.lineTo(cx + mxOff + 34, cy - 26)
-        ctx.moveTo(cx + mxOff + 14, cy - 19)
-        ctx.lineTo(cx + mxOff + 18, cy - 12)
-        ctx.lineTo(cx + mxOff + 34, cy - 12)
+        ctx.arc(bx, by, 18, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#1e293b'
+        ctx.beginPath()
+        ctx.arc(bx, by, 15, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = '#fbbf24'
+        ctx.lineWidth = 2
         ctx.stroke()
-        ctx.fillStyle = '#bbf7d0'
-        ctx.fillRect(cx + mxOff + 10 + Math.round(((time * 22) % 22)), cy - 27, 3, 3)
-      }
-
-      // Nivel inferior de escritorio operador con botonera roja y verde luminosa
-      ctx.fillStyle = '#070b12'
-      ctx.fillRect(cx - 64, cy + 6, 128, 30)
-      ctx.fillStyle = '#334155'
-      ctx.fillRect(cx - 62, cy + 8, 124, 26)
-      ctx.fillStyle = '#92400e'
-      ctx.fillRect(cx - 62, cy + 8, 124, 4)
-      for (let b = 0; b < 8; b++) {
-        ctx.fillStyle = b % 2 === 0 ? '#ef4444' : '#22c55e'
-        ctx.fillRect(cx - 50 + b * 13, cy + 16, 8, 6)
-        ctx.fillStyle = '#f8fafc'
-        ctx.fillRect(cx - 48 + b * 13, cy + 17, 3, 2)
-      }
-      ctx.fillStyle = '#0f172a'
-      ctx.fillRect(cx - 44, cy + 25, 88, 6)
-
-      // Gran icono de rayo amarillo brillante arriba de la estación central de ALPACA ⚡
-      const bx = cx
-      const by = cy - 60
-      ctx.fillStyle = '#070b12'
-      ctx.beginPath()
-      ctx.arc(bx, by, 18, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = '#1e293b'
-      ctx.beginPath()
-      ctx.arc(bx, by, 15, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.strokeStyle = '#fbbf24'
-      ctx.lineWidth = 2
-      ctx.stroke()
-      ctx.fillStyle = '#fde047'
-      ctx.beginPath()
-      ctx.moveTo(bx + 3, by - 11)
-      ctx.lineTo(bx - 8, by + 1)
-      ctx.lineTo(bx, by + 1)
-      ctx.lineTo(bx - 4, by + 11)
-      ctx.lineTo(bx + 8, by - 1)
-      ctx.lineTo(bx, by - 1)
-      ctx.closePath()
-      ctx.fill()
+        ctx.fillStyle = '#fde047'
+        ctx.beginPath()
+        ctx.moveTo(bx + 3, by - 11)
+        ctx.lineTo(bx - 8, by + 1)
+        ctx.lineTo(bx, by + 1)
+        ctx.lineTo(bx - 4, by + 11)
+        ctx.lineTo(bx + 8, by - 1)
+        ctx.lineTo(bx, by - 1)
+        ctx.closePath()
+        ctx.fill()
+      })
     }
 
     // 3) DERECHA: Arco de ventana con horizonte brillante de la Tierra + debajo 3 vitrinas con cristales de energía cian (98%, 97%, 99%)
     {
-      // Arco de ventana industrial en acero y bronce mostrando horizonte brillante de la Tierra
       const wx = 1916
       const wy = 796
       const ww = 196
@@ -4538,7 +4868,6 @@ function drawSpaceStationWorld(
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(wx + 12 + ((i * 31) % (ww - 24)), wy + 10 + ((i * 19) % 24), 1.5, 1.5)
       }
-      // Horizonte brillante curvo de la Tierra abajo en la ventana
       const earthY = wy + wh + 78
       const glow = ctx.createRadialGradient(wx + ww / 2, earthY, 85, wx + ww / 2, earthY, 128)
       glow.addColorStop(0, '#1d4ed8')
@@ -4560,62 +4889,61 @@ function drawSpaceStationWorld(
       ctx.fillRect(wx + 114, wy + 56, 36, 5)
       ctx.restore()
 
-      // Debajo del arco: 3 vitrinas blindadas con cristales de energía cian brillantes (98%, 97%, 99%)
-      const crystalPcts = ['98%', '97%', '99%']
-      for (let cIdx = 0; cIdx < 3; cIdx++) {
-        const vx = 1922 + cIdx * 62
-        const vy = 886
-        ctx.fillStyle = '#070b12'
-        ctx.fillRect(vx - 2, vy - 2, 54, 86)
-        ctx.fillStyle = '#252c37'
-        ctx.fillRect(vx, vy, 50, 82)
-        ctx.strokeStyle = '#b45309'
-        ctx.lineWidth = 1.5
-        ctx.strokeRect(vx, vy, 50, 82)
+      pushDepth(968, () => {
+        const crystalPcts = ['98%', '97%', '99%']
+        for (let cIdx = 0; cIdx < 3; cIdx++) {
+          const vx = 1924 + cIdx * 62
+          const vy = 886
+          ctx.fillStyle = '#070b12'
+          ctx.fillRect(vx - 2, vy - 2, 54, 86)
+          ctx.fillStyle = '#252c37'
+          ctx.fillRect(vx, vy, 50, 82)
+          ctx.strokeStyle = '#b45309'
+          ctx.lineWidth = 1.5
+          ctx.strokeRect(vx, vy, 50, 82)
 
-        // Cristal cian facetado brillante dentro de la vitrina
-        ctx.fillStyle = '#041d2e'
-        ctx.fillRect(vx + 6, vy + 6, 38, 52)
-        ctx.fillStyle = '#0284c7'
-        ctx.beginPath()
-        ctx.moveTo(vx + 25, vy + 10)
-        ctx.lineTo(vx + 36, vy + 28)
-        ctx.lineTo(vx + 31, vy + 52)
-        ctx.lineTo(vx + 19, vy + 52)
-        ctx.lineTo(vx + 14, vy + 28)
-        ctx.closePath()
-        ctx.fill()
-        ctx.fillStyle = '#67e8f9'
-        ctx.beginPath()
-        ctx.moveTo(vx + 25, vy + 13)
-        ctx.lineTo(vx + 32, vy + 28)
-        ctx.lineTo(vx + 25, vy + 49)
-        ctx.lineTo(vx + 19, vy + 28)
-        ctx.closePath()
-        ctx.fill()
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(vx + 23, vy + 19, 3, 18)
+          ctx.fillStyle = '#041d2e'
+          ctx.fillRect(vx + 6, vy + 6, 38, 52)
+          ctx.fillStyle = '#0284c7'
+          ctx.beginPath()
+          ctx.moveTo(vx + 25, vy + 10)
+          ctx.lineTo(vx + 36, vy + 28)
+          ctx.lineTo(vx + 31, vy + 52)
+          ctx.lineTo(vx + 19, vy + 52)
+          ctx.lineTo(vx + 14, vy + 28)
+          ctx.closePath()
+          ctx.fill()
+          ctx.fillStyle = '#67e8f9'
+          ctx.beginPath()
+          ctx.moveTo(vx + 25, vy + 13)
+          ctx.lineTo(vx + 32, vy + 28)
+          ctx.lineTo(vx + 25, vy + 49)
+          ctx.lineTo(vx + 19, vy + 28)
+          ctx.closePath()
+          ctx.fill()
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(vx + 23, vy + 19, 3, 18)
 
-        // Visor digital verde mostrando 98%, 97%, 99%
-        ctx.fillStyle = '#031d11'
-        ctx.fillRect(vx + 6, vy + 62, 38, 16)
-        ctx.strokeStyle = '#22c55e'
-        ctx.lineWidth = 1
-        ctx.strokeRect(vx + 6, vy + 62, 38, 16)
-        ctx.font = 'bold 8px "Press Start 2P", monospace'
-        ctx.textAlign = 'center'
-        ctx.fillStyle = '#4ade80'
-        ctx.fillText(crystalPcts[cIdx], vx + 25, vy + 74)
-      }
+          ctx.fillStyle = '#031d11'
+          ctx.fillRect(vx + 6, vy + 62, 38, 16)
+          ctx.strokeStyle = '#22c55e'
+          ctx.lineWidth = 1
+          ctx.strokeRect(vx + 6, vy + 62, 38, 16)
+          ctx.font = 'bold 8px "Press Start 2P", monospace'
+          ctx.textAlign = 'center'
+          ctx.fillStyle = '#4ade80'
+          ctx.fillText(crystalPcts[cIdx], vx + 25, vy + 74)
+        }
+      })
     }
 
-    // Mobiliario complementario industrial ALPACA-1 en la parte baja sin estorbar pasillos ni la caja/robot
+    // Mobiliario complementario industrial ALPACA-1 en la parte baja sin estorbar pasillos ni la salida Sur
     const atlasPower = getStationSpriteAtlas()
     if (atlasPower) {
-      drawAtlasSprite(ctx, atlasPower.furniture.sparePartsCabinet, 1598, 1068)
-      drawAtlasSprite(ctx, atlasPower.furniture.auxBatteryBank, 1820, 1072)
-      drawAtlasSprite(ctx, atlasPower.furniture.oscilloscopeBench, 1940, 1058)
-      drawAtlasSprite(ctx, atlasPower.furniture.thermalDiagPanel, 2032, 1060)
+      pushDepth(1112, () => drawAtlasSprite(ctx, atlasPower.furniture.sparePartsCabinet, 1756, 1068))
+      pushDepth(1104, () => drawAtlasSprite(ctx, atlasPower.furniture.auxBatteryBank, 1814, 1072))
+      pushDepth(1094, () => drawAtlasSprite(ctx, atlasPower.furniture.oscilloscopeBench, 1936, 1058))
+      pushDepth(1088, () => drawAtlasSprite(ctx, atlasPower.furniture.thermalDiagPanel, 2028, 1060))
     }
   }
 
@@ -4623,16 +4951,21 @@ function drawSpaceStationWorld(
   // i) LIFE SUPPORT & ELECTRICAL (Tanques O2 detallados + tuberías + MASTER SWITCH)
   // --------------------------------------------------------------------------
   {
-    ctx.fillStyle = '#2c343e'
-    ctx.fillRect(1240, 1120, 16, 96)
-    ctx.fillRect(1240, 1312, 16, 96)
+    pushDepth(1216, () => {
+      ctx.fillStyle = '#2c343e'
+      ctx.fillRect(1240, 1120, 16, 96)
+    })
+    pushDepth(1408, () => {
+      ctx.fillStyle = '#2c343e'
+      ctx.fillRect(1240, 1312, 16, 96)
+    })
 
     ctx.fillStyle = '#64748b'
-    ctx.fillRect(940, 1116, 176, 10)
-    ctx.fillRect(982, 1116, 10, 24)
-    ctx.fillRect(1050, 1116, 10, 24)
+    ctx.fillRect(906, 1116, 176, 10)
+    ctx.fillRect(940, 1116, 10, 24)
+    ctx.fillRect(1008, 1116, 10, 24)
     ctx.fillStyle = '#94a3b8'
-    ctx.fillRect(940, 1118, 176, 4)
+    ctx.fillRect(906, 1118, 176, 4)
 
     const drawDetailedO2Tank = (tx: number, ty: number) => {
       ctx.fillStyle = '#070b12'
@@ -4660,62 +4993,111 @@ function drawSpaceStationWorld(
       ctx.textAlign = 'center'
       ctx.fillText('O2', tx + 27, ty + 56)
     }
-    drawDetailedO2Tank(960, 1138)
-    drawDetailedO2Tank(1028, 1138)
+    pushDepth(1238, () => {
+      drawDetailedO2Tank(918, 1138)
+      drawDetailedO2Tank(986, 1138)
+    })
 
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(1108, 1130, 56, 106)
-    ctx.fillStyle = '#334155'
-    ctx.fillRect(1110, 1132, 52, 12)
-    ctx.fillRect(1110, 1222, 52, 12)
-    ctx.fillStyle = '#16a34a'
-    ctx.fillRect(1116, 1144, 40, 78)
-    ctx.fillStyle = '#22c55e'
-    ctx.fillRect(1120, 1146, 30, 74)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
-    ctx.fillRect(1121, 1148, 5, 70)
-    for (let b = 0; b < 4; b++) {
-      const by = 1212 - ((time * 26 + b * 15) % 60)
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(1128 + b * 6, by, 3, 3)
-    }
+    pushDepth(1236, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(1054, 1130, 56, 106)
+      ctx.fillStyle = '#334155'
+      ctx.fillRect(1056, 1132, 52, 12)
+      ctx.fillRect(1056, 1222, 52, 12)
+      ctx.fillStyle = '#16a34a'
+      ctx.fillRect(1062, 1144, 40, 78)
+      ctx.fillStyle = '#22c55e'
+      ctx.fillRect(1066, 1146, 30, 74)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
+      ctx.fillRect(1067, 1148, 5, 70)
+      for (let b = 0; b < 4; b++) {
+        const by = 1212 - ((time * 26 + b * 15) % 60)
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(1074 + b * 6, by, 3, 3)
+      }
+    })
 
-    ctx.fillStyle = '#070b12'
-    ctx.fillRect(1310, 1132, 148, 92)
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(1312, 1134, 144, 88)
-    ctx.strokeStyle = '#facc15'
-    ctx.lineWidth = 2.5
-    ctx.strokeRect(1312, 1134, 144, 88)
+    pushDepth(1224, () => {
+      ctx.fillStyle = '#070b12'
+      ctx.fillRect(1310, 1132, 148, 92)
+      ctx.fillStyle = '#1e293b'
+      ctx.fillRect(1312, 1134, 144, 88)
+      ctx.strokeStyle = '#facc15'
+      ctx.lineWidth = 2.5
+      ctx.strokeRect(1312, 1134, 144, 88)
 
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(1364, 1152, 40, 52)
-    const leverUp = state.battery >= 60
-    ctx.fillStyle = leverUp ? '#22c55e' : '#ef4444'
-    ctx.fillRect(1356, leverUp ? 1154 : 1184, 56, 16)
-    ctx.font = 'bold 9px "Press Start 2P", monospace'
-    ctx.textAlign = 'center'
-    ctx.fillStyle = '#000000'
-    ctx.fillText('MASTER SWITCH', 1385, 1126)
-    ctx.fillStyle = '#fde047'
-    ctx.fillText('MASTER SWITCH', 1384, 1125)
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(1364, 1152, 40, 52)
+      const leverUp = state.battery >= 60
+      ctx.fillStyle = leverUp ? '#22c55e' : '#ef4444'
+      ctx.fillRect(1356, leverUp ? 1154 : 1184, 56, 16)
+      ctx.font = 'bold 9px "Press Start 2P", monospace'
+      ctx.textAlign = 'center'
+      ctx.fillStyle = '#000000'
+      ctx.fillText('MASTER SWITCH', 1385, 1148)
+      ctx.fillStyle = '#fde047'
+      ctx.fillText('MASTER SWITCH', 1384, 1147)
+    })
 
-    // Etiquetas claras de subdivisión Oeste (LIFE SUPPORT · PUMA-3) vs Este (ELECTRICAL · ALPACA-1) + mobiliario
+    // Etiquetas claras de subdivisión Oeste (LIFE SUPPORT) vs Este (ELECTRICAL) centradas en piso interior + mobiliario
     const atlasSplit = getStationSpriteAtlas()
     if (atlasSplit) {
-      drawAtlasSprite(ctx, atlasSplit.furniture.botanicalIncubator, 908, 1332)
-      drawAtlasSprite(ctx, atlasSplit.furniture.geoGlacierShelf, 1134, 1332)
-      drawAtlasSprite(ctx, atlasSplit.furniture.sparePartsCabinet, 1278, 1332)
-      drawAtlasSprite(ctx, atlasSplit.furniture.techBunk, 1416, 1340)
+      pushDepth(1376, () => drawAtlasSprite(ctx, atlasSplit.furniture.botanicalIncubator, 908, 1332))
+      pushDepth(1376, () => drawAtlasSprite(ctx, atlasSplit.furniture.geoGlacierShelf, 1134, 1332))
+      pushDepth(1376, () => drawAtlasSprite(ctx, atlasSplit.furniture.sparePartsCabinet, 1278, 1332))
+      pushDepth(1376, () => drawAtlasSprite(ctx, atlasSplit.furniture.techBunk, 1416, 1340))
     }
     ctx.font = 'bold 7px "Press Start 2P", monospace'
     ctx.fillStyle = '#000000'
-    ctx.fillText('LIFE SUPPORT (ALPACA-1)', 1062, 1396)
-    ctx.fillText('ELECTRICAL (ALPACA-1)', 1386, 1396)
+    ctx.fillText('LIFE SUPPORT (ALPACA-1)', 1079, 1296)
+    ctx.fillText('ELECTRICAL (ALPACA-1)', 1375, 1296)
     ctx.fillStyle = '#55efc4'
-    ctx.fillText('LIFE SUPPORT (ALPACA-1)', 1061, 1395)
+    ctx.fillText('LIFE SUPPORT (ALPACA-1)', 1078, 1295)
     ctx.fillStyle = '#ff9f43'
-    ctx.fillText('ELECTRICAL (ALPACA-1)', 1385, 1395)
+    ctx.fillText('ELECTRICAL (ALPACA-1)', 1374, 1295)
+
+    // Neblina ámbar parpadeante y alerta CO2 en LIFE SUPPORT cuando está activo soporte_vital
+    if (threatMap.has('eclss')) {
+      const hazeAlpha = 0.14 + 0.12 * Math.abs(Math.sin(time * 4.5))
+      ctx.fillStyle = `rgba(245, 158, 11, ${hazeAlpha.toFixed(2)})`
+      ctx.fillRect(898, 1122, 344, 284)
+      ctx.font = 'bold 8px "Press Start 2P", monospace'
+      ctx.textAlign = 'center'
+      ctx.fillStyle = 'rgba(42, 18, 4, 0.92)'
+      ctx.fillRect(962, 1104, 128, 16)
+      ctx.fillStyle = '#fbbf24'
+      ctx.fillText('CO2 ↑ O2 -1.5%/s', 1026, 1116)
+    }
+  }
+
+  // Telemetría de descenso de Sonda en USER SEGMENT cuando está activo aterrizaje_planetario
+  const landerThreatWorld = threatMap.get('lander')
+  if (landerThreatWorld) {
+    const lx = 1744
+    const ly = 136
+    const altFrac = clamp(landerThreatWorld.probeAlt / 500, 0, 1)
+    ctx.fillStyle = 'rgba(4, 12, 24, 0.92)'
+    ctx.fillRect(lx - 42, ly - 18, 84, 22)
+    ctx.strokeStyle = landerThreatWorld.probeAlt < 160 ? '#ef4444' : '#38bdf8'
+    ctx.lineWidth = 1.5
+    ctx.strokeRect(lx - 42, ly - 18, 84, 22)
+    ctx.fillStyle = '#0f172a'
+    ctx.fillRect(lx - 36, ly - 3, 72, 4)
+    ctx.fillStyle = landerThreatWorld.probeAlt < 160 ? '#ef4444' : '#22c55e'
+    ctx.fillRect(lx - 36, ly - 3, Math.round(72 * altFrac), 4)
+    ctx.font = 'bold 7px "Press Start 2P", monospace'
+    ctx.textAlign = 'center'
+    ctx.fillStyle = landerThreatWorld.probeAlt < 160 ? '#fca5a5' : '#7dd3fc'
+    ctx.fillText(`ALT ${Math.round(landerThreatWorld.probeAlt)}m ↓`, lx, ly - 7)
+  }
+
+  // Atenuación de luces interiores durante eclipse solar (la sala activa del jugador mantiene iluminación legible)
+  if (isEclipseActive) {
+    for (const rm of STATION_ROOMS) {
+      if (rm.id === activeRoom?.id) continue
+      ctx.fillStyle = 'rgba(4, 9, 28, 0.34)'
+      ctx.fillRect(rm.floor.x, rm.floor.y, rm.floor.w, rm.floor.h)
+    }
   }
 
   // ==========================================================================
@@ -4725,16 +5107,15 @@ function drawSpaceStationWorld(
     const linkBlink = Math.sin(time * 5) > 0
 
     // ---- Centro 1 · SPACE SEGMENT: estación de mando doble, hologramas dorados y teclados LED (SAT-01)
-    {
-      const cx = 340
-      const cy = 300
+    pushDepth(318, () => {
+      const cx = 362
+      const cy = 286
       ctx.fillStyle = '#05070d'
       ctx.fillRect(cx - 64, cy - 2, 128, 34)
       ctx.fillStyle = '#334155'
       ctx.fillRect(cx - 62, cy, 124, 30)
       ctx.fillStyle = '#d4a017'
       ctx.fillRect(cx - 62, cy, 124, 3)
-      // Teclado doble pixelado + LEDs
       for (let bx = cx - 54; bx <= cx + 42; bx += 6) {
         ctx.fillStyle = '#94a3b8'
         ctx.fillRect(bx, cy + 8, 4, 2)
@@ -4800,12 +5181,12 @@ function drawSpaceStationWorld(
       ctx.fillText('SAT-01 ●', cx + 1, cy - 77)
       ctx.fillStyle = '#fde047'
       ctx.fillText('SAT-01 ●', cx, cy - 78)
-    }
+    })
 
-    // ---- Centro 2 · USER SEGMENT: pantallas duales, radar y teclado LED (SAT-02)
-    {
-      const cx = 1780
-      const cy = 300
+    // ---- Centro 2 · USER SEGMENT: pantallas duales, radar y teclado LED (SAT-02, despejando puerta Sur)
+    pushDepth(328, () => {
+      const cx = 1628
+      const cy = 298
       ctx.fillStyle = '#05070d'
       ctx.fillRect(cx - 70, cy - 2, 140, 34)
       ctx.fillStyle = '#334155'
@@ -4869,28 +5250,92 @@ function drawSpaceStationWorld(
       ctx.fillText('SAT-02 ●', cx + 1, cy - 51)
       ctx.fillStyle = '#67e8f9'
       ctx.fillText('SAT-02 ●', cx, cy - 52)
+    })
+  }
+
+  // Renderizado unificado Y-Sorting (muebles, máquinas, transbordador, reactor y los 4 especialistas)
+  depthItems.sort((a, b) => a.sortY - b.sortY)
+  for (const item of depthItems) {
+    item.draw()
+  }
+
+  // 7c. ILUMINACIÓN AUTOMÁTICA AL CAMINAR (sala/pasillo visitado 100% a color; salas lejanas en penumbra suave)
+  if (!state.overviewMode) {
+    for (const rm of STATION_ROOMS) {
+      if (rm.id === activeRoom?.id) {
+        // Realce cálido de iluminación activa en la sala donde está parado el personaje
+        ctx.save()
+        ctx.strokeStyle = rm.color
+        ctx.globalAlpha = 0.42
+        ctx.lineWidth = 2.5
+        traceOctagonPath(ctx, rm.hull.x + 15, rm.hull.y + 15, rm.hull.w - 30, rm.hull.h - 30, 30)
+        ctx.stroke()
+        ctx.restore()
+      } else {
+        ctx.save()
+        ctx.fillStyle = 'rgba(3, 6, 16, 0.42)'
+        traceOctagonPath(ctx, rm.hull.x + 15, rm.hull.y + 15, rm.hull.w - 30, rm.hull.h - 30, 30)
+        ctx.fill()
+        ctx.restore()
+      }
+    }
+
+    for (const cor of CORRIDORS) {
+      const cx = cor.rect.x + cor.rect.w / 2
+      const cy = cor.rect.y + cor.rect.h / 2
+      const nearCor =
+        activeCorridor?.id === cor.id ||
+        Math.hypot(state.activePlayerPos.x - cx, state.activePlayerPos.y - cy) < 135
+      if (!nearCor) {
+        ctx.fillStyle = 'rgba(3, 6, 16, 0.36)'
+        ctx.fillRect(cor.rect.x, cor.rect.y, cor.rect.w, cor.rect.h)
+      }
     }
   }
 
-  // 8. PUERTAS CORREDIZAS MECÁNICAS INTERNAS
+  // 8. PUERTAS CORREDIZAS AUTOMÁTICAS EN TODAS LAS ÁREAS (se abren por completo al paso de cualquiera)
   for (const door of SLIDING_DOORS) {
-    const openAmt = state.doorOpenMap[door.id] ?? 0
+    const openAmt = clamp(state.doorOpenMap[door.id] ?? 0, 0, 1)
     const half = door.size / 2
-    const gap = openAmt * (half - 8)
+    const gap = openAmt * (half - 2)
+    const leafLen = Math.max(0, half - gap)
+    const sensorGreen = openAmt > 0.25 ? '#4ade80' : '#22c55e'
 
     if (door.orientation === 'vertical') {
-      ctx.fillStyle = '#94a3b8'
-      ctx.fillRect(door.x - 6, door.y - half, 12, half - gap)
-      ctx.fillRect(door.x - 6, door.y + gap, 12, half - gap)
+      ctx.fillStyle = '#1e293b'
+      ctx.fillRect(door.x - 8, door.y - half - 4, 16, 6)
+      ctx.fillRect(door.x - 8, door.y + half - 2, 16, 6)
+      ctx.fillStyle = sensorGreen
+      ctx.fillRect(door.x - 2, door.y - half - 2, 4, 3)
+      ctx.fillRect(door.x - 2, door.y + half - 1, 4, 3)
+      if (leafLen > 1) {
+        ctx.fillStyle = '#475569'
+        ctx.fillRect(door.x - 6, door.y - half, 12, leafLen)
+        ctx.fillRect(door.x - 6, door.y + gap, 12, leafLen)
+        ctx.fillStyle = '#94a3b8'
+        ctx.fillRect(door.x - 3, door.y - half + 2, 6, Math.max(1, leafLen - 4))
+        ctx.fillRect(door.x - 3, door.y + gap + 2, 6, Math.max(1, leafLen - 4))
+      }
     } else {
-      ctx.fillStyle = '#94a3b8'
-      ctx.fillRect(door.x - half, door.y - 6, half - gap, 12)
-      ctx.fillRect(door.x + gap, door.y - 6, half - gap, 12)
+      ctx.fillStyle = '#1e293b'
+      ctx.fillRect(door.x - half - 4, door.y - 8, 6, 16)
+      ctx.fillRect(door.x + half - 2, door.y - 8, 6, 16)
+      ctx.fillStyle = sensorGreen
+      ctx.fillRect(door.x - half - 2, door.y - 2, 3, 4)
+      ctx.fillRect(door.x + half - 1, door.y - 2, 3, 4)
+      if (leafLen > 1) {
+        ctx.fillStyle = '#475569'
+        ctx.fillRect(door.x - half, door.y - 6, leafLen, 12)
+        ctx.fillRect(door.x + gap, door.y - 6, leafLen, 12)
+        ctx.fillStyle = '#94a3b8'
+        ctx.fillRect(door.x - half + 2, door.y - 3, Math.max(1, leafLen - 4), 6)
+        ctx.fillRect(door.x + gap + 2, door.y - 3, Math.max(1, leafLen - 4), 6)
+      }
     }
   }
 
-  // 9. MARCOS ABIERTOS DE TRANSICIÓN ENTRE SECTORES (paso físico 100% libre sin puertas láser)
-  for (const gate of LASER_GATES) {
+  // 9. BALIZAS DE TRANSICIÓN ENTRE SECTORES (paso 100% libre, cero láseres bloqueantes)
+  for (const gate of SECTOR_THRESHOLDS) {
     const ownerInfo = ROLE_INFO[gate.owner]
     const half = gate.size / 2
 
@@ -4898,8 +5343,7 @@ function drawSpaceStationWorld(
     if (gate.orientation === 'vertical') {
       ctx.fillRect(gate.x - 8, gate.y - half - 6, 16, 10)
       ctx.fillRect(gate.x - 8, gate.y + half - 4, 16, 10)
-      // Baliza LED abierta en el umbral metálico
-      ctx.fillStyle = '#22c55e'
+      ctx.fillStyle = '#4ade80'
       ctx.fillRect(gate.x - 2, gate.y - half - 2, 4, 4)
       ctx.fillRect(gate.x - 2, gate.y + half - 2, 4, 4)
       ctx.fillStyle = ownerInfo.color
@@ -4907,7 +5351,7 @@ function drawSpaceStationWorld(
     } else {
       ctx.fillRect(gate.x - half - 6, gate.y - 8, 10, 16)
       ctx.fillRect(gate.x + half - 4, gate.y - 8, 10, 16)
-      ctx.fillStyle = '#22c55e'
+      ctx.fillStyle = '#4ade80'
       ctx.fillRect(gate.x - half - 2, gate.y - 2, 4, 4)
       ctx.fillRect(gate.x + half - 2, gate.y - 2, 4, 4)
       ctx.fillStyle = ownerInfo.color
@@ -4922,45 +5366,81 @@ function drawSpaceStationWorld(
   for (const c of CONSOLES) {
     const isMyRole = canUseConsole(c, state.activeRole)
     const isNearOrHovered = state.nearestConsoleId === c.id || state.hoveredConsoleId === c.id
-    const hasActiveTask = state.activeTaskConsoleIds.has(c.id)
     const roleColor = ROLE_INFO[c.role].color
     const pulse = 0.5 + 0.5 * Math.sin(time * 6)
     const mg = CONSOLE_MINIGAME[c.id]
+    const inStage = mg ? state.missionGames.has(mg) : false
+    const cdExp = mg ? state.consoleCooldowns[mg] : undefined
+    const isInCooldown = Boolean(
+      mg && inStage && !state.missionCompleted && typeof cdExp === 'number' && cdExp > state.serverNowMs
+    )
+    const cooldownSecLeft =
+      isInCooldown && typeof cdExp === 'number'
+        ? Math.max(1, Math.ceil((cdExp - state.serverNowMs) / 1000))
+        : 0
+    const isSolved = Boolean(
+      mg && inStage && (isInCooldown || (state.missionCompleted && state.completedMinigames.has(mg)))
+    )
+    const liveThreat = inStage && !isInCooldown && !state.missionCompleted && mg ? threatMap.get(mg) : undefined
+    const hasMyActiveTask =
+      isMyRole &&
+      inStage &&
+      !isInCooldown &&
+      !state.missionCompleted &&
+      (Boolean(liveThreat) || state.activeTaskConsoleIds.has(c.id))
 
     ctx.save()
-    // Aura interactiva en el suelo para distinguir las terminales operables del mobiliario decorativo
+    // Aura interactiva en el suelo para distinguir terminales estabilizadas, en emergencia de TU rol y disponibles
     ctx.strokeStyle = !isMyRole && isNearOrHovered
       ? '#f87171'
-      : hasActiveTask
+      : isSolved
+      ? '#22c55e'
+      : !inStage
+      ? '#64748b'
+      : hasMyActiveTask
       ? '#fde047'
       : isNearOrHovered
       ? '#ffffff'
       : roleColor
-    ctx.lineWidth = hasActiveTask || isNearOrHovered ? 3.5 : 2
-    ctx.globalAlpha = isMyRole ? (hasActiveTask || isNearOrHovered ? 0.95 : 0.62) : isNearOrHovered ? 0.9 : 0.36
+    ctx.lineWidth = hasMyActiveTask || isNearOrHovered ? 3.5 : 2
+    ctx.globalAlpha = !inStage
+      ? isNearOrHovered
+        ? 0.72
+        : 0.25
+      : isSolved
+      ? isNearOrHovered
+        ? 0.9
+        : 0.55
+      : isMyRole
+      ? hasMyActiveTask || isNearOrHovered
+        ? 0.95
+        : 0.62
+      : isNearOrHovered
+      ? 0.9
+      : 0.34
     ctx.beginPath()
     ctx.ellipse(
       c.standX,
       c.standY + 12,
-      hasActiveTask || isNearOrHovered ? 24 + pulse * 4 : 18,
-      hasActiveTask || isNearOrHovered ? 11 + pulse * 2 : 8,
+      hasMyActiveTask || isNearOrHovered ? 24 + pulse * 4 : 18,
+      hasMyActiveTask || isNearOrHovered ? 11 + pulse * 2 : 8,
       0,
       0,
       Math.PI * 2
     )
     ctx.stroke()
 
-    ctx.globalAlpha = 1
+    ctx.globalAlpha = inStage ? 1 : 0.62
     // Placa pixel-art interactiva del Atlas diferenciada del mobiliario
     if (interactiveAtlas) {
       const badgeSprite =
-        mg === 'dock' || mg === 'comet'
+        mg === 'dock' || mg === 'comet' || mg === 'debris'
           ? interactiveAtlas.apasRadarBadge
-          : mg === 'eps'
+          : mg === 'eps' || mg === 'pcb'
           ? interactiveAtlas.epsPanelBadge
-          : mg === 'eclss' || mg === 'lander'
+          : mg === 'eclss' || mg === 'reactor' || mg === 'lander'
           ? interactiveAtlas.eclssConsoleBadge
-          : c.id.startsWith('sat_ctrl') || mg === 'telecom'
+          : c.id.startsWith('sat_ctrl') || mg === 'telecom' || mg === 'hga' || mg === 'decrypt'
           ? interactiveAtlas.satCtrlBadge
           : interactiveAtlas.navTerminalBadge
       drawAtlasSprite(ctx, badgeSprite, c.x - badgeSprite.width / 2, c.y + 12)
@@ -4988,19 +5468,50 @@ function drawSpaceStationWorld(
       ctx.fillRect(lx - 1, ly + 1, 2, 4)
     }
 
-    // Indicador pixel-art "!" amarillo rebotando sobre consola con tarea activa o zona de consola activa del dueño
-    if (hasActiveTask || (isMyRole && isNearOrHovered)) {
+    // Indicador verde cuando la consola está en enfriamiento temporal o etapa completada ✅
+    if (isSolved) {
+      const solvedLabel = isInCooldown
+        ? `🟢 ESTABILIZADO · ${cooldownSecLeft}s`
+        : '✅ COMPLETADO'
+      ctx.font = 'bold 6px "Press Start 2P", monospace'
+      const gw = Math.max(64, Math.ceil(ctx.measureText(solvedLabel).width + 10))
+      const gx = Math.round(c.x - gw / 2)
+      const gy = Math.round(c.y - 42)
+      ctx.fillStyle = '#022c22'
+      ctx.fillRect(gx, gy, gw, 14)
+      ctx.strokeStyle = '#22c55e'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(gx, gy, gw, 14)
+      ctx.textAlign = 'center'
+      ctx.fillStyle = '#4ade80'
+      ctx.fillText(solvedLabel, Math.round(c.x), gy + 10)
+    } else if (isMyRole && inStage && (hasMyActiveTask || isNearOrHovered)) {
+      // Indicador pixel-art "!" amarillo/rojo rebotando SOLO en consolas del propio rol del jugador
       const bx = Math.round(c.x - 16)
       const by = Math.round(c.y - 54 + bounce)
       ctx.fillStyle = '#000000'
       ctx.fillRect(bx - 3, by - 3, 38, 38)
-      ctx.fillStyle = hasActiveTask && Math.sin(time * 10) > 0 ? '#ef4444' : '#f59e0b'
+      ctx.fillStyle = hasMyActiveTask && Math.sin(time * 10) > 0 ? '#ef4444' : '#f59e0b'
       ctx.fillRect(bx, by, 32, 32)
       ctx.fillStyle = '#fde047'
       ctx.fillRect(bx + 4, by + 4, 24, 24)
       ctx.fillStyle = '#000000'
       ctx.fillRect(bx + 13, by + 6, 6, 13)
       ctx.fillRect(bx + 13, by + 21, 6, 5)
+
+      // Barra de urgencia en vivo sobre la consola amenazada del jugador activo
+      if (liveThreat && c.id === liveThreat.consoleId) {
+        const ux = Math.round(c.x - 26)
+        const uy = by - 12
+        const frac = clamp(liveThreat.urgency / 100, 0.08, 1)
+        ctx.fillStyle = '#050814'
+        ctx.fillRect(ux, uy, 52, 8)
+        ctx.strokeStyle = '#ef4444'
+        ctx.lineWidth = 1
+        ctx.strokeRect(ux, uy, 52, 8)
+        ctx.fillStyle = liveThreat.urgency > 65 ? '#ef4444' : '#f59e0b'
+        ctx.fillRect(ux + 2, uy + 2, Math.round(48 * frac), 4)
+      }
     }
 
     // Cursor pixel-art amarillo señalando la consola operada por el dueño
@@ -5022,86 +5533,730 @@ function drawSpaceStationWorld(
 // ============================================================================
 // 5. COMPONENTE PRINCIPAL (LIENZO 100% ANCHO + MODAL GRANDE DE CONSOLA RETRO)
 // ============================================================================
+interface RoleClaimEntry {
+  clientId: string
+  playerName: string
+  timestamp: number
+}
+
+type RoleClaimsMap = Partial<Record<RoleId, RoleClaimEntry>>
+
+interface RemotePlayerState {
+  clientId: string
+  playerName?: string
+  x: number
+  y: number
+  dir: FacingDir
+  walkFrame: number
+  isInteracting: boolean
+  currentRoom: string
+  lastSeen: number
+}
+
+type RemotePlayersMap = Partial<Record<RoleId, RemotePlayerState>>
+
+interface SharedStationStats {
+  battery: number
+  lifeSupport: number
+  dataBuffer: number
+  orbitStability: number
+  hull: number
+  signalQuality: number
+}
+
+interface SharedStationSnapshot {
+  completedMinigames: string[]
+  resolvedCount?: number
+  roleResolvedCounts?: Partial<Record<RoleId, number>>
+  consoleCooldowns?: Record<string, number>
+  attemptCounts?: Record<string, number>
+  activeThreats: ActiveThreat[]
+  stats: Partial<SharedStationStats>
+  stationHealth?: number
+  isGameOver?: boolean
+  gameOverReason?: string
+  retryEpoch?: number
+  points: number
+  lastUpdated: number
+}
+
+const ROLES_SYNC_CHANNEL = 'squadron-roles-sync'
+
+function getOrCreateClientId(): string {
+  const key = 'squadron_client_id_v1'
+  try {
+    const existing = window.localStorage.getItem(key) || window.sessionStorage.getItem(key)
+    if (existing) {
+      window.localStorage.setItem(key, existing)
+      return existing
+    }
+    const uuid =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `pc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+    window.localStorage.setItem(key, uuid)
+    window.sessionStorage.setItem(key, uuid)
+    return uuid
+  } catch {
+    return `pc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  }
+}
+
+function getDefaultPlayerName(clientId: string): string {
+  try {
+    const saved =
+      window.localStorage.getItem('squadron_player_name_v1') ||
+      window.sessionStorage.getItem('squadron_player_name_v1')
+    if (saved && saved.trim()) return saved.trim().slice(0, 18)
+  } catch {
+    // ignorar errores de almacenamiento
+  }
+  return `OPERADOR-${clientId.slice(-4).toUpperCase()}`
+}
+
 export default function StationOperationScreen({
   onBackToWorkshop,
-  onReplayCutscene,
   onOpenTelemetryReport,
   onExitToMenu,
+  onRoomClosed,
+  onRoomUpdated,
+  onAdvanceMission,
+  missionId,
+  roomCode = null,
+  clientIdOverride,
+  initialAssignedRole = null,
+  initialPlayerName,
+  initialRoleClaims,
+  initialSoloMode = false,
 }: Props) {
   const s = useGame()
-  const contract = CONTRACTS.find((c) => c.id === s.contractId) ?? CONTRACTS[0]
+  const advancingMissionLockUntilRef = useRef<number>(0)
+  const [syncedMissionId, setSyncedMissionId] = useState<MissionId | null>(() =>
+    missionId ? sanitizeMissionId(missionId) : null
+  )
+  useEffect(() => {
+    if (missionId) {
+      setSyncedMissionId(sanitizeMissionId(missionId))
+    }
+  }, [missionId])
+
+  const activeMissionId: MissionId = syncedMissionId ?? sanitizeMissionId(s.contractId)
+  const activeMissionDef = MISSION_CATALOG[activeMissionId]
+  const missionGames = activeMissionDef.stationMinigames
+  const missionGamesRef = useRef<MinigameId[]>(missionGames)
+  missionGamesRef.current = missionGames
+  const missionTargetCount = activeMissionDef.targetResolutions
+  const missionTargetCountRef = useRef<number>(missionTargetCount)
+  missionTargetCountRef.current = missionTargetCount
+  const missionDiff = activeMissionDef.difficulty
+  const nextMissionId = getNextMissionId(activeMissionId)
+
+  const contract = CONTRACTS.find((c) => c.id === activeMissionId) ?? CONTRACTS[0]
   const launcher = LAUNCHERS.find((l) => l.id === s.launcherId) ?? LAUNCHERS[0]
   const chassis = CHASSIS.find((c) => c.id === s.chassisId) ?? CHASSIS[1]
 
   const baseTel = useMemo(
     () =>
       analyze({
-        contractId: s.contractId,
+        contractId: activeMissionId,
         launcherId: s.launcherId,
         chassisId: s.chassisId,
         parts: s.parts,
       }),
-    [s.contractId, s.launcherId, s.chassisId, s.parts]
+    [activeMissionId, s.launcherId, s.chassisId, s.parts]
   )
 
-  // ESTADO INICIAL 100% ESTABLE
+  // ESTADO INICIAL 100% ESTABLE + MOTOR DE MINIJUEGOS FILTRADOS POR MISIÓN Y AMENAZAS EN TIEMPO REAL
   const [battery, setBattery] = useState<number>(92)
   const [lifeSupport, setLifeSupport] = useState<number>(100)
   const [dataBuffer, setDataBuffer] = useState<number>(0)
   const [orbitStability, setOrbitStability] = useState<number>(100)
   const [hull, setHull] = useState<number>(100)
   const [signalQuality, setSignalQuality] = useState<number>(100)
+  const [stationHealth, setStationHealth] = useState<number>(100)
+  const stationHealthRef = useRef<number>(100)
+  const [isGameOver, setIsGameOver] = useState<boolean>(false)
+  const isGameOverRef = useRef<boolean>(false)
+  const [gameOverReason, setGameOverReason] = useState<string>('')
+  const [healthDamageFlash, setHealthDamageFlash] = useState<boolean>(false)
+  const healthFlashTimerRef = useRef<number | null>(null)
+  const retryEpochRef = useRef<number>(0)
   const [officialScience, setOfficialScience] = useState(() => Math.round(baseTel.sciPts * 0.4))
-  const [missionProgress, setMissionProgress] = useState<number>(15)
-  const [activeEvent, setActiveEvent] = useState<StationEventId>('none')
+  const [completedMinigames, setCompletedMinigames] = useState<Set<MinigameId>>(() => new Set())
+  const completedMinigamesRef = useRef<Set<MinigameId>>(new Set())
+  const [resolvedCount, setResolvedCount] = useState<number>(0)
+  const resolvedCountRef = useRef<number>(0)
+  const [roleResolvedCounts, setRoleResolvedCounts] = useState<Record<RoleId, number>>({
+    director: 0,
+    engineer: 0,
+    science: 0,
+    comms: 0,
+  })
+  const roleResolvedCountsRef = useRef<Record<RoleId, number>>({
+    director: 0,
+    engineer: 0,
+    science: 0,
+    comms: 0,
+  })
+  const [consoleCooldowns, setConsoleCooldowns] = useState<Partial<Record<MinigameId, number>>>({})
+  const consoleCooldownsRef = useRef<Partial<Record<MinigameId, number>>>({})
+  const attemptCountsRef = useRef<Partial<Record<MinigameId, number>>>({})
+  const serverClockOffsetRef = useRef<number>(0)
+  const [cooldownNowMs, setCooldownNowMs] = useState<number>(() => Date.now())
+  const [remoteAlertBanner, setRemoteAlertBanner] = useState<{
+    game: MinigameId
+    consoleId: string
+    sector: string
+    distM: number
+    arrow: string
+    hint: string
+    urgency: number
+  } | null>(null)
+  const remoteAlertSigRef = useRef<string>('')
+  const getServerNowMs = useCallback(() => Date.now() + serverClockOffsetRef.current, [])
+  const isGameInCooldown = useCallback(
+    (game: MinigameId, nowMs = getServerNowMs()): boolean => {
+      const exp = consoleCooldownsRef.current[game]
+      return typeof exp === 'number' && exp > nowMs
+    },
+    [getServerNowMs]
+  )
+  const missionProgress = Math.min(100, Math.round((resolvedCount / missionTargetCount) * 100))
+  const [activeEvent, setActiveEvent] = useState<StationEventId>(activeMissionDef.defaultAmbientEvent)
   const [overviewMode, setOverviewMode] = useState(false)
   const [visitingQuadrant, setVisitingQuadrant] = useState<QuadrantId | null>(null)
   const [playerCurrentQuadrant, setPlayerCurrentQuadrant] = useState<QuadrantId>(s.activeRole)
   const [visitorAlert, setVisitorAlert] = useState<{ msg: string; owner: RoleId } | null>(null)
-  const [completedMissionIds, setCompletedMissionIds] = useState<string[]>([])
   const [missionPanelOpen, setMissionPanelOpen] = useState(true)
   const [missionCompleted, setMissionCompleted] = useState(false)
+  const [victoryPhase, setVictoryPhase] = useState<VictoryPhase>('none')
+  const [victoryReplayMode, setVictoryReplayMode] = useState(false)
+  const [laserCinematicNonce, setLaserCinematicNonce] = useState(1)
+  const [returnHomeCinematicNonce, setReturnHomeCinematicNonce] = useState(1)
+  const startVictoryCinematicFlow = useCallback(() => {
+    setOpenConsoleIdRaw(null)
+    setActiveMinigame(null)
+    setRemoteAlertBanner(null)
+    setVictoryReplayMode(false)
+    setLaserCinematicNonce((n) => n + 1)
+    setMissionCompleted(true)
+    setVictoryPhase('laser_cinematic')
+    playIntroSweep()
+  }, [])
   const [nearestConsoleId, setNearestConsoleId] = useState<string | null>(null)
   const [hoveredConsoleId, setHoveredConsoleId] = useState<string | null>(null)
   const [openConsoleId, setOpenConsoleIdRaw] = useState<string | null>(null)
   const [activeMinigame, setActiveMinigame] = useState<MinigameId | null>(null)
   const [navSatTarget, setNavSatTarget] = useState<'sat1' | 'sat2'>('sat1')
-  // Al "abrir" una consola con minijuego asignado, se abre el modal del minijuego en lugar de la terminal simple
-  const setOpenConsoleId = useCallback((id: string | null) => {
-    if (id) {
-      const mg = CONSOLE_MINIGAME[id]
-      if (mg) {
-        if (mg === 'nav') {
-          setNavSatTarget(id === 'sat_ctrl_2' || id === 'sci_lab' ? 'sat2' : 'sat1')
-        }
-        setActiveMinigame(mg)
-        setOpenConsoleIdRaw(null)
-        return
-      }
-    }
-    setOpenConsoleIdRaw(id)
-  }, [])
   const [currentRoomLabel, setCurrentRoomLabel] = useState<string>('GROUND SEGMENT')
 
-  // Cola reactiva de misiones/problemas encadenados (máximo 2 activos a la vez)
-  const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([
-    {
-      id: 'init_sci',
-      role: 'science',
-      consoleId: 'sci_scan',
-      kind: 'mission',
-      title: 'Aterrizaje Sonda Planetaria (USER SEGMENT)',
-      reason:
-        'La estación se encuentra 100% estable en órbita. Acércate al simulador en USER SEGMENT para pilotar la sonda planetaria e iniciar la cadena de misión.',
+  // =========================================================================
+  // LOBBY DE SELECCIÓN DE ROL + SINCRONIZACIÓN MULTI-PC (LAN /api/roles-sync)
+  // =========================================================================
+  const clientId = useMemo(
+    () => clientIdOverride?.trim() || getOrCreateClientId(),
+    [clientIdOverride]
+  )
+  const activeRoomCode = useMemo(
+    () => (roomCode && roomCode.trim() ? roomCode.trim().toUpperCase() : null),
+    [roomCode]
+  )
+  const rolesSyncChannelName = activeRoomCode
+    ? `${ROLES_SYNC_CHANNEL}-${activeRoomCode}`
+    : ROLES_SYNC_CHANNEL
+  const [playerName, setPlayerName] = useState<string>(
+    () => initialPlayerName?.trim() || getDefaultPlayerName(clientId)
+  )
+  const [roleClaims, setRoleClaims] = useState<RoleClaimsMap>(() => {
+    if (initialRoleClaims && Object.keys(initialRoleClaims).length > 0) {
+      return initialRoleClaims as RoleClaimsMap
+    }
+    if (initialAssignedRole) {
+      return {
+        [initialAssignedRole]: {
+          clientId,
+          playerName: initialPlayerName?.trim() || getDefaultPlayerName(clientId),
+          timestamp: Date.now(),
+        },
+      }
+    }
+    return {}
+  })
+  const [roleLobbyOpen, setRoleLobbyOpen] = useState<boolean>(
+    () => !(Boolean(initialSoloMode) || Boolean(initialAssignedRole))
+  )
+  const [soloPracticeMode, setSoloPracticeMode] = useState<boolean>(() => Boolean(initialSoloMode))
+  const [syncErrorMsg, setSyncErrorMsg] = useState<string | null>(null)
+  const [syncConnected, setSyncConnected] = useState<boolean>(false)
+  const [syncBusyRole, setSyncBusyRole] = useState<RoleId | null>(null)
+  const [remotePlayerRoles, setRemotePlayerRoles] = useState<Partial<Record<RoleId, string>>>({})
+
+  const remotePlayersRef = useRef<RemotePlayersMap>({})
+  const remoteRolesSigRef = useRef<string>('')
+  const syncInFlightRef = useRef<boolean>(false)
+  const hasSyncedSharedStationRef = useRef<boolean>(false)
+  const statsSnapshotRef = useRef<SharedStationStats>({
+    battery: 92,
+    lifeSupport: 100,
+    dataBuffer: 0,
+    orbitStability: 100,
+    hull: 100,
+    signalQuality: 100,
+  })
+  useEffect(() => {
+    statsSnapshotRef.current = {
+      battery,
+      lifeSupport,
+      dataBuffer,
+      orbitStability,
+      hull,
+      signalQuality,
+    }
+  }, [battery, lifeSupport, dataBuffer, orbitStability, hull, signalQuality])
+
+  const officialScienceRef = useRef<number>(officialScience)
+  useEffect(() => {
+    officialScienceRef.current = officialScience
+  }, [officialScience])
+
+  const missionCompletedRef = useRef<boolean>(missionCompleted)
+  useEffect(() => {
+    missionCompletedRef.current = missionCompleted
+  }, [missionCompleted])
+
+  const roleClaimsRef = useRef<RoleClaimsMap>({})
+  useEffect(() => {
+    roleClaimsRef.current = roleClaims
+  }, [roleClaims])
+  const soloPracticeModeRef = useRef<boolean>(soloPracticeMode)
+  useEffect(() => {
+    soloPracticeModeRef.current = soloPracticeMode
+  }, [soloPracticeMode])
+  const playerNameRef = useRef<string>(playerName)
+  useEffect(() => {
+    playerNameRef.current = playerName
+    try {
+      window.localStorage.setItem('squadron_player_name_v1', playerName)
+      window.sessionStorage.setItem('squadron_player_name_v1', playerName)
+    } catch {
+      // ignorar errores de almacenamiento
+    }
+  }, [playerName])
+
+  const myClaimedRole = useMemo<RoleId | null>(() => {
+    for (const r of ROLE_ORDER) {
+      if (roleClaims[r]?.clientId === clientId) return r
+    }
+    return null
+  }, [roleClaims, clientId])
+
+  const myClaimedRoleRef = useRef<RoleId | null>(myClaimedRole)
+  useEffect(() => {
+    myClaimedRoleRef.current = myClaimedRole
+  }, [myClaimedRole])
+
+  const activeRoleRef = useRef<RoleId>(s.activeRole)
+  activeRoleRef.current = s.activeRole
+
+  const isLocalStationLeader = useCallback((): boolean => {
+    if (soloPracticeModeRef.current) return true
+    const mine = myClaimedRoleRef.current
+    if (!mine) return false
+    const connectedRoles = new Set<RoleId>([mine])
+    for (const r of ROLE_ORDER) {
+      if (remotePlayersRef.current[r]) {
+        connectedRoles.add(r)
+      }
+    }
+    const leader = ROLE_ORDER.find((r) => connectedRoles.has(r)) ?? mine
+    return leader === mine
+  }, [])
+
+  const isRoleLockedByOther = useCallback(
+    (r: RoleId): boolean => {
+      if (soloPracticeMode) return false
+      const c = roleClaims[r]
+      return Boolean(c && c.clientId !== clientId) || Boolean(remotePlayerRoles[r])
     },
-  ])
+    [roleClaims, remotePlayerRoles, clientId, soloPracticeMode]
+  )
+
+  const applySyncedClaims = useCallback((nextClaims: RoleClaimsMap | undefined) => {
+    if (!nextClaims || typeof nextClaims !== 'object') return
+    setRoleClaims(nextClaims)
+    setSyncConnected(true)
+  }, [])
+
+  const onRoomClosedRef = useRef(onRoomClosed)
+  onRoomClosedRef.current = onRoomClosed
+  const roomClosedNotifiedRef = useRef(false)
+  const notifyRoomClosedOnce = useCallback(() => {
+    if (roomClosedNotifiedRef.current) return
+    roomClosedNotifiedRef.current = true
+    onRoomClosedRef.current?.()
+  }, [])
+
+  // Sincroniza rol asignado al entrar directamente desde el Lobby / Cinemática
+  useEffect(() => {
+    if (initialAssignedRole && !initialSoloMode) {
+      actions.setRole(initialAssignedRole)
+      setPlayerCurrentQuadrant(initialAssignedRole)
+    }
+  }, [initialAssignedRole, initialSoloMode])
+
+  const broadcastRolesUpdate = useCallback(
+    (claimsPayload?: RoleClaimsMap) => {
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel(rolesSyncChannelName)
+          bc.postMessage({ type: 'sync', claims: claimsPayload ?? null, ts: Date.now() })
+          bc.close()
+        }
+      } catch {
+        // BroadcastChannel opcional
+      }
+    },
+    [rolesSyncChannelName]
+  )
+
+  // Solo forzamos volver al rol propio cuando inicia sesión o si el rol que mirábamos pasa a otro jugador;
+  // los roles vacantes ([BOT / LIBRE]) pueden operarse localmente sin soltar nuestro bloqueo principal.
+  const hadClaimedRoleRef = useRef<boolean>(Boolean(initialAssignedRole))
+  const syncedInitialClaimRef = useRef<boolean>(Boolean(initialAssignedRole))
+  useEffect(() => {
+    if (myClaimedRole) {
+      hadClaimedRoleRef.current = true
+      const activeIsLockedByOther = isRoleLockedByOther(s.activeRole)
+      if ((!syncedInitialClaimRef.current || activeIsLockedByOther) && s.activeRole !== myClaimedRole && !soloPracticeMode) {
+        actions.setRole(myClaimedRole)
+      }
+      syncedInitialClaimRef.current = true
+    } else if (hadClaimedRoleRef.current && !soloPracticeMode) {
+      hadClaimedRoleRef.current = false
+      syncedInitialClaimRef.current = false
+      setRoleLobbyOpen(true)
+      setSyncErrorMsg(
+        'Tu rol fue liberado o la sala fue reiniciada. Selecciona un especialista disponible.'
+      )
+    }
+  }, [myClaimedRole, isRoleLockedByOther, s.activeRole, soloPracticeMode])
+
+  // Suscripción en tiempo real: SSE + Polling 800ms + BroadcastChannel + Latido 1.5s + sendBeacon
+  useEffect(() => {
+    let cancelled = false
+    const roomQuery = activeRoomCode ? `roomCode=${encodeURIComponent(activeRoomCode)}` : ''
+    const rolesGetUrl = roomQuery ? `/api/roles-sync?${roomQuery}` : '/api/roles-sync'
+    const rolesStreamUrl = roomQuery
+      ? `/api/roles-sync?stream=1&${roomQuery}`
+      : '/api/roles-sync?stream=1'
+
+    const fetchSnapshot = async () => {
+      try {
+        const res = await fetch(rolesGetUrl, { cache: 'no-store' })
+        if (res.status === 404 && activeRoomCode) {
+          if (!cancelled) notifyRoomClosedOnce()
+          return
+        }
+        if (!res.ok) return
+        const data = (await res.json()) as { claims?: RoleClaimsMap; deleted?: boolean }
+        if (data.deleted && activeRoomCode) {
+          if (!cancelled) notifyRoomClosedOnce()
+          return
+        }
+        if (!cancelled && data.claims) {
+          applySyncedClaims(data.claims)
+        }
+      } catch {
+        if (!cancelled) setSyncConnected(false)
+      }
+    }
+
+    void fetchSnapshot()
+
+    let es: EventSource | null = null
+    try {
+      if (typeof EventSource !== 'undefined') {
+        es = new EventSource(rolesStreamUrl)
+        es.onopen = () => {
+          if (!cancelled) setSyncConnected(true)
+        }
+        es.onmessage = (ev) => {
+          try {
+            const parsed = JSON.parse(ev.data) as { claims?: RoleClaimsMap; deleted?: boolean }
+            if (parsed.deleted && activeRoomCode) {
+              if (!cancelled) notifyRoomClosedOnce()
+              return
+            }
+            if (!cancelled && parsed.claims) {
+              applySyncedClaims(parsed.claims)
+            }
+          } catch {
+            // ignorar tramas incompletas
+          }
+        }
+        es.onerror = () => {
+          if (!cancelled) setSyncConnected(false)
+        }
+      }
+    } catch {
+      // Fallback por polling HTTP
+    }
+
+    let bc: BroadcastChannel | null = null
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel(rolesSyncChannelName)
+        bc.onmessage = (ev) => {
+          const d = ev.data as { claims?: RoleClaimsMap | null } | undefined
+          if (!cancelled && d?.claims) {
+            applySyncedClaims(d.claims)
+          } else {
+            void fetchSnapshot()
+          }
+        }
+      }
+    } catch {
+      // ignorar si no existe BroadcastChannel
+    }
+
+    const pollTimer = window.setInterval(() => {
+      void fetchSnapshot()
+    }, 800)
+
+    const heartbeatTimer = window.setInterval(async () => {
+      if (soloPracticeModeRef.current) return
+      const curClaims = roleClaimsRef.current
+      const ownsAny = ROLE_ORDER.some((r) => curClaims[r]?.clientId === clientId)
+      if (!activeRoomCode && !ownsAny) return
+      try {
+        const res = await fetch('/api/roles-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'heartbeat',
+            clientId,
+            ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
+            playerName:
+              playerNameRef.current.trim() || `OPERADOR-${clientId.slice(-4).toUpperCase()}`,
+          }),
+        })
+        if (res.status === 404 && activeRoomCode) {
+          if (!cancelled) notifyRoomClosedOnce()
+          return
+        }
+        if (res.ok || res.status === 400) {
+          const data = (await res.json().catch(() => ({}))) as {
+            claims?: RoleClaimsMap
+            deleted?: boolean
+            code?: string
+          }
+          if ((data.deleted || (res.status === 400 && data.code === 'ROOM_FULL')) && activeRoomCode) {
+            if (!cancelled) notifyRoomClosedOnce()
+            return
+          }
+          if (!cancelled && data.claims) {
+            applySyncedClaims(data.claims)
+          }
+        }
+      } catch {
+        // se reintenta en el siguiente ciclo
+      }
+    }, 1500)
+
+    const onBeforeUnload = () => {
+      if (activeRoomCode) return
+      try {
+        const payload = JSON.stringify({
+          action: 'leave',
+          clientId,
+        })
+        if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+          const blob = new Blob([payload], { type: 'application/json' })
+          navigator.sendBeacon('/api/roles-sync', blob)
+        }
+      } catch {
+        // ignorar errores al cerrar pestaña
+      }
+    }
+    if (!activeRoomCode) {
+      window.addEventListener('beforeunload', onBeforeUnload)
+    }
+
+    return () => {
+      cancelled = true
+      window.clearInterval(pollTimer)
+      window.clearInterval(heartbeatTimer)
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      es?.close()
+      bc?.close()
+    }
+  }, [applySyncedClaims, clientId, activeRoomCode, rolesSyncChannelName, notifyRoomClosedOnce])
+
+  const claimRoleRemote = useCallback(
+    async (r: RoleId) => {
+      playClick()
+      setSyncErrorMsg(null)
+      if (soloPracticeMode) {
+        setVisitingQuadrant(null)
+        setOpenConsoleIdRaw(null)
+        actions.setRole(r)
+        setRoleLobbyOpen(false)
+        return
+      }
+      setSyncBusyRole(r)
+      const cleanName =
+        playerNameRef.current.trim() || `OPERADOR-${clientId.slice(-4).toUpperCase()}`
+      try {
+        const res = await fetch('/api/roles-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'claim',
+            roleId: r,
+            clientId,
+            ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
+            playerName: cleanName,
+          }),
+        })
+        const data = (await res.json()) as {
+          ok?: boolean
+          error?: string
+          ownerName?: string
+          claims?: RoleClaimsMap
+        }
+        if (data.claims) {
+          applySyncedClaims(data.claims)
+          broadcastRolesUpdate(data.claims)
+        }
+        if (res.status === 409 || !res.ok || data.ok === false) {
+          const owner = data.ownerName || data.claims?.[r]?.playerName || 'otro jugador'
+          setSyncErrorMsg(`El rol ${ROLE_INFO[r].code} ya está seleccionado por ${owner}.`)
+          return
+        }
+        setVisitingQuadrant(null)
+        setOpenConsoleIdRaw(null)
+        actions.setRole(r)
+        setRoleLobbyOpen(false)
+      } catch {
+        setSyncErrorMsg(
+          'No se pudo conectar con /api/roles-sync en la red LAN. Puedes activar el Modo Práctica Individual.'
+        )
+      } finally {
+        setSyncBusyRole(null)
+      }
+    },
+    [applySyncedClaims, broadcastRolesUpdate, clientId, soloPracticeMode]
+  )
+
+  const releaseMyRoleRemote = useCallback(
+    async (keepLobbyOpen = true) => {
+      playClick()
+      setSyncErrorMsg(null)
+      hadClaimedRoleRef.current = false
+      try {
+        const res = await fetch('/api/roles-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'release',
+            clientId,
+            ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
+          }),
+        })
+        if (res.ok) {
+          const data = (await res.json()) as { claims?: RoleClaimsMap }
+          if (data.claims) {
+            applySyncedClaims(data.claims)
+            broadcastRolesUpdate(data.claims)
+          }
+        }
+      } catch {
+        // fallo silencioso si está desconectado
+      } finally {
+        if (keepLobbyOpen) setRoleLobbyOpen(true)
+      }
+    },
+    [applySyncedClaims, broadcastRolesUpdate, clientId]
+  )
+
+  const resetRoomHostRemote = useCallback(async () => {
+    playClick()
+    setSyncErrorMsg(null)
+    hadClaimedRoleRef.current = false
+    remotePlayersRef.current = {}
+    remoteRolesSigRef.current = ''
+    setRemotePlayerRoles({})
+    try {
+      const res = await fetch('/api/roles-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reset',
+          ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
+        }),
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { claims?: RoleClaimsMap }
+        if (data.claims) {
+          applySyncedClaims(data.claims)
+          broadcastRolesUpdate(data.claims)
+        }
+        if (!soloPracticeMode) {
+          setRoleLobbyOpen(true)
+        }
+      }
+    } catch {
+      setSyncErrorMsg('Sin respuesta de /api/roles-sync al intentar resetear la sala.')
+    }
+  }, [applySyncedClaims, broadcastRolesUpdate, soloPracticeMode])
+
+  // Problemas activos en tiempo real (coordinados con enfriamiento 120s-150s tras resolver)
+  const [activeThreats, setActiveThreats] = useState<ActiveThreat[]>(() => {
+    const firstGame =
+      missionGames.find((g) => UNIQUE_MINIGAME_DEFS[g].role === s.activeRole) ??
+      missionGames[0] ??
+      'dock'
+    const firstDef = UNIQUE_MINIGAME_DEFS[firstGame]
+    return [
+      {
+        id: `threat_${firstGame}_init`,
+        game: firstGame,
+        role: firstDef.role,
+        consoleId: firstDef.primaryConsoleId,
+        title: firstDef.title,
+        urgency: firstGame === 'lander' ? 14 : 18,
+        probeAlt: firstGame === 'lander' ? 500 : 0,
+        startedAt: 0,
+        attempt: 1,
+        seed: 101,
+      },
+    ]
+  })
+  const activeThreatsRef = useRef<ActiveThreat[]>(activeThreats)
+  useEffect(() => {
+    activeThreatsRef.current = activeThreats
+  }, [activeThreats])
+  const nextThreatCountdownRef = useRef<number>(20)
+
+  const activeTasks: ActiveTask[] = useMemo(
+    () =>
+      activeThreats.map((t) => ({
+        id: t.id,
+        role: t.role,
+        consoleId: t.consoleId,
+        kind: t.urgency >= 50 ? 'problem' : 'mission',
+        title: `${t.title} · ${UNIQUE_MINIGAME_DEFS[t.game].quadrantTag}`,
+        reason: UNIQUE_MINIGAME_DEFS[t.game].threatTitle,
+      })),
+    [activeThreats]
+  )
 
   const [logs, setLogs] = useState<IntercomLog[]>(() => [
     {
       id: 1,
       from: 'director',
       kind: 'ok',
-      text: `"¡Estación en órbita! Acércate a cualquier máquina con el signo (!) y presiona 'E' para abrir la terminal de la NASA."`,
+      text: `"¡${activeMissionDef.code} en órbita! Acércate a una consola con alerta (!) y presiona 'E'. Son ${missionGames.length} problemas únicos (Nivel ${missionDiff})."`,
     },
   ])
 
@@ -5254,7 +6409,7 @@ export default function StationOperationScreen({
       const ownerRole: RoleId = typeof target === 'string' ? target : target.role
       const ownerInfo = ROLE_INFO[ownerRole]
       const now = performance.now() / 1000
-      const lockMsg = `🔒 SOLO ${ownerInfo.animalName} PUEDE RESOLVER ESTE SISTEMA`
+      const lockMsg = `🔒 Consola exclusiva de ${ownerInfo.animalName} — Solo puedes observar`
 
       setVisitorAlert({ msg: lockMsg, owner: ownerRole })
       if (typeof target !== 'string') {
@@ -5274,24 +6429,975 @@ export default function StationOperationScreen({
     [activeRole, playConsoleBeep, pushLog, spawnCanvasFloating]
   )
 
+  const teleportActivePlayerTo = useCallback(
+    (tx: number, ty: number, label?: string, color?: string) => {
+      const me = astronautsRef.current[activeRole]
+      me.x = tx
+      me.y = ty
+      me.waypoints = []
+      me.isMoving = false
+      for (const door of SLIDING_DOORS) {
+        if (Math.hypot(tx - door.x, ty - door.y) < 155) {
+          doorOpenRef.current[door.id] = 1
+        }
+      }
+      setOverviewMode(false)
+      setVisitingQuadrant(null)
+      if (label) {
+        spawnCanvasFloating(tx, ty - 34, `📍 ${label}`, color ?? ROLE_INFO[activeRole].color)
+      }
+    },
+    [activeRole, spawnCanvasFloating]
+  )
+
   useEffect(() => {
     if (!visitorAlert) return
     const t = window.setTimeout(() => setVisitorAlert(null), 3800)
     return () => window.clearTimeout(t)
   }, [visitorAlert])
 
-  const upsertReactiveTasks = useCallback((completedConsoleId: string, nextTasks: ActiveTask[]) => {
-    setActiveTasks((prev) => {
-      const remaining = prev.filter((t) => t.consoleId !== completedConsoleId)
-      const merged = [...remaining]
-      for (const nt of nextTasks) {
-        if (!merged.some((m) => m.consoleId === nt.consoleId)) {
-          merged.push(nt)
+  const rollConsoleCooldownSeconds = () => 120 + Math.floor(Math.random() * 31)
+
+  const pickNextPendingMinigame = useCallback(
+    (
+      _solved: Set<MinigameId>,
+      currentThreats: ActiveThreat[],
+      preferDifferentFrom?: RoleId[]
+    ): MinigameId | null => {
+      const nowServer = getServerNowMs()
+      const busy = new Set(currentThreats.map((t) => t.game))
+      const eligible = missionGamesRef.current.filter((g) => {
+        if (busy.has(g)) return false
+        const exp = consoleCooldownsRef.current[g]
+        return !(typeof exp === 'number' && exp > nowServer)
+      })
+      if (eligible.length === 0) return null
+
+      // Priorizar primero consolas NO resueltas, luego roles sin amenaza activa y menor # de ejecuciones
+      eligible.sort((a, b) => {
+        const unsolvedPriorityA = _solved.has(a) ? 1 : 0
+        const unsolvedPriorityB = _solved.has(b) ? 1 : 0
+        if (unsolvedPriorityA !== unsolvedPriorityB) return unsolvedPriorityA - unsolvedPriorityB
+        const diffPriorityA =
+          preferDifferentFrom && preferDifferentFrom.includes(UNIQUE_MINIGAME_DEFS[a].role) ? 1 : 0
+        const diffPriorityB =
+          preferDifferentFrom && preferDifferentFrom.includes(UNIQUE_MINIGAME_DEFS[b].role) ? 1 : 0
+        if (diffPriorityA !== diffPriorityB) return diffPriorityA - diffPriorityB
+        const attA = attemptCountsRef.current[a] ?? 0
+        const attB = attemptCountsRef.current[b] ?? 0
+        return attA - attB
+      })
+      return eligible[0]
+    },
+    [getServerNowMs]
+  )
+
+  const createThreatForGame = useCallback(
+    (
+      game: MinigameId,
+      startedAt = performance.now() / 1000,
+      attempt?: number,
+      seed?: number
+    ): ActiveThreat => {
+      const def = UNIQUE_MINIGAME_DEFS[game]
+      const resolvedAttempt = attempt ?? (attemptCountsRef.current[game] ?? 0) + 1
+      const resolvedSeed =
+        typeof seed === 'number' && Number.isFinite(seed)
+          ? seed
+          : Math.floor(1000 + Math.random() * 89000)
+      return {
+        id: `threat_${game}_${resolvedAttempt}_${Math.round(startedAt * 1000)}`,
+        game,
+        role: def.role,
+        consoleId: def.primaryConsoleId,
+        title: def.title,
+        urgency: game === 'lander' ? 14 : 18,
+        probeAlt: game === 'lander' ? 500 : 0,
+        startedAt,
+        attempt: resolvedAttempt,
+        seed: resolvedSeed,
+      }
+    },
+    []
+  )
+
+  const triggerDamageFlash = useCallback(() => {
+    setHealthDamageFlash(true)
+    if (healthFlashTimerRef.current) {
+      window.clearTimeout(healthFlashTimerRef.current)
+    }
+    healthFlashTimerRef.current = window.setTimeout(() => {
+      setHealthDamageFlash(false)
+    }, 650)
+  }, [])
+
+  const resetCurrentStageForRetry = useCallback(
+    (nextEpoch?: number) => {
+      if (typeof nextEpoch === 'number' && Number.isFinite(nextEpoch)) {
+        retryEpochRef.current = nextEpoch
+      }
+      const nextDef = MISSION_CATALOG[activeMissionId]
+      const nextGames = nextDef.stationMinigames
+      const nextFirst =
+        nextGames.find((g) => UNIQUE_MINIGAME_DEFS[g].role === activeRoleRef.current) ??
+        nextGames[0] ??
+        'dock'
+      const initThreat = createThreatForGame(nextFirst, performance.now() / 1000, 1, 101)
+
+      completedMinigamesRef.current = new Set()
+      setCompletedMinigames(new Set())
+      resolvedCountRef.current = 0
+      setResolvedCount(0)
+      roleResolvedCountsRef.current = { director: 0, engineer: 0, science: 0, comms: 0 }
+      setRoleResolvedCounts({ director: 0, engineer: 0, science: 0, comms: 0 })
+      consoleCooldownsRef.current = {}
+      setConsoleCooldowns({})
+      attemptCountsRef.current = {}
+      setRemoteAlertBanner(null)
+      remoteAlertSigRef.current = ''
+      setActiveMinigame(null)
+      setOpenConsoleIdRaw(null)
+      setMissionCompleted(false)
+      setVictoryPhase('none')
+      setVictoryReplayMode(false)
+      isGameOverRef.current = false
+      setIsGameOver(false)
+      setGameOverReason('')
+      setHealthDamageFlash(false)
+      stationHealthRef.current = 100
+      setStationHealth(100)
+      activeThreatsRef.current = [initThreat]
+      setActiveThreats([initThreat])
+      setBattery(95)
+      setLifeSupport(100)
+      setDataBuffer(0)
+      setOrbitStability(100)
+      setHull(100)
+      setSignalQuality(100)
+      statsSnapshotRef.current = {
+        battery: 95,
+        lifeSupport: 100,
+        dataBuffer: 0,
+        orbitStability: 100,
+        hull: 100,
+        signalQuality: 100,
+      }
+      hasSyncedSharedStationRef.current = false
+      setActiveEvent(nextDef.defaultAmbientEvent)
+      nextThreatCountdownRef.current = 18
+    },
+    [activeMissionId, createThreatForGame]
+  )
+
+  const applySharedStationFromServer = useCallback(
+    (shared: SharedStationSnapshot | undefined, serverTimeMs?: number) => {
+      if (typeof serverTimeMs === 'number' && Number.isFinite(serverTimeMs)) {
+        serverClockOffsetRef.current = serverTimeMs - Date.now()
+      }
+      if (!shared || soloPracticeModeRef.current || !shared.lastUpdated) return
+
+      if (
+        typeof shared.retryEpoch === 'number' &&
+        Number.isFinite(shared.retryEpoch) &&
+        shared.retryEpoch > retryEpochRef.current
+      ) {
+        resetCurrentStageForRetry(shared.retryEpoch)
+        pushLog(
+          'director',
+          'ok',
+          '"🔄 MISIÓN REINICIADA AL 100% POR EL EQUIPO. ¡Sistemas restablecidos!"'
+        )
+        return
+      }
+
+      const isInitialHydration = !hasSyncedSharedStationRef.current
+      hasSyncedSharedStationRef.current = true
+
+      if (typeof shared.stationHealth === 'number' && Number.isFinite(shared.stationHealth)) {
+        const serverHp = clamp(Math.round(shared.stationHealth * 10) / 10, 0, 100)
+        if (serverHp !== stationHealthRef.current) {
+          if (!isInitialHydration && serverHp <= stationHealthRef.current - 5) {
+            triggerDamageFlash()
+            playConsoleBeep(180, false)
+          }
+          stationHealthRef.current = serverHp
+          setStationHealth(serverHp)
         }
       }
-      return merged.slice(-2)
-    })
-  }, [])
+
+      if (shared.isGameOver === true && !isGameOverRef.current) {
+        isGameOverRef.current = true
+        setIsGameOver(true)
+        setGameOverReason(
+          shared.gameOverReason || 'Colapso crítico de la Estación Espacial: integridad agotada.'
+        )
+        setActiveMinigame(null)
+        setOpenConsoleIdRaw(null)
+        setRemoteAlertBanner(null)
+      }
+
+      const nowServer =
+        typeof serverTimeMs === 'number' && Number.isFinite(serverTimeMs)
+          ? serverTimeMs
+          : getServerNowMs()
+      setCooldownNowMs(nowServer)
+
+      const allowedGames = missionGamesRef.current
+      const prevSolved = completedMinigamesRef.current
+      const incomingSolved = (Array.isArray(shared.completedMinigames) ? shared.completedMinigames : []).filter(
+        (g): g is MinigameId => allowedGames.includes(g as MinigameId)
+      )
+
+      const prevCooldowns = consoleCooldownsRef.current
+      const nextCooldowns: Partial<Record<MinigameId, number>> = {}
+      const newlyCooledGames: MinigameId[] = []
+      if (shared.consoleCooldowns && typeof shared.consoleCooldowns === 'object') {
+        for (const [k, exp] of Object.entries(shared.consoleCooldowns)) {
+          if (
+            allowedGames.includes(k as MinigameId) &&
+            typeof exp === 'number' &&
+            Number.isFinite(exp) &&
+            exp > nowServer
+          ) {
+            nextCooldowns[k as MinigameId] = exp
+            const prevExp = prevCooldowns[k as MinigameId]
+            if (!prevExp || Math.abs(exp - prevExp) > 5000) {
+              newlyCooledGames.push(k as MinigameId)
+            }
+          }
+        }
+      }
+      consoleCooldownsRef.current = nextCooldowns
+      setConsoleCooldowns(nextCooldowns)
+
+      if (shared.attemptCounts && typeof shared.attemptCounts === 'object') {
+        const mergedAttempts: Partial<Record<MinigameId, number>> = { ...attemptCountsRef.current }
+        for (const [k, cnt] of Object.entries(shared.attemptCounts)) {
+          if (allowedGames.includes(k as MinigameId) && typeof cnt === 'number' && Number.isFinite(cnt)) {
+            mergedAttempts[k as MinigameId] = Math.max(mergedAttempts[k as MinigameId] ?? 0, cnt)
+          }
+        }
+        attemptCountsRef.current = mergedAttempts
+      }
+
+      if (shared.roleResolvedCounts && typeof shared.roleResolvedCounts === 'object') {
+        const nextRoleCounts: Record<RoleId, number> = { ...roleResolvedCountsRef.current }
+        let roleChanged = false
+        for (const r of ROLE_ORDER) {
+          const val = shared.roleResolvedCounts[r]
+          if (typeof val === 'number' && Number.isFinite(val) && val > nextRoleCounts[r]) {
+            nextRoleCounts[r] = val
+            roleChanged = true
+          }
+        }
+        if (roleChanged) {
+          roleResolvedCountsRef.current = nextRoleCounts
+          setRoleResolvedCounts(nextRoleCounts)
+        }
+      }
+
+      const newlySolvedRemotely = incomingSolved.filter((g) => !prevSolved.has(g))
+      if (newlySolvedRemotely.length > 0) {
+        const merged = new Set<MinigameId>(prevSolved)
+        for (const g of incomingSolved) merged.add(g)
+        completedMinigamesRef.current = merged
+        setCompletedMinigames(merged)
+      }
+
+      const incomingResolvedCount = Math.max(
+        resolvedCountRef.current,
+        typeof shared.resolvedCount === 'number' && Number.isFinite(shared.resolvedCount)
+          ? shared.resolvedCount
+          : incomingSolved.length
+      )
+      const resolvedAdvanced = incomingResolvedCount > resolvedCountRef.current
+      if (resolvedAdvanced) {
+        resolvedCountRef.current = incomingResolvedCount
+        setResolvedCount(incomingResolvedCount)
+
+        if (!isInitialHydration) {
+          const notifyList =
+            newlyCooledGames.length > 0 ? newlyCooledGames : newlySolvedRemotely
+          for (const g of notifyList) {
+            const def = UNIQUE_MINIGAME_DEFS[g]
+            if (def.role === activeRoleRef.current) {
+              playConsoleBeep(880, true)
+              const c = CONSOLES.find((cc) => cc.id === def.primaryConsoleId)
+              if (c) {
+                spawnCanvasFloating(c.x, c.y - 34, `🟢 ${def.title.toUpperCase()} ESTABILIZADO`, '#4ade80')
+              }
+              pushLog(
+                def.role,
+                'ok',
+                `"🟢 ${ROLE_INFO[def.role].animalName} estabilizó ${def.title} (${incomingResolvedCount}/${missionTargetCountRef.current})."`
+              )
+            }
+          }
+        }
+
+        if (incomingResolvedCount >= missionTargetCountRef.current && !missionCompletedRef.current) {
+          activeThreatsRef.current = []
+          setActiveThreats([])
+          setRemoteAlertBanner(null)
+          setActiveEvent(MISSION_CATALOG[activeMissionId].defaultAmbientEvent)
+          startVictoryCinematicFlow()
+        }
+      }
+
+      if (typeof shared.points === 'number' && shared.points !== officialScienceRef.current) {
+        officialScienceRef.current = shared.points
+        setOfficialScience(shared.points)
+      }
+
+      const shouldAdoptWorldState =
+        isInitialHydration || !isLocalStationLeader() || resolvedAdvanced
+
+      if (shouldAdoptWorldState) {
+        if (shared.stats && typeof shared.stats === 'object') {
+          const nextStats: SharedStationStats = {
+            battery:
+              typeof shared.stats.battery === 'number'
+                ? shared.stats.battery
+                : statsSnapshotRef.current.battery,
+            lifeSupport:
+              typeof shared.stats.lifeSupport === 'number'
+                ? shared.stats.lifeSupport
+                : statsSnapshotRef.current.lifeSupport,
+            dataBuffer:
+              typeof shared.stats.dataBuffer === 'number'
+                ? shared.stats.dataBuffer
+                : statsSnapshotRef.current.dataBuffer,
+            orbitStability:
+              typeof shared.stats.orbitStability === 'number'
+                ? shared.stats.orbitStability
+                : statsSnapshotRef.current.orbitStability,
+            hull:
+              typeof shared.stats.hull === 'number'
+                ? shared.stats.hull
+                : statsSnapshotRef.current.hull,
+            signalQuality:
+              typeof shared.stats.signalQuality === 'number'
+                ? shared.stats.signalQuality
+                : statsSnapshotRef.current.signalQuality,
+          }
+          if (nextStats.battery !== statsSnapshotRef.current.battery) setBattery(nextStats.battery)
+          if (nextStats.lifeSupport !== statsSnapshotRef.current.lifeSupport)
+            setLifeSupport(nextStats.lifeSupport)
+          if (nextStats.dataBuffer !== statsSnapshotRef.current.dataBuffer)
+            setDataBuffer(nextStats.dataBuffer)
+          if (nextStats.orbitStability !== statsSnapshotRef.current.orbitStability)
+            setOrbitStability(nextStats.orbitStability)
+          if (nextStats.hull !== statsSnapshotRef.current.hull) setHull(nextStats.hull)
+          if (nextStats.signalQuality !== statsSnapshotRef.current.signalQuality)
+            setSignalQuality(nextStats.signalQuality)
+          statsSnapshotRef.current = nextStats
+        }
+
+        if (Array.isArray(shared.activeThreats)) {
+          const allowedNow = missionGamesRef.current
+          const nextThreats = missionCompletedRef.current
+            ? []
+            : shared.activeThreats.filter((t) => {
+                if (!allowedNow.includes(t.game)) return false
+                const exp = nextCooldowns[t.game]
+                return !(typeof exp === 'number' && exp > nowServer)
+              })
+          const prevSig = activeThreatsRef.current
+            .map((t) => `${t.id}:${Math.round(t.urgency)}:${Math.round(t.probeAlt)}`)
+            .join('|')
+          const nextSig = nextThreats
+            .map((t) => `${t.id}:${Math.round(t.urgency)}:${Math.round(t.probeAlt)}`)
+            .join('|')
+          if (prevSig !== nextSig) {
+            activeThreatsRef.current = nextThreats
+            setActiveThreats(nextThreats)
+            setActiveEvent(
+              deriveStationEvent(nextThreats, MISSION_CATALOG[activeMissionId].defaultAmbientEvent)
+            )
+          }
+        }
+      }
+    },
+    [
+      activeMissionId,
+      getServerNowMs,
+      isLocalStationLeader,
+      playConsoleBeep,
+      pushLog,
+      resetCurrentStageForRetry,
+      spawnCanvasFloating,
+      triggerDamageFlash,
+    ]
+  )
+
+  const sendStationSync = useCallback(
+    async (extra?: {
+      completedGame?: MinigameId
+      completedRole?: RoleId
+      cooldownSeconds?: number
+      completionNonce?: string
+      pointsDelta?: number
+      healthDelta?: number
+      healthNonce?: string
+      isGameOver?: boolean
+      gameOverReason?: string
+      statsPatch?: Partial<SharedStationStats>
+      activeThreats?: ActiveThreat[]
+      stats?: SharedStationStats
+      knownSolvedCount?: number
+      forceStateUpdate?: boolean
+    }) => {
+      if (soloPracticeModeRef.current) return
+      const controlledRole = activeRoleRef.current
+      const primaryRole = myClaimedRoleRef.current
+      const controlledClaim = roleClaimsRef.current[controlledRole]
+      const controlledLockedByOther =
+        Boolean(controlledClaim && controlledClaim.clientId !== clientId) ||
+        Boolean(remotePlayersRef.current[controlledRole])
+      const myRole = !controlledLockedByOther ? controlledRole : primaryRole
+      const me = myRole ? astronautsRef.current[myRole] : null
+      const curRm = me ? findRoomAtPoint(me.x, me.y) : null
+
+      const body: Record<string, unknown> = {
+        action: 'sync',
+        clientId,
+        ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
+        playerName: playerNameRef.current.trim() || `OPERADOR-${clientId.slice(-4).toUpperCase()}`,
+        seedStation: {
+          completedMinigames: Array.from(completedMinigamesRef.current),
+          activeThreats: activeThreatsRef.current,
+          stats: statsSnapshotRef.current,
+          stationHealth: stationHealthRef.current,
+          points: officialScienceRef.current,
+        },
+        ...(myRole && me
+          ? {
+              roleId: myRole,
+              player: {
+                x: Math.round(me.x * 10) / 10,
+                y: Math.round(me.y * 10) / 10,
+                dir: me.dir,
+                walkFrame: Math.round(me.walkFrame * 100) / 100,
+                isInteracting: me.isInteracting,
+                currentRoom: curRm ? curRm.label : 'PASILLO DE CONEXIÓN',
+              },
+            }
+          : {}),
+        ...(extra ?? {}),
+      }
+
+      const res = await fetch('/api/station-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (res.status === 404 && activeRoomCode) {
+        notifyRoomClosedOnce()
+        return
+      }
+      if (!res.ok) return
+      const data = (await res.json()) as {
+        deleted?: boolean
+        missionId?: string
+        phase?: string
+        serverTime?: number
+        room?: RoomSnapshot
+        roles?: RoleClaimsMap
+        players?: Record<string, RemotePlayerState>
+        sharedStation?: SharedStationSnapshot
+      }
+      if (data.deleted && activeRoomCode) {
+        notifyRoomClosedOnce()
+        return
+      }
+      if (
+        data.room &&
+        data.phase &&
+        data.phase !== 'STATION' &&
+        Date.now() >= advancingMissionLockUntilRef.current
+      ) {
+        onRoomUpdated?.(data.room)
+        return
+      }
+      if (data.missionId && Date.now() >= advancingMissionLockUntilRef.current) {
+        const nextM = sanitizeMissionId(data.missionId)
+        setSyncedMissionId((prev) => (prev === nextM ? prev : nextM))
+      }
+
+      if (data.roles) {
+        applySyncedClaims(data.roles)
+      }
+
+      const nextRemotes: RemotePlayersMap = {}
+      const nextNames: Partial<Record<RoleId, string>> = {}
+      if (data.players && typeof data.players === 'object') {
+        for (const r of ROLE_ORDER) {
+          const entry = data.players[r]
+          if (entry && entry.clientId && entry.clientId !== clientId) {
+            nextRemotes[r] = entry
+            nextNames[r] = entry.playerName || ROLE_INFO[r].animalName
+          }
+        }
+      }
+      remotePlayersRef.current = nextRemotes
+
+      const nextSig = ROLE_ORDER.map((r) => `${r}:${nextNames[r] ?? ''}`).join('|')
+      if (nextSig !== remoteRolesSigRef.current) {
+        remoteRolesSigRef.current = nextSig
+        setRemotePlayerRoles(nextNames)
+      }
+
+      applySharedStationFromServer(data.sharedStation, data.serverTime)
+    },
+    [
+      applySharedStationFromServer,
+      applySyncedClaims,
+      clientId,
+      activeRoomCode,
+      notifyRoomClosedOnce,
+      onRoomUpdated,
+    ]
+  )
+
+  // Sincronización en tiempo real del mapa, posiciones (10Hz) y progreso compartido (/api/station-sync)
+  useEffect(() => {
+    if (soloPracticeMode) {
+      remotePlayersRef.current = {}
+      remoteRolesSigRef.current = ''
+      setRemotePlayerRoles({})
+      return
+    }
+    let cancelled = false
+    const timer = window.setInterval(() => {
+      if (syncInFlightRef.current) return
+      syncInFlightRef.current = true
+      void sendStationSync()
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) syncInFlightRef.current = false
+        })
+    }, 100)
+    return () => {
+      cancelled = true
+      syncInFlightRef.current = false
+      window.clearInterval(timer)
+    }
+  }, [sendStationSync, soloPracticeMode])
+
+  const triggerStationGameOver = useCallback(
+    (reasonText: string) => {
+      if (isGameOverRef.current) return
+      isGameOverRef.current = true
+      setIsGameOver(true)
+      setGameOverReason(reasonText)
+      setActiveMinigame(null)
+      setOpenConsoleIdRaw(null)
+      setRemoteAlertBanner(null)
+      if (!soloPracticeModeRef.current) {
+        void sendStationSync({
+          isGameOver: true,
+          gameOverReason: reasonText,
+          forceStateUpdate: true,
+        }).catch(() => {})
+      }
+    },
+    [sendStationSync]
+  )
+
+  const handleRetryMissionStage = useCallback(async () => {
+    playClick()
+    if (soloPracticeModeRef.current || !activeRoomCode) {
+      resetCurrentStageForRetry(retryEpochRef.current + 1)
+      pushLog('director', 'ok', '"🔄 MISIÓN ACTUAL REINICIADA AL 100% DE INTEGRIDAD."')
+      return
+    }
+    try {
+      const res = await fetch('/api/station-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'retry_mission',
+          roomCode: activeRoomCode,
+          clientId,
+        }),
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { sharedStation?: SharedStationSnapshot }
+        const epoch = data.sharedStation?.retryEpoch ?? retryEpochRef.current + 1
+        resetCurrentStageForRetry(epoch)
+        pushLog(
+          'director',
+          'ok',
+          '"🔄 MISIÓN ACTUAL REINICIADA AL 100% PARA TODA LA ESCUADRA."'
+        )
+        return
+      }
+    } catch {
+      // Fallback local reset if network momentarily unreachable
+    }
+    resetCurrentStageForRetry(retryEpochRef.current + 1)
+  }, [activeRoomCode, clientId, pushLog, resetCurrentStageForRetry])
+
+  const prevMissionIdRef = useRef<MissionId>(activeMissionId)
+  useEffect(() => {
+    if (prevMissionIdRef.current === activeMissionId) return
+    prevMissionIdRef.current = activeMissionId
+    const nextDef = MISSION_CATALOG[activeMissionId]
+    resetCurrentStageForRetry()
+    pushLog(
+      'director',
+      'ok',
+      `"🧭 MISIÓN ${nextDef.number} (${nextDef.code}) ACTIVA: Meta ${nextDef.targetResolutions} anomalías (Nivel ${nextDef.difficulty})."`
+    )
+  }, [activeMissionId, pushLog, resetCurrentStageForRetry])
+
+  // Al "abrir" una consola con minijuego asignado, filtra por misión activa y respeta enfriamiento 35s-50s
+  const setOpenConsoleId = useCallback(
+    (id: string | null) => {
+      if (id) {
+        const mg = CONSOLE_MINIGAME[id]
+        if (mg && !missionGamesRef.current.includes(mg)) {
+          const c = CONSOLES.find((cc) => cc.id === id)
+          const def = UNIQUE_MINIGAME_DEFS[mg]
+          playConsoleBeep(420, false)
+          if (c) {
+            spawnCanvasFloating(c.x, c.y - 26, '⏳ TERMINAL EN RESERVA · ETAPA POSTERIOR', '#94a3b8')
+          }
+          pushLog(
+            def.role,
+            'info',
+            `"⏳ ${def.title} está en modo reserva para otra etapa de la campaña científica."`
+          )
+          setOpenConsoleIdRaw(null)
+          return
+        }
+        if (mg && missionGamesRef.current.includes(mg)) {
+          const nowServer = getServerNowMs()
+          const cdExp = consoleCooldownsRef.current[mg]
+          if (typeof cdExp === 'number' && cdExp > nowServer) {
+            const secLeft = Math.max(1, Math.ceil((cdExp - nowServer) / 1000))
+            const c = CONSOLES.find((cc) => cc.id === id)
+            const def = UNIQUE_MINIGAME_DEFS[mg]
+            playConsoleBeep(760, true)
+            if (c) {
+              spawnCanvasFloating(
+                c.x,
+                c.y - 26,
+                `🟢 ESTABILIZADO (Enfriamiento: ${secLeft}s)`,
+                '#55efc4'
+              )
+            }
+            pushLog(
+              def.role,
+              'ok',
+              `"🟢 ESTABILIZADO (Enfriamiento: ${secLeft}s) · ${def.title} listo tras enfriarse."`
+            )
+            setOpenConsoleIdRaw(null)
+            return
+          }
+          if (missionCompletedRef.current) {
+            const c = CONSOLES.find((cc) => cc.id === id)
+            if (c) {
+              spawnCanvasFloating(c.x, c.y - 26, '✅ ETAPA COMPLETADA', '#55efc4')
+            }
+            setOpenConsoleIdRaw(null)
+            return
+          }
+          if (mg === 'nav') {
+            setNavSatTarget(id === 'sat_ctrl_2' || id === 'sci_lab' ? 'sat2' : 'sat1')
+          }
+          setActiveMinigame(mg)
+          setOpenConsoleIdRaw(null)
+          return
+        }
+      }
+      setOpenConsoleIdRaw(id)
+    },
+    [getServerNowMs, playConsoleBeep, pushLog, spawnCanvasFloating]
+  )
+
+  // Temporizador UI (1s) para refrescar contadores de enfriamiento (35s-50s) en todas las PCs
+  useEffect(() => {
+    if (missionCompleted) return
+    const timer = window.setInterval(() => {
+      const nowServer = getServerNowMs()
+      setCooldownNowMs(nowServer)
+      const prevMap = consoleCooldownsRef.current
+      let pruned = false
+      const nextMap: Partial<Record<MinigameId, number>> = {}
+      for (const [k, exp] of Object.entries(prevMap)) {
+        if (typeof exp === 'number' && exp > nowServer) {
+          nextMap[k as MinigameId] = exp
+        } else {
+          pruned = true
+        }
+      }
+      if (pruned) {
+        consoleCooldownsRef.current = nextMap
+        setConsoleCooldowns(nextMap)
+      }
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [getServerNowMs, missionCompleted])
+
+  // Motor en tiempo real (1s): reactiva sistemas cuando termina el enfriamiento hasta alcanzar la meta de etapa
+  useEffect(() => {
+    if (activeMinigame || missionCompleted || isGameOver) return
+    const timer = window.setInterval(() => {
+      if (!soloPracticeModeRef.current && (!myClaimedRoleRef.current || !isLocalStationLeader())) {
+        return
+      }
+      if (!soloPracticeModeRef.current && !hasSyncedSharedStationRef.current) {
+        return
+      }
+
+      const nowSec = performance.now() / 1000
+      const nowServer = getServerNowMs()
+      const targetGoal = missionTargetCountRef.current
+      const remainingNeeded = Math.max(0, targetGoal - resolvedCountRef.current)
+      if (remainingNeeded <= 0) return
+
+      const maxConcurrent = Math.min(remainingNeeded, missionGamesRef.current.length >= 8 ? 3 : 2)
+      let current = activeThreatsRef.current.filter((t) => !isGameInCooldown(t.game, nowServer))
+
+      if (current.length === 0) {
+        const nextGame = pickNextPendingMinigame(completedMinigamesRef.current, current)
+        if (nextGame) {
+          const spawned = createThreatForGame(nextGame, nowSec)
+          current = [spawned]
+          const def = UNIQUE_MINIGAME_DEFS[nextGame]
+          if (def.role === activeRoleRef.current) {
+            playConsoleBeep(260, false)
+            const c = CONSOLES.find((cc) => cc.id === def.primaryConsoleId)
+            if (c) {
+              spawnCanvasFloating(c.x, c.y - 26, `⚠️ ${def.title.toUpperCase()}`, '#ff7b7b')
+            }
+            pushLog(def.role, 'warn', `"⚠️ FALLO EN TU SECTOR (${def.quadrantTag}): ${def.threatTitle}"`)
+          }
+          nextThreatCountdownRef.current = 18
+        }
+      } else if (current.length < maxConcurrent) {
+        nextThreatCountdownRef.current -= 1
+        if (nextThreatCountdownRef.current <= 0) {
+          nextThreatCountdownRef.current = 18
+          const nextGame = pickNextPendingMinigame(
+            completedMinigamesRef.current,
+            current,
+            current.map((t) => t.role)
+          )
+          if (nextGame) {
+            const spawned = createThreatForGame(nextGame, nowSec)
+            current = [...current, spawned]
+            const def = UNIQUE_MINIGAME_DEFS[nextGame]
+            if (def.role === activeRoleRef.current) {
+              const c = CONSOLES.find((cc) => cc.id === def.primaryConsoleId)
+              playConsoleBeep(260, false)
+              if (c) {
+                spawnCanvasFloating(c.x, c.y - 26, `⚠️ ${def.title.toUpperCase()}`, '#ff7b7b')
+              }
+              pushLog(
+                def.role,
+                'warn',
+                `"🚨 NUEVO FALLO EN TU SECTOR (${def.quadrantTag}): ${def.threatTitle}"`
+              )
+            }
+          }
+        }
+      }
+
+      let touchDownWarn = false
+      const nextStats: SharedStationStats = { ...statsSnapshotRef.current }
+      const adjustStat = (
+        key: 'hull' | 'orbitStability' | 'battery' | 'lifeSupport' | 'signalQuality' | 'dataBuffer',
+        delta: number,
+        min = 12,
+        max = 100
+      ) => {
+        nextStats[key] = clamp(Number((nextStats[key] + delta).toFixed(1)), min, max)
+      }
+      const updated = current.map((t) => {
+        let nextAlt = t.probeAlt
+        switch (t.game) {
+          case 'comet':
+            adjustStat('hull', -1.2, 0)
+            break
+          case 'dock':
+            adjustStat('orbitStability', -1.0, 10)
+            break
+          case 'eps':
+            adjustStat('battery', -1.5, 0)
+            break
+          case 'eclss':
+            adjustStat('lifeSupport', -1.5, 0)
+            break
+          case 'lander':
+            nextAlt = Math.max(0, t.probeAlt - 12)
+            if (nextAlt <= 0) {
+              nextAlt = 420
+              touchDownWarn = true
+              adjustStat('hull', -8, 0)
+            }
+            break
+          case 'nav':
+            adjustStat('orbitStability', -0.8, 10)
+            adjustStat('signalQuality', -0.9, 10)
+            break
+          case 'telecom':
+            adjustStat('dataBuffer', 2.5, 0, 100)
+            adjustStat('signalQuality', -0.5, 10)
+            break
+          case 'cyber':
+            adjustStat('signalQuality', -1.3, 10)
+            break
+          case 'gyro':
+            adjustStat('orbitStability', -1.0, 10)
+            break
+          case 'debris':
+            adjustStat('hull', -1.3, 0)
+            break
+          case 'reactor':
+            adjustStat('battery', -1.2, 0)
+            break
+          case 'pcb':
+            adjustStat('battery', -1.4, 0)
+            break
+          case 'spectro':
+            adjustStat('dataBuffer', 1.8, 0, 100)
+            break
+          case 'thermal':
+            adjustStat('signalQuality', -0.9, 10)
+            break
+          case 'hga':
+            adjustStat('dataBuffer', 2.2, 0, 100)
+            adjustStat('signalQuality', -0.7, 10)
+            break
+          case 'decrypt':
+            adjustStat('signalQuality', -1.4, 10)
+            break
+        }
+        return {
+          ...t,
+          probeAlt: nextAlt,
+          urgency: clamp(Number((t.urgency + 2.6).toFixed(1)), 0, 100),
+        }
+      })
+
+      if (touchDownWarn) {
+        pushLog(
+          'science',
+          'warn',
+          '"🛬 ¡Sonda PUMA-3 rozó terreno a 0m! Casco -8%, altímetro reactivado a 420m para maniobra."'
+        )
+      }
+
+      if (nextStats.battery !== statsSnapshotRef.current.battery) setBattery(nextStats.battery)
+      if (nextStats.lifeSupport !== statsSnapshotRef.current.lifeSupport)
+        setLifeSupport(nextStats.lifeSupport)
+      if (nextStats.dataBuffer !== statsSnapshotRef.current.dataBuffer)
+        setDataBuffer(nextStats.dataBuffer)
+      if (nextStats.orbitStability !== statsSnapshotRef.current.orbitStability)
+        setOrbitStability(nextStats.orbitStability)
+      if (nextStats.hull !== statsSnapshotRef.current.hull) setHull(nextStats.hull)
+      if (nextStats.signalQuality !== statsSnapshotRef.current.signalQuality)
+        setSignalQuality(nextStats.signalQuality)
+      statsSnapshotRef.current = nextStats
+
+      activeThreatsRef.current = updated
+      setActiveThreats(updated)
+
+      const derivedEvent = deriveStationEvent(
+        updated,
+        MISSION_CATALOG[activeMissionId].defaultAmbientEvent
+      )
+      setActiveEvent(derivedEvent)
+
+      // Drenado progresivo de Vida General de la Estación: -0.8%/s por fallo activo (-1.8%/s si urgencia >= 95)
+      let healthDrainPerSec = 0
+      for (const t of updated) {
+        healthDrainPerSec += t.urgency >= 95 ? 1.8 : 0.8
+      }
+      const healthDelta = healthDrainPerSec > 0 ? -Number(healthDrainPerSec.toFixed(2)) : 0
+      const nextStationHp = clamp(
+        Number((stationHealthRef.current + healthDelta).toFixed(1)),
+        0,
+        100
+      )
+      if (nextStationHp !== stationHealthRef.current) {
+        stationHealthRef.current = nextStationHp
+        setStationHealth(nextStationHp)
+      }
+
+      let collapseReason = ''
+      if (nextStationHp <= 0) {
+        collapseReason =
+          'La Vida General de la Estación cayó al 0% por acumulación prolongada de fallos orbitales.'
+      } else if (nextStats.hull <= 0) {
+        collapseReason =
+          'Fractura total del Casco Estructural (0%) tras múltiples impactos de escombros/meteoritos.'
+      } else if (nextStats.battery <= 0) {
+        collapseReason =
+          'Apagón eléctrico total del subsistema EPS (Batería 0%): pérdida irreversible de control.'
+      } else if (nextStats.lifeSupport <= 0) {
+        collapseReason =
+          'Colapso crítico de Soporte Vital ECLSS (Oxígeno/Presión 0%) en todos los módulos.'
+      }
+
+      const tickNonce =
+        healthDelta !== 0
+          ? `tick-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+          : undefined
+
+      if (collapseReason) {
+        if (!isGameOverRef.current) {
+          isGameOverRef.current = true
+          setIsGameOver(true)
+          setGameOverReason(collapseReason)
+          setActiveMinigame(null)
+          setOpenConsoleIdRaw(null)
+          setRemoteAlertBanner(null)
+        }
+        if (!soloPracticeModeRef.current) {
+          void sendStationSync({
+            activeThreats: updated,
+            stats: nextStats,
+            knownSolvedCount: resolvedCountRef.current,
+            forceStateUpdate: true,
+            ...(healthDelta !== 0 ? { healthDelta, healthNonce: tickNonce } : {}),
+            isGameOver: true,
+            gameOverReason: collapseReason,
+          }).catch(() => {})
+        }
+        return
+      }
+
+      if (!soloPracticeModeRef.current) {
+        void sendStationSync({
+          activeThreats: updated,
+          stats: nextStats,
+          knownSolvedCount: resolvedCountRef.current,
+          forceStateUpdate: true,
+          ...(healthDelta !== 0 ? { healthDelta, healthNonce: tickNonce } : {}),
+        }).catch(() => {})
+      }
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [
+    activeMinigame,
+    createThreatForGame,
+    getServerNowMs,
+    isGameOver,
+    isGameInCooldown,
+    isLocalStationLeader,
+    missionCompleted,
+    pickNextPendingMinigame,
+    playConsoleBeep,
+    pushLog,
+    sendStationSync,
+    spawnCanvasFloating,
+  ])
+
+  const upsertReactiveTasks = useCallback((_completedConsoleId: string, _nextTasks: ActiveTask[]) => {}, [])
 
   // ==========================================================================
   // MOTOR DE REACCIÓN EN CADENA AL EJECUTAR ACCIÓN EN EL MODAL DE CONSOLA
@@ -5304,16 +7410,7 @@ export default function StationOperationScreen({
       ent.interactUntil = nowSec + 1.35
       ent.dir = c.x < ent.x ? 'left' : 'right'
 
-      const advanceProgress = (delta: number) => {
-        setMissionProgress((p) => {
-          const next = clamp(p + delta, 0, 100)
-          if (next >= 100) {
-            setMissionCompleted(true)
-            playIntroSweep()
-          }
-          return next
-        })
-      }
+      const advanceProgress = (_delta: number) => {}
 
       switch (c.id) {
         case 'sci_scan':
@@ -5543,9 +7640,33 @@ export default function StationOperationScreen({
         }
       }
 
-      const solvedIds = MISSION_BACKLOG.filter((m) => m.consoleIds.includes(c.id)).map((m) => m.id)
-      if (solvedIds.length > 0) {
-        setCompletedMissionIds((prev) => Array.from(new Set([...prev, ...solvedIds])))
+      const fallbackMg = CONSOLE_MINIGAME[c.id]
+      if (
+        fallbackMg &&
+        missionGamesRef.current.includes(fallbackMg) &&
+        !isGameInCooldown(fallbackMg)
+      ) {
+        const prevResolved = resolvedCountRef.current
+        const nextResolved = prevResolved + 1
+        resolvedCountRef.current = nextResolved
+        setResolvedCount(nextResolved)
+        const nextSet = new Set(completedMinigamesRef.current)
+        nextSet.add(fallbackMg)
+        completedMinigamesRef.current = nextSet
+        setCompletedMinigames(nextSet)
+        const cdSec = rollConsoleCooldownSeconds()
+        const cdUntil = getServerNowMs() + cdSec * 1000
+        consoleCooldownsRef.current = { ...consoleCooldownsRef.current, [fallbackMg]: cdUntil }
+        setConsoleCooldowns(consoleCooldownsRef.current)
+        if (!soloPracticeModeRef.current) {
+          void sendStationSync({
+            completedGame: fallbackMg,
+            completedRole: UNIQUE_MINIGAME_DEFS[fallbackMg].role,
+            cooldownSeconds: cdSec,
+            completionNonce: `${clientId}-${fallbackMg}-${Date.now()}`,
+            knownSolvedCount: prevResolved,
+          }).catch(() => {})
+        }
       }
 
       setOpenConsoleId(null)
@@ -5555,6 +7676,7 @@ export default function StationOperationScreen({
       dataBuffer,
       playConsoleBeep,
       pushLog,
+      sendStationSync,
       setOpenConsoleId,
       signalQuality,
       spawnCanvasFloating,
@@ -5567,218 +7689,457 @@ export default function StationOperationScreen({
   // ==========================================================================
   const handleMinigameComplete = useCallback(
     (game: MinigameId) => {
+      setActiveMinigame(null)
       playConsoleBeep(880, true)
+
       const me = astronautsRef.current[activeRole]
       const fx = me.x
       const fy = me.y - 44
-      const advance = (delta: number) => {
-        setMissionProgress((p) => {
-          const next = clamp(p + delta, 0, 100)
-          if (next >= 100) {
-            setMissionCompleted(true)
-            playIntroSweep()
-          }
-          return next
-        })
+
+      // 1. Registrar resolución, incrementar contador por rol y asignar enfriamiento de 120s a 150s
+      const defCompleted = UNIQUE_MINIGAME_DEFS[game]
+      const prevResolvedCount = resolvedCountRef.current
+      const nextResolvedCount = prevResolvedCount + 1
+      resolvedCountRef.current = nextResolvedCount
+      setResolvedCount(nextResolvedCount)
+
+      const nextRoleCounts: Record<RoleId, number> = {
+        ...roleResolvedCountsRef.current,
+        [defCompleted.role]: (roleResolvedCountsRef.current[defCompleted.role] ?? 0) + 1,
       }
-      const group = MINIGAME_CONSOLES[game]
-      setActiveTasks((prev) => prev.filter((t) => !group.includes(t.consoleId)))
-      const solvedMinigameIds = MISSION_BACKLOG.filter((m) =>
-        m.consoleIds.some((cid) => group.includes(cid))
-      ).map((m) => m.id)
-      if (solvedMinigameIds.length > 0) {
-        setCompletedMissionIds((prev) => Array.from(new Set([...prev, ...solvedMinigameIds])))
+      roleResolvedCountsRef.current = nextRoleCounts
+      setRoleResolvedCounts(nextRoleCounts)
+
+      const nextAttemptNum = (attemptCountsRef.current[game] ?? 0) + 1
+      attemptCountsRef.current = { ...attemptCountsRef.current, [game]: nextAttemptNum }
+
+      const cooldownSec = rollConsoleCooldownSeconds()
+      const cooldownUntil = getServerNowMs() + cooldownSec * 1000
+      const nextCooldownMap: Partial<Record<MinigameId, number>> = {
+        ...consoleCooldownsRef.current,
+        [game]: cooldownUntil,
       }
-      const stamp = Date.now()
+      consoleCooldownsRef.current = nextCooldownMap
+      setConsoleCooldowns(nextCooldownMap)
+      setCooldownNowMs(getServerNowMs())
+
+      const completionNonce = `${clientId}-${game}-${nextAttemptNum}-${Date.now().toString(36)}`
+
+      const nextSolved = new Set(completedMinigamesRef.current)
+      nextSolved.add(game)
+      completedMinigamesRef.current = nextSolved
+      setCompletedMinigames(nextSolved)
+
+      // Al completar un minijuego, restaurar +15% de Vida General de la Estación (máximo 100%)
+      const healedHealth = clamp(Number((stationHealthRef.current + 15).toFixed(1)), 0, 100)
+      stationHealthRef.current = healedHealth
+      setStationHealth(healedHealth)
+
+      // 2. Resolver amenaza activa y restaurar barras afectadas al 100%
+      const nowSec = performance.now() / 1000
+      let remaining = activeThreatsRef.current.filter((t) => t.game !== game)
+      const statsPatch: Partial<SharedStationStats> = {}
+      let pointsDelta = 0
+      const applyReward = (pts: number, color: string, badge: string, logMsg: string) => {
+        pointsDelta = pts
+        if (pointsDelta > 0) {
+          officialScienceRef.current += pointsDelta
+          setOfficialScience((v) => v + pointsDelta)
+        }
+        spawnCanvasFloating(fx, fy, badge, color)
+        pushLog(activeRole, 'ok', logMsg)
+      }
 
       switch (game) {
-        case 'dock':
+        case 'dock': {
+          const nextHull = clamp(Math.round(statsSnapshotRef.current.hull + 15), 0, 100)
+          statsPatch.orbitStability = 100
+          statsPatch.hull = nextHull
+          pointsDelta = 35
           setOrbitStability(100)
-          setHull((h) => clamp(h + 15, 0, 100))
-          setOfficialScience((v) => v + 35)
-          advance(13)
-          spawnCanvasFloating(fx, fy, '🚀 ACOPLAMIENTO APAS COMPLETO · +35 PTS', '#ffd23f')
+          setHull(nextHull)
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '🚀 ACOPLAMIENTO APAS 100% · +35 PTS', '#ffd23f')
           pushLog(
             activeRole,
             'ok',
-            '"🚀 Acoplamiento APAS completado a menos de 0.15 m/s: órbita 100%, casco +15% (+35 PTS)."'
+            '"🚀 CÓNDOR-4 completó el acoplamiento APAS: órbita 100%, casco +15% (+35 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_eclss_${stamp}`,
-              role: 'engineer',
-              consoleId: 'eng_o2',
-              kind: 'mission',
-              title: 'Estabilizar Soporte Vital O2 (LIFE SUPPORT)',
-              reason: 'El módulo acoplado requiere equilibrar presión, O2 y humedad con ALPACA-1.',
-            },
-          ])
           break
+        }
 
-        case 'comet':
+        case 'comet': {
+          const nextOrbit = clamp(
+            Math.round(statsSnapshotRef.current.orbitStability + 15),
+            0,
+            100
+          )
+          statsPatch.hull = 100
+          statsPatch.orbitStability = nextOrbit
+          pointsDelta = 40
           setHull(100)
-          setOrbitStability((o) => clamp(o + 15, 0, 100))
-          setOfficialScience((v) => v + 40)
-          advance(13)
-          spawnCanvasFloating(fx, fy, '☄️ COMETA INTERCEPTADO · CASCO 100% · +40 PTS', '#ffd23f')
+          setOrbitStability(nextOrbit)
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '☄️ COMETA DESVIADO · CASCO 100% · +40 PTS', '#ffd23f')
           pushLog(
             activeRole,
             'ok',
-            '"☄️ Reencuentro con el cometa superado: escudos activos, casco restaurado al 100% (+40 PTS)."'
+            '"☄️ Defensa orbital completada por CÓNDOR-4: meteoritos despejados y casco al 100% (+40 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_lander_${stamp}`,
-              role: 'science',
-              consoleId: 'sci_scan',
-              kind: 'mission',
-              title: 'Aterrizaje Sonda en USER SEGMENT',
-              reason: 'Cometa analizado y casco seguro: PUMA-3 puede descender la sonda planetaria.',
-            },
-          ])
           break
+        }
 
         case 'eps':
+          statsPatch.battery = 100
+          pointsDelta = 35
           setBattery(100)
-          if (activeEvent === 'eclipse') setActiveEvent('none')
-          setOfficialScience((v) => v + 35)
-          advance(12)
-          spawnCanvasFloating(fx, fy, '⚡ BUSES EPS BALANCEADOS · BATERÍA 100% · +35 PTS', '#ffd23f')
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '⚡ POTENCIA EPS 100% · ECLIPSE SUPERADO · +35 PTS', '#ffd23f')
           pushLog(
             activeRole,
             'ok',
-            '"⚡ Distribución EPS balanceada: Batería al 100% (+35 PTS) compartida con toda la estación."'
+            '"⚡ ALPACA-1 equilibró los buses EPS: batería e iluminación al 100% (+35 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_cyber_${stamp}`,
-              role: 'comms',
-              consoleId: 'com_align',
-              kind: 'mission',
-              title: 'Ciberdefensa Satelital (SPACE SEGMENT)',
-              reason: 'Con energía al 100%, SERPIENTE-2 debe blindar los nodos contra ciberataques.',
-            },
-          ])
           break
 
         case 'eclss':
+          statsPatch.lifeSupport = 100
+          pointsDelta = 35
           setLifeSupport(100)
-          if (activeEvent === 'o2_leak') setActiveEvent('none')
-          setOfficialScience((v) => v + 35)
-          advance(12)
-          spawnCanvasFloating(fx, fy, '🫧 SOPORTE VITAL O2 100% · +35 PTS', '#55efc4')
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '🫧 SOPORTE VITAL O2 100% · CO2 CERO · +35 PTS', '#55efc4')
           pushLog(
             activeRole,
             'ok',
-            '"🫧 ECLSS estabilizado por ALPACA-1: O2, CO2, presión y temperatura nominales al 100% (+35 PTS)."'
+            '"🫧 ECLSS purificado por ALPACA-1: O2 al 100%, neblina CO2 eliminada (+35 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_nav_sat2_${stamp}`,
-              role: 'science',
-              consoleId: 'sat_ctrl_2',
-              kind: 'mission',
-              title: 'Órbita SAT-02 INTI-SCIENCE (USER SEGMENT)',
-              reason: 'Atmósfera estable en la nave: PUMA-3 puede calibrar la órbita del SAT-02.',
-            },
-          ])
           break
 
-        case 'lander':
-          setDataBuffer((v) => clamp(v + 40, 0, 100))
-          setOfficialScience((v) => v + 45)
-          advance(13)
-          spawnCanvasFloating(fx, fy, '🛬 ATERRIZAJE SONDA · +40% DATOS · +45 PTS', '#55efc4')
+        case 'lander': {
+          const nextBuf = nextSolved.has('telecom')
+            ? statsSnapshotRef.current.dataBuffer
+            : clamp(Math.max(statsSnapshotRef.current.dataBuffer, 35), 0, 100)
+          statsPatch.dataBuffer = nextBuf
+          pointsDelta = 45
+          setDataBuffer(nextBuf)
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '🛬 SONDA EN SUPERFICIE · +45 PTS', '#55efc4')
           pushLog(
             activeRole,
             'ok',
-            '"🛬 Sonda planetaria aterrizada con éxito por PUMA-3: muestras recolectadas (+40% Buffer · +45 PTS)."'
+            '"🛬 PUMA-3 posó la sonda planetaria con éxito: muestras recolectadas (+45 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_telecom_${stamp}`,
-              role: 'comms',
-              consoleId: 'com_tx',
-              kind: 'mission',
-              title: 'Reparación Telecom DSN (COMMUNICATIONS)',
-              reason: 'Hay muestras planetarias en el Buffer listas para transmitirse a la Tierra.',
-            },
-          ])
           break
+        }
 
         case 'nav':
+          statsPatch.orbitStability = 100
+          statsPatch.signalQuality = 100
+          pointsDelta = 40
           setOrbitStability(100)
           setSignalQuality(100)
-          if (activeEvent === 'solar_storm') setActiveEvent('none')
-          setOfficialScience((v) => v + 40)
-          advance(13)
-          spawnCanvasFloating(fx, fy, '🛰️ SAT-01 / SAT-02 EN ÓRBITA · +40 PTS', '#74b9ff')
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '🛰️ SAT-02 INTI-SCIENCE EN ÓRBITA · 100% · +40 PTS', '#74b9ff')
           pushLog(
             activeRole,
             'ok',
-            '"🛰️ Satélites orbitales (AMARU-COMMS e INTI-SCIENCE) alineados al 100%: órbita y señal estables (+40 PTS)."'
+            '"🛰️ PUMA-3 alineó SAT-02 INTI-SCIENCE en su órbita nominal: señal 100% (+40 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_eps_${stamp}`,
-              role: 'engineer',
-              consoleId: 'eng_switch',
-              kind: 'mission',
-              title: 'Distribución Eléctrica EPS (POWER MGD)',
-              reason: 'Los satélites alineados demandan carga estable entre los 3 buses de potencia.',
-            },
-          ])
           break
 
         case 'telecom':
+          statsPatch.signalQuality = 100
+          statsPatch.dataBuffer = 0
+          pointsDelta = 35
           setSignalQuality(100)
           setDataBuffer(0)
-          if (activeEvent === 'solar_storm') setActiveEvent('none')
-          setOfficialScience((v) => v + 35)
-          advance(12)
-          spawnCanvasFloating(fx, fy, '📡 TELECOM DSN 100% · BUFFER ENVIADO · +35 PTS', '#74b9ff')
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '📡 TELECOM DSN 100% · BUFFER 0% · +35 PTS', '#74b9ff')
           pushLog(
             activeRole,
             'ok',
-            '"📡 Enlace DSN reparado por SERPIENTE-2: señal al 100% y Buffer descargado a la Tierra (+35 PTS)."'
+            '"📡 SERPIENTE-2 sincronizó la antena DSN: buffer enviado y señal 100% (+35 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_dock_${stamp}`,
-              role: 'director',
-              consoleId: 'dir_orbit',
-              kind: 'mission',
-              title: 'Acoplamiento APAS en GROUND SEGMENT',
-              reason: 'Telemetría DSN al 100%: CÓNDOR-4 autorizado para maniobra de acoplamiento.',
-            },
-          ])
           break
 
         case 'cyber':
+          statsPatch.signalQuality = 100
+          pointsDelta = 40
           setSignalQuality(100)
-          if (activeEvent === 'solar_storm') setActiveEvent('none')
-          setOfficialScience((v) => v + 40)
-          advance(12)
-          spawnCanvasFloating(fx, fy, '🛡️ FIREWALL SATELITAL 100% · +40 PTS', '#74b9ff')
+          if (pointsDelta > 0) {
+            officialScienceRef.current += pointsDelta
+            setOfficialScience((v) => v + pointsDelta)
+          }
+          spawnCanvasFloating(fx, fy, '🛡️ FIREWALL 8080 SEGURO · 100% · +40 PTS', '#74b9ff')
           pushLog(
             activeRole,
             'ok',
-            '"🛡️ Ciberdefensa completada por SERPIENTE-2: intrusiones bloqueadas y red segura al 100% (+40 PTS)."'
+            '"🛡️ SERPIENTE-2 selló el puerto 8080: intrusión neutralizada al 100% (+40 PTS)."'
           )
-          upsertReactiveTasks(group[0], [
-            {
-              id: `task_comet_${stamp}`,
-              role: 'director',
-              consoleId: 'dir_shield',
-              kind: 'mission',
-              title: 'Reencuentro Cometa en LAUNCH SEGMENT',
-              reason: 'Red satelital limpia: CÓNDOR-4 puede activar el radar táctico en Hangar.',
-            },
-          ])
+          break
+
+        case 'gyro':
+          statsPatch.orbitStability = 100
+          setOrbitStability(100)
+          applyReward(
+            40,
+            '#ffd23f',
+            '🧭 GIROSCOPIO CMG CALIBRADO · 100% · +40 PTS',
+            '"🧭 CÓNDOR-4 estabilizó los volantes de inercia CMG: actitud orbital al 100% (+40 PTS)."'
+          )
+          break
+
+        case 'debris': {
+          const nextOrbit = clamp(Math.round(statsSnapshotRef.current.orbitStability + 12), 0, 100)
+          statsPatch.hull = 100
+          statsPatch.orbitStability = nextOrbit
+          setHull(100)
+          setOrbitStability(nextOrbit)
+          applyReward(
+            45,
+            '#ffd23f',
+            '🛰️ ESCOMBROS EYECTADOS · CASCO 100% · +45 PTS',
+            '"🛰️ CÓNDOR-4 despejó la basura orbital del corredor solar: casco al 100% (+45 PTS)."'
+          )
+          break
+        }
+
+        case 'reactor': {
+          const nextHull = clamp(Math.round(statsSnapshotRef.current.hull + 8), 0, 100)
+          statsPatch.battery = 100
+          statsPatch.hull = nextHull
+          setBattery(100)
+          setHull(nextHull)
+          applyReward(
+            40,
+            '#55efc4',
+            '☢️ REACTOR REFRIGERADO · ENERGÍA 100% · +40 PTS',
+            '"☢️ ALPACA-1 equilibró los bucles criogénicos del reactor: energía al 100% (+40 PTS)."'
+          )
+          break
+        }
+
+        case 'pcb':
+          statsPatch.battery = 100
+          setBattery(100)
+          applyReward(
+            45,
+            '#55efc4',
+            '🔌 BUSES PCB PUENTEADOS · ENERGÍA 100% · +45 PTS',
+            '"🔌 ALPACA-1 reparó los buses del tablero maestro PCB tras la tormenta solar: energía al 100% (+45 PTS)."'
+          )
+          break
+
+        case 'spectro': {
+          const nextBuf = clamp(Math.round(statsSnapshotRef.current.dataBuffer * 0.25), 0, 100)
+          const nextSig = clamp(Math.round(statsSnapshotRef.current.signalQuality + 12), 0, 100)
+          statsPatch.dataBuffer = nextBuf
+          statsPatch.signalQuality = nextSig
+          setDataBuffer(nextBuf)
+          setSignalQuality(nextSig)
+          applyReward(
+            40,
+            '#a29bfe',
+            '🧪 ESPECTROMETRÍA VERIFICADA · +40 PTS',
+            '"🧪 PUMA-3 analizó las líneas espectrales del muestreo científico (+40 PTS)."'
+          )
+          break
+        }
+
+        case 'thermal': {
+          const nextHull = clamp(Math.round(statsSnapshotRef.current.hull + 10), 0, 100)
+          statsPatch.signalQuality = 100
+          statsPatch.hull = nextHull
+          setSignalQuality(100)
+          setHull(nextHull)
+          applyReward(
+            45,
+            '#a29bfe',
+            '🌡️ TELEMETRÍA MULTIESPECTRAL 100% · +45 PTS',
+            '"🌡️ PUMA-3 calibró el mapeo térmico infrarrojo contra llamaradas solares: señal al 100% (+45 PTS)."'
+          )
+          break
+        }
+
+        case 'hga':
+          statsPatch.signalQuality = 100
+          statsPatch.dataBuffer = 0
+          setSignalQuality(100)
+          setDataBuffer(0)
+          applyReward(
+            40,
+            '#74b9ff',
+            '🛰️ ANTENA DSN ALINEADA · 100% · BUFFER 0% · +40 PTS',
+            '"🛰️ SERPIENTE-2 fijó el haz Ka de la antena DSN: enlace al 100% y buffer transmitido (+40 PTS)."'
+          )
+          break
+
+        case 'decrypt':
+          statsPatch.signalQuality = 100
+          setSignalQuality(100)
+          applyReward(
+            45,
+            '#74b9ff',
+            '🔐 CLAVE CUÁNTICA ESTABLECIDA · 100% · +45 PTS',
+            '"🔐 SERPIENTE-2 desencriptó el canal cuántico de emergencia: red segura al 100% (+45 PTS)."'
+          )
           break
       }
+
+      const nextStatsSnapshot: SharedStationStats = {
+        ...statsSnapshotRef.current,
+        ...statsPatch,
+      }
+      statsSnapshotRef.current = nextStatsSnapshot
+
+      // 3. Desbloquear victoria al alcanzar la meta de problemas resueltos de la etapa (4/6/8)
+      if (nextResolvedCount >= missionTargetCountRef.current) {
+        activeThreatsRef.current = []
+        setActiveThreats([])
+        setRemoteAlertBanner(null)
+        setActiveEvent(MISSION_CATALOG[activeMissionId].defaultAmbientEvent)
+        startVictoryCinematicFlow()
+        if (!soloPracticeModeRef.current) {
+          void sendStationSync({
+            completedGame: game,
+            completedRole: defCompleted.role,
+            cooldownSeconds: cooldownSec,
+            completionNonce,
+            pointsDelta,
+            statsPatch,
+            activeThreats: [],
+            stats: nextStatsSnapshot,
+            knownSolvedCount: prevResolvedCount,
+            forceStateUpdate: true,
+          }).catch(() => {})
+        }
+        return
+      }
+
+      if (remaining.length === 0) {
+        const nextGame = pickNextPendingMinigame(nextSolved, remaining)
+        if (nextGame) {
+          const spawned = createThreatForGame(nextGame, nowSec)
+          remaining = [spawned]
+          const def = UNIQUE_MINIGAME_DEFS[nextGame]
+          if (def.role === activeRoleRef.current) {
+            pushLog(
+              def.role,
+              'warn',
+              `"⚠️ SIGUIENTE FALLO (${def.quadrantTag}): ${def.threatTitle}"`
+            )
+          }
+        }
+      }
+      nextThreatCountdownRef.current = 18
+      activeThreatsRef.current = remaining
+      setActiveThreats(remaining)
+
+      setActiveEvent(
+        deriveStationEvent(remaining, MISSION_CATALOG[activeMissionId].defaultAmbientEvent)
+      )
+
+      if (!soloPracticeModeRef.current) {
+        void sendStationSync({
+          completedGame: game,
+          completedRole: defCompleted.role,
+          cooldownSeconds: cooldownSec,
+          completionNonce,
+          pointsDelta,
+          statsPatch,
+          activeThreats: remaining,
+          stats: nextStatsSnapshot,
+          knownSolvedCount: prevResolvedCount,
+          forceStateUpdate: true,
+        }).catch(() => {})
+      }
     },
-    [activeEvent, activeRole, playConsoleBeep, pushLog, spawnCanvasFloating, upsertReactiveTasks]
+    [
+      activeMissionId,
+      activeRole,
+      clientId,
+      createThreatForGame,
+      getServerNowMs,
+      pickNextPendingMinigame,
+      playConsoleBeep,
+      pushLog,
+      sendStationSync,
+      spawnCanvasFloating,
+    ]
+  )
+
+  const handleMinigameFail = useCallback(
+    (game: MinigameId) => {
+      if (isGameOverRef.current) return
+      const def = UNIQUE_MINIGAME_DEFS[game]
+      const nextHealth = clamp(Number((stationHealthRef.current - 20).toFixed(1)), 0, 100)
+      stationHealthRef.current = nextHealth
+      setStationHealth(nextHealth)
+      triggerDamageFlash()
+      playConsoleBeep(165, false)
+
+      const me = astronautsRef.current[activeRoleRef.current]
+      if (me) {
+        spawnCanvasFloating(me.x, me.y - 46, '💥 -20% VIDA ESTACIÓN', '#ff4d6d')
+      }
+      pushLog(
+        def.role,
+        'warn',
+        `"💥 FALLO EN ${def.title.toUpperCase()}: -20% Vida General de la Estación (actual: ${Math.round(nextHealth)}%)."`
+      )
+
+      const failNonce = `fail-${clientId}-${game}-${Date.now().toString(36)}`
+      if (nextHealth <= 0) {
+        const reasonText = `Fallo crítico en ${def.title}: Vida General de la Estación agotada al 0%.`
+        if (!soloPracticeModeRef.current) {
+          void sendStationSync({
+            healthDelta: -20,
+            healthNonce: failNonce,
+            isGameOver: true,
+            gameOverReason: reasonText,
+          }).catch(() => {})
+        }
+        triggerStationGameOver(reasonText)
+        return
+      }
+
+      if (!soloPracticeModeRef.current) {
+        void sendStationSync({
+          healthDelta: -20,
+          healthNonce: failNonce,
+        }).catch(() => {})
+      }
+    },
+    [
+      clientId,
+      playConsoleBeep,
+      pushLog,
+      sendStationSync,
+      spawnCanvasFloating,
+      triggerDamageFlash,
+      triggerStationGameOver,
+    ]
   )
 
   const closeMinigame = useCallback(() => {
@@ -5818,6 +8179,15 @@ export default function StationOperationScreen({
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       const k = e.key.toLowerCase()
 
+      if (roleLobbyOpen) {
+        if (k === 'escape' && (soloPracticeMode || myClaimedRole !== null)) {
+          e.preventDefault()
+          playClick()
+          setRoleLobbyOpen(false)
+        }
+        return
+      }
+
       if (k === 'escape') {
         if (openConsoleId) {
           e.preventDefault()
@@ -5841,9 +8211,29 @@ export default function StationOperationScreen({
 
       if (e.key >= '1' && e.key <= '4') {
         const idx = Number(e.key) - 1
+        const targetRole = ROLE_ORDER[idx]
+        if (isRoleLockedByOther(targetRole)) {
+          playClick()
+          const owner =
+            remotePlayerRoles[targetRole] ??
+            roleClaims[targetRole]?.playerName ??
+            'otro jugador'
+          const me = astronautsRef.current[activeRole]
+          spawnCanvasFloating(me.x, me.y - 44, `🔒 ${ROLE_INFO[targetRole].code} (${owner})`, '#f87171')
+          pushLog(
+            targetRole,
+            'warn',
+            `"🔒 Rol bloqueado: ${ROLE_INFO[targetRole].code} pertenece en otro PC a ${owner}."`
+          )
+          return
+        }
+        if (!soloPracticeMode && !myClaimedRole && targetRole !== myClaimedRole) {
+          void claimRoleRemote(targetRole)
+          return
+        }
         setVisitingQuadrant(null)
         setOpenConsoleId(null)
-        actions.setRole(ROLE_ORDER[idx])
+        actions.setRole(targetRole)
         playClick()
         return
       }
@@ -5877,11 +8267,32 @@ export default function StationOperationScreen({
           return
         }
 
-        // 3. De lo contrario caminar hacia su consola propia más cercana
+        // 3. De lo contrario caminar hacia su consola con alerta o sistema pendiente más cercano
+        const activeMissionSet = new Set(missionGamesRef.current)
         const myConsoles = CONSOLES.filter((c) => canUseConsole(c, activeRole))
+        const activeRoleThreat = activeThreatsRef.current.find((t) => t.role === activeRole)
+        const threatenedConsoles = activeRoleThreat
+          ? myConsoles.filter((c) => CONSOLE_MINIGAME[c.id] === activeRoleThreat.game)
+          : []
+        const stageConsoles = myConsoles.filter((c) => {
+          const mg = CONSOLE_MINIGAME[c.id]
+          return Boolean(mg && activeMissionSet.has(mg))
+        })
+        const pendingConsoles = stageConsoles.filter((c) => {
+          const mg = CONSOLE_MINIGAME[c.id]
+          return !mg || !isGameInCooldown(mg)
+        })
+        const pool =
+          threatenedConsoles.length > 0
+            ? threatenedConsoles
+            : pendingConsoles.length > 0
+            ? pendingConsoles
+            : stageConsoles.length > 0
+            ? stageConsoles
+            : myConsoles
         let best: ConsoleStation | null = null
         let bestD = Infinity
-        for (const c of myConsoles) {
+        for (const c of pool) {
           const d = Math.hypot(c.standX - me.x, c.standY - me.y)
           if (d < bestD) {
             bestD = d
@@ -5914,19 +8325,29 @@ export default function StationOperationScreen({
   }, [
     activeMinigame,
     activeRole,
+    claimRoleRemote,
     executeConsole,
+    isGameInCooldown,
+    isRoleLockedByOther,
+    myClaimedRole,
     openConsole,
     openConsoleId,
     openOrWalkToConsole,
+    pushLog,
+    remotePlayerRoles,
+    roleClaims,
+    roleLobbyOpen,
     setOpenConsoleId,
+    soloPracticeMode,
+    spawnCanvasFloating,
     triggerReadOnlyAlert,
     visitingQuadrant,
   ])
 
-  // Al abrir un minijuego se sueltan las teclas de movimiento retenidas
+  // Al abrir un minijuego o el Lobby de roles se sueltan las teclas de movimiento retenidas
   useEffect(() => {
-    if (activeMinigame) keysRef.current.clear()
-  }, [activeMinigame])
+    if (activeMinigame || roleLobbyOpen) keysRef.current.clear()
+  }, [activeMinigame, roleLobbyOpen])
 
   const activeTaskConsoleIds = useMemo(
     () => new Set(activeTasks.map((t) => t.consoleId)),
@@ -5948,6 +8369,10 @@ export default function StationOperationScreen({
     nearestConsoleId,
     hoveredConsoleId,
     activeTaskConsoleIds,
+    activeThreats,
+    completedMinigames,
+    consoleCooldowns,
+    missionCompleted,
   })
   useEffect(() => {
     liveStateRef.current = {
@@ -5965,6 +8390,10 @@ export default function StationOperationScreen({
       nearestConsoleId,
       hoveredConsoleId,
       activeTaskConsoleIds,
+      activeThreats,
+      completedMinigames,
+      consoleCooldowns,
+      missionCompleted,
     }
   }, [
     battery,
@@ -5981,6 +8410,10 @@ export default function StationOperationScreen({
     nearestConsoleId,
     hoveredConsoleId,
     activeTaskConsoleIds,
+    activeThreats,
+    completedMinigames,
+    consoleCooldowns,
+    missionCompleted,
   ])
 
   // ==========================================================================
@@ -6001,7 +8434,16 @@ export default function StationOperationScreen({
 
       for (const r of ROLE_ORDER) {
         const ent = astronautsRef.current[r]
-        if (time > ent.interactUntil) {
+        const remoteHuman =
+          r !== st.activeRole && !soloPracticeModeRef.current
+            ? remotePlayersRef.current[r]
+            : undefined
+        const isClaimedByOther =
+          r !== st.activeRole &&
+          !soloPracticeModeRef.current &&
+          Boolean(roleClaimsRef.current[r] && roleClaimsRef.current[r]!.clientId !== clientId)
+
+        if (!remoteHuman && time > ent.interactUntil) {
           ent.isInteracting = false
         }
 
@@ -6023,7 +8465,7 @@ export default function StationOperationScreen({
             const dx = wp.x - ent.x
             const dy = wp.y - ent.y
             const dist = Math.hypot(dx, dy)
-            if (dist < 12) {
+            if (dist < 16) {
               const finishedWp = ent.waypoints.shift()!
               if (finishedWp.consoleId) {
                 const targetC = CONSOLES.find((c) => c.id === finishedWp.consoleId)
@@ -6037,13 +8479,43 @@ export default function StationOperationScreen({
               vy = (dy / dist) * speed
             }
           }
+        } else if (remoteHuman) {
+          // Rol ocupado por jugador humano en red LAN: NO ejecutar IA de bot.
+          // Interpolación suave (Lerp) a 60 FPS hacia las coordenadas recibidas de su PC.
+          ent.waypoints = []
+          const dx = remoteHuman.x - ent.x
+          const dy = remoteHuman.y - ent.y
+          const dist = Math.hypot(dx, dy)
+          if (dist > 280) {
+            ent.x = remoteHuman.x
+            ent.y = remoteHuman.y
+          } else {
+            ent.x += dx * 0.35
+            ent.y += dy * 0.35
+          }
+          ent.dir = remoteHuman.dir
+          ent.isInteracting = remoteHuman.isInteracting
+          const isRemotelyWalking = dist > 1.2 || remoteHuman.walkFrame > 0
+          ent.isMoving = isRemotelyWalking
+          if (isRemotelyWalking) {
+            ent.walkFrame += dt * 11
+          } else {
+            ent.walkFrame = 0
+          }
+          continue
+        } else if (isClaimedByOther) {
+          // Rol reservado en lobby LAN esperando su primer paquete de posición (~100ms)
+          ent.waypoints = []
+          ent.isMoving = false
+          ent.walkFrame = 0
+          continue
         } else {
           if (ent.waypoints.length > 0) {
             const wp = ent.waypoints[0]
             const dx = wp.x - ent.x
             const dy = wp.y - ent.y
             const dist = Math.hypot(dx, dy)
-            if (dist < 12) {
+            if (dist < 16) {
               ent.waypoints.shift()
               if (ent.waypoints.length === 0) {
                 ent.isInteracting = true
@@ -6069,8 +8541,10 @@ export default function StationOperationScreen({
         if (vx !== 0 || vy !== 0) {
           const nx = ent.x + vx * dt
           const ny = ent.y + vy * dt
+          const prevX = ent.x
+          const prevY = ent.y
 
-          // Movimiento libre entre cuadrantes (visitantes pueden caminar por toda la estación)
+          // Movimiento libre entre cuadrantes (con colisión sólida X/Y separada contra objetos)
           if (isPointInsideWalkableGeometry(nx, ent.y)) {
             ent.x = nx
           }
@@ -6078,13 +8552,67 @@ export default function StationOperationScreen({
             ent.y = ny
           }
 
-          if (Math.abs(vx) >= Math.abs(vy)) {
-            ent.dir = vx < 0 ? 'left' : 'right'
-          } else {
-            ent.dir = vy < 0 ? 'up' : 'down'
+          let moved = ent.x !== prevX || ent.y !== prevY
+          if (!moved && ent.waypoints.length > 0) {
+            // Deslizamiento suave alrededor de obstáculos sólidos cuando el desplazamiento por clic queda bloqueado
+            const wp = ent.waypoints[0]
+            const len = Math.hypot(vx, vy) || 1
+            const ux = vx / len
+            const uy = vy / len
+            const px = -uy
+            const py = ux
+            const slideDist = Math.min(len, speed) * dt
+            const sideAOpen = isPointInsideWalkableGeometry(
+              ent.x + px * 16 + ux * 10,
+              ent.y + py * 16 + uy * 10
+            )
+            const sideBOpen = isPointInsideWalkableGeometry(
+              ent.x - px * 16 + ux * 10,
+              ent.y - py * 16 + uy * 10
+            )
+            const primarySign =
+              sideAOpen && !sideBOpen
+                ? 1
+                : !sideAOpen && sideBOpen
+                  ? -1
+                  : (wp.x + wp.y) % 2 >= 1
+                    ? 1
+                    : -1
+            const signs = [primarySign, -primarySign]
+            const candidates: [number, number][] = []
+            for (const s of signs) {
+              candidates.push([
+                ent.x + (ux * 0.42 + s * px * 0.9) * slideDist,
+                ent.y + (uy * 0.42 + s * py * 0.9) * slideDist,
+              ])
+              candidates.push([ent.x + s * px * slideDist, ent.y + s * py * slideDist])
+            }
+            for (const [cx, cy] of candidates) {
+              if (isPointInsideWalkableGeometry(cx, cy)) {
+                ent.x = cx
+                ent.y = cy
+                moved = true
+                break
+              }
+            }
+            if (!moved && r !== st.activeRole) {
+              ent.waypoints = []
+              ent.aiPauseUntil = time + 1.2
+            }
           }
-          ent.isMoving = true
-          ent.walkFrame += dt * 11
+
+          if (moved) {
+            if (Math.abs(vx) >= Math.abs(vy)) {
+              ent.dir = vx < 0 ? 'left' : 'right'
+            } else {
+              ent.dir = vy < 0 ? 'up' : 'down'
+            }
+            ent.isMoving = true
+            ent.walkFrame += dt * 11
+          } else {
+            ent.isMoving = false
+            ent.walkFrame = 0
+          }
         } else {
           ent.isMoving = false
           ent.walkFrame = 0
@@ -6094,9 +8622,8 @@ export default function StationOperationScreen({
       // Actualizar sala actual y cuadrante actual del jugador activo
       const activeEnt = astronautsRef.current[st.activeRole]
       const curRm = findRoomAtPoint(activeEnt.x, activeEnt.y)
-      if (curRm) {
-        setCurrentRoomLabel((prev) => (prev !== curRm.label ? curRm.label : prev))
-      }
+      const nextRoomLabel = curRm ? curRm.label : 'PASILLO DE CONEXIÓN'
+      setCurrentRoomLabel((prev) => (prev !== nextRoomLabel ? nextRoomLabel : prev))
       const detectedQuad = findQuadrantAtPoint(activeEnt.x, activeEnt.y)
       if (detectedQuad !== st.playerCurrentQuadrant) {
         setPlayerCurrentQuadrant(detectedQuad)
@@ -6105,7 +8632,7 @@ export default function StationOperationScreen({
         setVisitingQuadrant(null)
       }
 
-      // Actualizar consola cercana (propia o ajena) para mostrar [ PRESIONA 'E' ] o [ 🔒 SOLO LECTURA ]
+      // Actualizar consola cercana (propia o ajena) para mostrar [ PRESIONA 'E' ] o bloqueo de solo lectura
       let bestId: string | null = null
       let bestDist = Infinity
       for (const c of CONSOLES) {
@@ -6120,6 +8647,7 @@ export default function StationOperationScreen({
         setNearestConsoleId(nearId)
       }
 
+      // Todas las puertas entre pasillos y áreas se abren automáticamente al acercarse cualquiera de los 4 personajes
       for (const door of SLIDING_DOORS) {
         let minDist = Infinity
         for (const r of ROLE_ORDER) {
@@ -6127,9 +8655,9 @@ export default function StationOperationScreen({
           const d = Math.hypot(a.x - door.x, a.y - door.y)
           if (d < minDist) minDist = d
         }
-        const targetOpen = minDist < 105 ? 1 : 0
+        const targetOpen = minDist < 155 ? 1 : 0
         const cur = doorOpenRef.current[door.id] ?? 0
-        doorOpenRef.current[door.id] = cur + (targetOpen - cur) * Math.min(1, dt * 8)
+        doorOpenRef.current[door.id] = cur + (targetOpen - cur) * Math.min(1, dt * 12)
       }
 
       // Cámara encuadrada a la resolución Pixel-Art HD panorámica (~clientWidth / 2.2)
@@ -6156,24 +8684,17 @@ export default function StationOperationScreen({
         targetZoom = clamp(Math.min(cw / 960, ch / 560, qFocus.zoom), 0.52, 0.88)
         targetCamX = qFocus.x
         targetCamY = qFocus.y
-      } else if (curRm) {
-        const padX = curRm.id === 'engine_room' ? 110 : 64
-        const padY = curRm.id === 'communications' ? 88 : 60
-        targetZoom = clamp(
-          Math.min(cw / (curRm.hull.w + padX), ch / (curRm.hull.h + padY)),
-          0.55,
-          0.98
-        )
-        targetCamX = curRm.hull.x + curRm.hull.w / 2 + (curRm.id === 'engine_room' ? -22 : 0)
-        targetCamY = curRm.hull.y + curRm.hull.h / 2 + (curRm.id === 'communications' ? -8 : 0)
       } else {
-        targetZoom = 0.84
+        // Seguimiento suave continuo sobre la posición (x, y) del personaje activo en pasillos o cualquier habitación
+        targetZoom = curRm
+          ? clamp(Math.min(cw / (curRm.hull.w + 96), ch / (curRm.hull.h + 84)), 0.72, 0.90)
+          : 0.84
         targetCamX = activeEnt.x
         targetCamY = activeEnt.y
       }
 
-      camRef.current.x += (targetCamX - camRef.current.x) * Math.min(1, dt * 6.5)
-      camRef.current.y += (targetCamY - camRef.current.y) * Math.min(1, dt * 6.5)
+      camRef.current.x += (targetCamX - camRef.current.x) * Math.min(1, dt * 7.5)
+      camRef.current.y += (targetCamY - camRef.current.y) * Math.min(1, dt * 7.5)
       camRef.current.zoom += (targetZoom - camRef.current.zoom) * Math.min(1, dt * 6.5)
 
       // Renderizar escena en el Canvas Pixel-Art HD a pantalla completa
@@ -6186,11 +8707,19 @@ export default function StationOperationScreen({
           ctx.imageSmoothingEnabled = false
           ctx.clearRect(0, 0, cw, ch)
 
+          const hasCometThreat = st.activeThreats.some(
+            (t) => t.game === 'comet' && t.role === st.activeRole
+          )
+          const cometPulse = hasCometThreat && time % 5 < 0.45
+          const shakeX = cometPulse ? Math.round(Math.sin(time * 46) * 3.5) : 0
+          const shakeY = cometPulse ? Math.round(Math.cos(time * 54) * 2.5) : 0
+
           ctx.save()
-          ctx.translate(Math.round(cw / 2), Math.round(ch / 2))
+          ctx.translate(Math.round(cw / 2) + shakeX, Math.round(ch / 2) + shakeY)
           ctx.scale(camRef.current.zoom, camRef.current.zoom)
           ctx.translate(-camRef.current.x, -camRef.current.y)
 
+          const canvasServerNowMs = Date.now() + serverClockOffsetRef.current
           drawSpaceStationWorld(ctx, time, {
             battery: st.battery,
             lifeSupport: st.lifeSupport,
@@ -6205,6 +8734,14 @@ export default function StationOperationScreen({
             hoveredConsoleId: st.hoveredConsoleId,
             activeTaskConsoleIds: st.activeTaskConsoleIds,
             doorOpenMap: doorOpenRef.current,
+            activeThreats: st.activeThreats,
+            completedMinigames: st.completedMinigames,
+            consoleCooldowns: st.consoleCooldowns,
+            serverNowMs: canvasServerNowMs,
+            missionCompleted: st.missionCompleted,
+            missionGames: new Set(missionGamesRef.current),
+            activePlayerPos: { x: activeEnt.x, y: activeEnt.y },
+            astronauts: astronautsRef.current,
           })
 
           if (activeEnt.waypoints.length > 0) {
@@ -6216,40 +8753,27 @@ export default function StationOperationScreen({
             ctx.stroke()
           }
 
-          // Renderizar SIEMPRE los 4 especialistas físicos en sus sectores (sin duplicados ni niebla opaca)
-          const sortedRoles = [...ROLE_ORDER].sort(
-            (a, b) => astronautsRef.current[a].y - astronautsRef.current[b].y
-          )
-          const visibleRoles: { role: RoleId; x: number; y: number }[] = []
-          for (const r of sortedRoles) {
-            const a = astronautsRef.current[r]
-            visibleRoles.push({ role: r, x: a.x, y: a.y })
-
-            const info = ROLE_INFO[r]
-            const isMe = r === st.activeRole
-
-            ctx.save()
-            ctx.strokeStyle = info.color
-            ctx.lineWidth = isMe ? 3 : 1.5
-            ctx.globalAlpha = isMe ? 0.95 : 0.45
-            ctx.beginPath()
-            ctx.ellipse(a.x, a.y + 18, isMe ? 20 : 16, isMe ? 8 : 6, 0, 0, Math.PI * 2)
-            ctx.stroke()
-            ctx.restore()
-
-            drawAnimatedAstronaut(
-              ctx,
-              r,
-              a.x,
-              a.y,
-              a.dir,
-              a.walkFrame,
-              a.isInteracting,
-              time
-            )
-          }
+          // Los 4 especialistas ya fueron dibujados mediante Y-Sorting dentro de drawSpaceStationWorld;
+          // recolectamos sus posiciones para las etiquetas pixel-art en Screen-Space.
+          const visibleRoles: { role: RoleId; x: number; y: number }[] = ROLE_ORDER.map((r) => ({
+            role: r,
+            x: astronautsRef.current[r].x,
+            y: astronautsRef.current[r].y,
+          }))
 
           ctx.restore()
+
+          // Interferencia visual sutil en pantalla SOLO para SERPIENTE-2 cuando ciberataque (puerto 8080) afecta su sector
+          if (
+            st.activeRole === 'comms' &&
+            st.activeThreats.some((t) => t.game === 'cyber') &&
+            Math.sin(time * 23) > 0.58
+          ) {
+            const gY = Math.round(((Math.sin(time * 37) + 1) * 0.5) * Math.max(40, ch - 36))
+            ctx.fillStyle = Math.floor(time * 18) % 2 === 0 ? 'rgba(34, 211, 238, 0.20)' : 'rgba(248, 113, 113, 0.18)'
+            ctx.fillRect(0, gY, Math.round(cw * 0.24), 2)
+            ctx.fillRect(Math.round(cw * 0.76), Math.max(24, gY - 12), Math.round(cw * 0.24), 2)
+          }
 
           // ================================================================
           // CAPA SCREEN-SPACE PIXEL-ART HD (TEXTOS NÍTIDOS CON BORDE 1px-2px)
@@ -6279,7 +8803,7 @@ export default function StationOperationScreen({
             ctx.fillText(text, px, py)
           }
 
-          // Etiquetas nítidas de los 4 personajes (CÓNDOR, ALPACA, PUMA, SERPIENTE) en 'Press Start 2P'
+          // Etiquetas nítidas de los 4 personajes: [JUGADOR] SERPIENTE ● / [TÚ] / [BOT]
           const charNameFont =
             cw >= 540
               ? 'bold 8px "Press Start 2P", monospace'
@@ -6287,20 +8811,64 @@ export default function StationOperationScreen({
           for (const vr of visibleRoles) {
             const info = ROLE_INFO[vr.role]
             const isMe = vr.role === st.activeRole
+            const remotePlayer =
+              !isMe && !soloPracticeModeRef.current ? remotePlayersRef.current[vr.role] : undefined
+            const isRemoteConnected = Boolean(remotePlayer)
             const rawX = (vr.x - camRef.current.x) * camRef.current.zoom + cw / 2
             const rawY = (vr.y - 46 - camRef.current.y) * camRef.current.zoom + ch / 2
-            if (rawX < -40 || rawX > cw + 40 || rawY < -30 || rawY > ch + 30) continue
-            const sx = clamp(Math.round(rawX), 42, cw - 42)
-            const sy = clamp(Math.round(rawY), 34, ch - 30)
+            if (rawX < -70 || rawX > cw + 70 || rawY < -30 || rawY > ch + 30) continue
+
+            const tagText = isRemoteConnected
+              ? `[JUGADOR] ${info.animalName}`
+              : isMe && !soloPracticeModeRef.current && myClaimedRoleRef.current === vr.role
+                ? `[TÚ] ${info.animalName}`
+                : !isMe
+                  ? `[BOT] ${info.animalName}`
+                  : info.animalName
+
             ctx.font = charNameFont
-            const tw = Math.ceil(ctx.measureText(info.animalName).width + 12)
+            const dotExtraW = isRemoteConnected ? 11 : 0
+            const tw = Math.ceil(ctx.measureText(tagText).width + 12 + dotExtraW)
+            const halfW = Math.ceil(tw / 2)
+            const sx = clamp(Math.round(rawX), halfW + 4, cw - halfW - 4)
+            const sy = clamp(Math.round(rawY), 34, ch - 30)
             const bx = Math.round(sx - tw / 2)
-            ctx.fillStyle = isMe ? 'rgba(9, 14, 28, 0.90)' : 'rgba(6, 10, 22, 0.78)'
+
+            ctx.fillStyle = isRemoteConnected
+              ? 'rgba(4, 28, 18, 0.92)'
+              : isMe
+                ? 'rgba(9, 14, 28, 0.90)'
+                : 'rgba(6, 10, 22, 0.78)'
             ctx.fillRect(bx, sy - 11, tw, 13)
-            ctx.strokeStyle = isMe ? info.color : 'rgba(71, 85, 105, 0.85)'
-            ctx.lineWidth = 1
+            ctx.strokeStyle = isRemoteConnected
+              ? '#22c55e'
+              : isMe
+                ? info.color
+                : 'rgba(71, 85, 105, 0.85)'
+            ctx.lineWidth = isRemoteConnected || isMe ? 1.5 : 1
             ctx.strokeRect(bx + 0.5, sy - 10.5, tw - 1, 12)
-            drawOutlinedPixelText(info.animalName, sx, sy - 1, info.color, charNameFont, 'center', 1)
+
+            if (isRemoteConnected) {
+              // Punto verde brillante (●) indicando jugador humano conectado en red LAN
+              const dotX = bx + 7
+              const dotY = sy - 5
+              ctx.fillStyle = '#052e16'
+              ctx.fillRect(dotX - 3, dotY - 3, 6, 6)
+              ctx.fillStyle = Math.sin(time * 5) > -0.6 ? '#4ade80' : '#22c55e'
+              ctx.fillRect(dotX - 2, dotY - 2, 4, 4)
+              drawOutlinedPixelText(
+                tagText,
+                sx + 5,
+                sy - 1,
+                info.color,
+                charNameFont,
+                'center',
+                1
+              )
+            } else {
+              const labelColor = !isMe && !soloPracticeModeRef.current ? '#94a3b8' : info.color
+              drawOutlinedPixelText(tagText, sx, sy - 1, labelColor, charNameFont, 'center', 1)
+            }
           }
 
           // Textos flotantes de eventos/acciones en 'Press Start 2P'
@@ -6339,7 +8907,7 @@ export default function StationOperationScreen({
           const lockBannerConsole = activeDenied ?? activeForeignConsole
           if (lockBannerConsole && !canUseConsole(lockBannerConsole, st.activeRole)) {
             const ownerInfoLock = ROLE_INFO[lockBannerConsole.role]
-            const lockLabel = `🔒 SOLO ${ownerInfoLock.animalName} PUEDE RESOLVER ESTE SISTEMA`
+            const lockLabel = `🔒 Consola exclusiva de ${ownerInfoLock.animalName} — Solo puedes observar`
             const rawCx = (lockBannerConsole.x - camRef.current.x) * camRef.current.zoom + cw / 2
             const rawCy = (lockBannerConsole.y - 44 - camRef.current.y) * camRef.current.zoom + ch / 2
             const lockFont = cw >= 580 ? 'bold 7px "Press Start 2P", monospace' : 'bold 6px "Press Start 2P", monospace'
@@ -6382,49 +8950,152 @@ export default function StationOperationScreen({
           ctx.fillRect(hudX + 31, hudY + 23 - blueH, 4, blueH)
           ctx.restore()
 
-          // Arriba al centro: Nombre del segmento actual o modo visitante en 'Press Start 2P'
-          const inspectingQuad = st.visitingQuadrant
-          const effectiveOwner = inspectingQuad ?? st.playerCurrentQuadrant
-          const isForeignView = effectiveOwner !== st.activeRole
-          const roomBanner = st.overviewMode
-            ? 'MAPA ESTACION'
-            : inspectingQuad
-            ? `OBS: ${QUADRANT_DEFS[inspectingQuad].roomsSummary}`
-            : `${curRm?.label ?? 'PASILLO DE CONEXION'}${
-                isForeignView ? ` · SOLO LECTURA (${ROLE_INFO[effectiveOwner].animalName})` : ''
-              }`
-          const titleFont =
-            cw >= 580
-              ? 'bold 10px "Press Start 2P", monospace'
-              : cw >= 440
-              ? 'bold 8px "Press Start 2P", monospace'
-              : 'bold 7px "Press Start 2P", monospace'
-          ctx.font = titleFont
-          const titleW = Math.min(cw - 140, Math.ceil(ctx.measureText(roomBanner).width + 20))
-          const titleBoxX = Math.round(cw / 2 - titleW / 2)
-          ctx.fillStyle = isForeignView && !st.overviewMode ? 'rgba(42, 14, 18, 0.88)' : 'rgba(4, 7, 17, 0.78)'
-          ctx.fillRect(titleBoxX, 5, titleW, 20)
-          ctx.strokeStyle = isForeignView && !st.overviewMode ? '#f87171' : '#384252'
-          ctx.lineWidth = 1
-          ctx.strokeRect(titleBoxX + 0.5, 5.5, titleW - 1, 19)
-          drawOutlinedPixelText(
-            roomBanner,
-            cw / 2,
-            20,
-            isForeignView && !st.overviewMode ? '#fca5a5' : '#fbbf24',
-            titleFont,
-            'center',
-            2
-          )
+          // El cartel superior de sala se renderiza en React (Fila 2 del stack vertical) para evitar solapamientos.
 
-          // Abajo al centro: [ PRESIONA "E" VER CONSOLA ] con icono '!' amarillo encima, o bloqueo de rol
+          // Indicador direccional pulsante en el borde de cámara hacia consola en fallo exclusiva de TU rol
+          const myActiveThreatsCanvas = st.missionCompleted
+            ? []
+            : st.activeThreats
+                .filter((t) => t.role === st.activeRole)
+                .sort((a, b) => b.urgency - a.urgency)
+          const primaryMyThreat = myActiveThreatsCanvas[0]
+          let nextRemoteBannerSig = ''
+          let nextRemoteBannerVal: {
+            game: MinigameId
+            consoleId: string
+            sector: string
+            distM: number
+            arrow: string
+            hint: string
+            urgency: number
+          } | null = null
+
+          if (primaryMyThreat) {
+            const tc = CONSOLES.find((cc) => cc.id === primaryMyThreat.consoleId)
+            if (tc) {
+              const dx = tc.x - activeEnt.x
+              const dy = tc.y - activeEnt.y
+              const distPx = Math.hypot(dx, dy)
+              const distM = Math.max(1, Math.round(distPx / 18))
+              const arrow = getDirectionArrow(dx, dy)
+              const tcRoom = ROOM_BY_ID[tc.roomId]
+              const sectorLabel = tcRoom
+                ? tcRoom.label
+                : UNIQUE_MINIGAME_DEFS[primaryMyThreat.game].quadrantTag
+              const screenX = (tc.x - camRef.current.x) * camRef.current.zoom + cw / 2
+              const screenY = (tc.y - camRef.current.y) * camRef.current.zoom + ch / 2
+              const isOffCamera =
+                screenX < 40 || screenX > cw - 40 || screenY < 36 || screenY > ch - 36
+              const isFarAway = isOffCamera || curRm?.id !== tc.roomId || distPx > 210
+
+              if (isFarAway) {
+                const minX = 210
+                const maxX = Math.max(minX + 20, cw - 260)
+                const minY = 135
+                const maxY = Math.max(minY + 20, ch - 140)
+                const safeCx = Math.round((minX + maxX) / 2)
+                const safeCy = Math.round((minY + maxY) / 2)
+                const dirX = screenX - safeCx
+                const dirY = screenY - safeCy
+                const ang = Math.atan2(dirY, dirX)
+                const maxRx = Math.max(12, (maxX - minX) / 2)
+                const maxRy = Math.max(12, (maxY - minY) / 2)
+                const cosA = Math.cos(ang)
+                const sinA = Math.sin(ang)
+                const scaleEdge = Math.min(
+                  Math.abs(cosA) > 0.001 ? maxRx / Math.abs(cosA) : 9999,
+                  Math.abs(sinA) > 0.001 ? maxRy / Math.abs(sinA) : 9999
+                )
+                const edgeX = clamp(Math.round(safeCx + cosA * scaleEdge), minX, maxX)
+                const edgeY = clamp(Math.round(safeCy + sinA * scaleEdge), minY, maxY)
+                const arrowPulse = 0.72 + 0.28 * Math.sin(time * 9)
+
+                ctx.save()
+                ctx.translate(edgeX, edgeY)
+                ctx.globalAlpha = arrowPulse
+                ctx.fillStyle = 'rgba(127, 29, 29, 0.92)'
+                ctx.beginPath()
+                ctx.arc(0, 0, 14, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.strokeStyle = primaryMyThreat.urgency >= 65 ? '#f87171' : '#fde047'
+                ctx.lineWidth = 2
+                ctx.stroke()
+                ctx.save()
+                ctx.rotate(ang)
+                ctx.fillStyle = '#fde047'
+                ctx.beginPath()
+                ctx.moveTo(8, 0)
+                ctx.lineTo(-5, -6)
+                ctx.lineTo(-2, 0)
+                ctx.lineTo(-5, 6)
+                ctx.closePath()
+                ctx.fill()
+                ctx.restore()
+                ctx.restore()
+
+                drawOutlinedPixelText(
+                  `${distM}m`,
+                  edgeX,
+                  edgeY + 22 > maxY ? edgeY - 17 : edgeY + 22,
+                  '#fde047',
+                  'bold 7px "Press Start 2P", monospace',
+                  'center',
+                  1
+                )
+
+                nextRemoteBannerSig = `${primaryMyThreat.game}:${tc.roomId}:${distM}:${arrow}`
+                nextRemoteBannerVal = {
+                  game: primaryMyThreat.game,
+                  consoleId: tc.id,
+                  sector: sectorLabel,
+                  distM,
+                  arrow,
+                  hint: UNIQUE_MINIGAME_DEFS[primaryMyThreat.game].actionHint,
+                  urgency: Math.round(primaryMyThreat.urgency),
+                }
+              }
+            }
+          }
+          if (nextRemoteBannerSig !== remoteAlertSigRef.current) {
+            remoteAlertSigRef.current = nextRemoteBannerSig
+            setRemoteAlertBanner(nextRemoteBannerVal)
+          }
+
+          // Abajo al centro: [ PRESIONA "E" VER CONSOLA ], [ 🟢 ESTABILIZADO (Enfriamiento: XXs) ] o bloqueo de rol
           const promptCid = st.nearestConsoleId ?? st.hoveredConsoleId
           const promptConsole = promptCid ? CONSOLES.find((c) => c.id === promptCid) ?? null : null
           if (promptConsole) {
             const canOperate = canUseConsole(promptConsole, st.activeRole)
-            const promptText = canOperate
-              ? '[ PRESIONA "E" VER CONSOLA ]'
-              : `🔒 SOLO ${ROLE_INFO[promptConsole.role].animalName} PUEDE RESOLVER ESTE SISTEMA`
+            const promptMg = CONSOLE_MINIGAME[promptConsole.id]
+            const isReserveConsole = Boolean(
+              canOperate && promptMg && !missionGamesRef.current.includes(promptMg)
+            )
+            const promptCdExp =
+              canOperate && !isReserveConsole && promptMg
+                ? st.consoleCooldowns[promptMg]
+                : undefined
+            const isCooldownConsole = Boolean(
+              typeof promptCdExp === 'number' && promptCdExp > canvasServerNowMs
+            )
+            const promptCdSecLeft =
+              isCooldownConsole && typeof promptCdExp === 'number'
+                ? Math.max(1, Math.ceil((promptCdExp - canvasServerNowMs) / 1000))
+                : 0
+            const isSolvedConsole = Boolean(
+              canOperate &&
+                !isReserveConsole &&
+                promptMg &&
+                (isCooldownConsole || (st.missionCompleted && st.completedMinigames.has(promptMg)))
+            )
+            const promptText = !canOperate
+              ? `🔒 Consola exclusiva de ${ROLE_INFO[promptConsole.role].animalName} — Solo puedes observar`
+              : isReserveConsole
+              ? '[ MÓDULO EN RESERVA · OTRA ETAPA ]'
+              : isCooldownConsole
+              ? `[ 🟢 ESTABILIZADO (Enfriamiento: ${promptCdSecLeft}s) ]`
+              : isSolvedConsole
+              ? '[ SISTEMA ESTABILIZADO ✅ ]'
+              : '[ PRESIONA "E" VER CONSOLA ]'
             let promptFont =
               cw >= 600
                 ? 'bold 9px "Press Start 2P", monospace'
@@ -6437,7 +9108,7 @@ export default function StationOperationScreen({
             const pw = Math.ceil(ctx.measureText(promptText).width + 18)
             const px = Math.round(cw / 2 - pw / 2)
 
-            if (canOperate) {
+            if (canOperate && !isSolvedConsole && !isReserveConsole) {
               // Icono '!' amarillo pixel-art encima de la barra dorada activa
               const exY = Math.round(ch - 41 + Math.sin(time * 7.5) * 2)
               const exX = Math.round(cw / 2 - 7)
@@ -6452,16 +9123,34 @@ export default function StationOperationScreen({
               ctx.fillRect(exX + 6, exY + 9, 2, 2)
             }
 
-            ctx.fillStyle = canOperate ? 'rgba(4, 7, 17, 0.94)' : 'rgba(42, 8, 12, 0.96)'
+            ctx.fillStyle = !canOperate
+              ? 'rgba(42, 8, 12, 0.96)'
+              : isReserveConsole
+              ? 'rgba(15, 23, 42, 0.92)'
+              : isSolvedConsole
+              ? 'rgba(6, 36, 22, 0.95)'
+              : 'rgba(4, 7, 17, 0.94)'
             ctx.fillRect(px, ch - 25, pw, 19)
-            ctx.strokeStyle = canOperate ? '#fbbf24' : '#f59e0b'
+            ctx.strokeStyle = !canOperate
+              ? '#f59e0b'
+              : isReserveConsole
+              ? '#64748b'
+              : isSolvedConsole
+              ? '#34d399'
+              : '#fbbf24'
             ctx.lineWidth = 1.5
             ctx.strokeRect(px + 0.5, ch - 24.5, pw - 1, 18)
             drawOutlinedPixelText(
               promptText,
               cw / 2,
               ch - 11,
-              canOperate ? '#fde047' : '#fca5a5',
+              !canOperate
+                ? '#fca5a5'
+                : isReserveConsole
+                ? '#94a3b8'
+                : isSolvedConsole
+                ? '#6ee7b7'
+                : '#fde047',
               promptFont,
               'center',
               2
@@ -6519,48 +9208,31 @@ export default function StationOperationScreen({
       }
     }
 
-    // Visitantes pueden caminar libremente por cualquier sala/pasillo de los 4 cuadrantes para observar
-    if (isPointInsideWalkableGeometry(wx, wy)) {
+    // Paso 100% libre por todas las salas y pasillos de la estación al hacer clic
+    const walkTarget = findNearestWalkablePoint(wx, wy)
+    if (walkTarget) {
+      setVisitingQuadrant(null)
+      setOverviewMode(false)
       const me = astronautsRef.current[activeRole]
-      me.waypoints = buildWaypointPath(me.x, me.y, wx, wy)
+      me.waypoints = buildWaypointPath(me.x, me.y, walkTarget.x, walkTarget.y)
       playClick()
     }
   }
 
-  const finalScore = useMemo(() => {
-    const healthAvg = (battery + lifeSupport + orbitStability + hull) / 4
-    return Math.round(
-      officialScience * 10 +
-        healthAvg * 6 +
-        Math.max(0, baseTel.budget - baseTel.cost) * 0.5 +
-        (baseTel.allOk ? 400 : 150)
-    )
-  }, [battery, lifeSupport, orbitStability, hull, officialScience, baseTel.budget, baseTel.cost, baseTel.allOk])
-
-  const medal = useMemo(() => {
-    if (finalScore >= 1400 && hull >= 70 && lifeSupport >= 60) {
-      return {
-        tier: 'MEDALLA DE ORO NASA',
-        icon: '🥇',
-        color: '#ffd23f',
-        desc: 'Excelencia Orbital Andina: Telemetría, Ciencia y Supervivencia Perfectas.',
-      }
+  const pilotNamesByRole = useMemo<Record<RoleId, string>>(() => {
+    const out = {} as Record<RoleId, string>
+    for (const r of ROLE_ORDER) {
+      out[r] =
+        r === activeRole
+          ? playerName
+          : (!soloPracticeMode
+              ? remotePlayerRoles[r] || roleClaims[r]?.playerName
+              : undefined) ||
+            roleClaims[r]?.playerName ||
+            `IA ${ROLE_INFO[r].animalName}`
     }
-    if (finalScore >= 950) {
-      return {
-        tier: 'MEDALLA DE PLATA NASA',
-        icon: '🥈',
-        color: '#e2e8f0',
-        desc: 'Misión Exitosa: Objetivos científicos cumplidos con anomalías controladas.',
-      }
-    }
-    return {
-      tier: 'MEDALLA DE BRONCE NASA',
-      icon: '🥉',
-      color: '#f97316',
-      desc: 'Misión Operativa: El CubeSat sobrevivió a la órbita con datos parciales.',
-    }
-  }, [finalScore, hull, lifeSupport])
+    return out
+  }, [activeRole, playerName, soloPracticeMode, remotePlayerRoles, roleClaims])
 
   const lastLog = logs[logs.length - 1]
   const openConsoleTask = useMemo(
@@ -6568,47 +9240,183 @@ export default function StationOperationScreen({
     [activeTasks, openConsole]
   )
 
-  const pendingBacklog = useMemo(() => {
-    const activeSet = new Set(activeTasks.map((t) => t.consoleId))
-    const doneSet = new Set(completedMissionIds)
-    return MISSION_BACKLOG.filter(
-      (m) => !doneSet.has(m.id) && !m.consoleIds.some((cid) => activeSet.has(cid))
-    )
-  }, [activeTasks, completedMissionIds])
+  const myActiveThreats = useMemo(
+    () => activeThreats.filter((t) => t.role === activeRole),
+    [activeThreats, activeRole]
+  )
 
-  const completedBacklog = useMemo(() => {
-    const doneSet = new Set(completedMissionIds)
-    return MISSION_BACKLOG.filter((m) => doneSet.has(m.id))
-  }, [completedMissionIds])
+  const myCooldownItems = useMemo(() => {
+    return missionGames
+      .filter((g) => {
+        if (UNIQUE_MINIGAME_DEFS[g].role !== activeRole) return false
+        const exp = consoleCooldowns[g]
+        return typeof exp === 'number' && exp > cooldownNowMs
+      })
+      .map((g) => ({
+        game: g,
+        def: UNIQUE_MINIGAME_DEFS[g],
+        secLeft: Math.max(1, Math.ceil(((consoleCooldowns[g] ?? 0) - cooldownNowMs) / 1000)),
+      }))
+  }, [activeRole, consoleCooldowns, cooldownNowMs, missionGames])
+
+  const myPendingBacklog = useMemo(() => {
+    const activeGames = new Set(activeThreats.map((t) => t.game))
+    return MISSION_BACKLOG.filter(
+      (m) =>
+        m.role === activeRole &&
+        missionGames.includes(m.game) &&
+        !activeGames.has(m.game) &&
+        !((consoleCooldowns[m.game] ?? 0) > cooldownNowMs)
+    )
+  }, [activeRole, activeThreats, consoleCooldowns, cooldownNowMs, missionGames])
+
+  const completedBacklog = useMemo(
+    () =>
+      MISSION_BACKLOG.filter(
+        (m) => missionGames.includes(m.game) && completedMinigames.has(m.game)
+      ),
+    [completedMinigames, missionGames]
+  )
+
+  const formatThreatMetric = useCallback(
+    (t: ActiveThreat): string => {
+      switch (t.game) {
+        case 'lander':
+          return `ALT ${Math.round(t.probeAlt)}m ↓`
+        case 'comet':
+          return `CASCO ${Math.round(hull)}%`
+        case 'dock':
+          return `ÓRBITA ${Math.round(orbitStability)}%`
+        case 'gyro':
+          return `ATT ${Math.round(orbitStability)}%`
+        case 'debris':
+          return `ESC ${Math.round(hull)}%`
+        case 'eps':
+          return `BAT ${Math.round(battery)}%`
+        case 'eclss':
+          return `O2 ${Math.round(lifeSupport)}%`
+        case 'reactor':
+          return `NÚCLEO ${Math.round(battery)}%`
+        case 'pcb':
+          return `BUS ${Math.round(battery)}%`
+        case 'nav':
+          return `SAT-02 ${Math.round(signalQuality)}%`
+        case 'spectro':
+          return `SPEC ${Math.round(dataBuffer)}% ↑`
+        case 'thermal':
+          return `IR ${Math.round(signalQuality)}%`
+        case 'telecom':
+          return `BUF ${Math.round(dataBuffer)}% ↑`
+        case 'hga':
+          return `HGA ${Math.round(signalQuality)}%`
+        case 'cyber':
+          return `RED ${Math.round(signalQuality)}%`
+        case 'decrypt':
+          return `QKD ${Math.round(signalQuality)}%`
+      }
+    },
+    [battery, dataBuffer, hull, lifeSupport, orbitStability, signalQuality]
+  )
+
+  const liveThreatProps = useMemo(() => {
+    if (!activeMinigame) {
+      return {
+        threatQuery: undefined,
+        threatState: undefined,
+      }
+    }
+    const threat = activeThreats.find((t) => t.game === activeMinigame)
+    const alt = Math.round(threat?.probeAlt ?? 500)
+    const attempt = threat?.attempt ?? (attemptCountsRef.current[activeMinigame] ?? 0) + 1
+    const seed = threat?.seed ?? (attempt * 1337 + activeMinigame.charCodeAt(0) * 31)
+    const stateObj: Record<string, number | string> = {
+      game: activeMinigame,
+      mission: activeMissionId,
+      diff: missionDiff,
+      attempt,
+      seed,
+      alt,
+      hull: Math.round(hull),
+      battery: Math.round(battery),
+      o2: Math.round(lifeSupport),
+      orbit: Math.round(orbitStability),
+      signal: Math.round(signalQuality),
+      buffer: Math.round(dataBuffer),
+      urgency: Math.round(threat?.urgency ?? 0),
+    }
+    const q = `diff=${missionDiff}&attempt=${attempt}&seed=${seed}&alt=${stateObj.alt}&hull=${stateObj.hull}&battery=${stateObj.battery}&o2=${stateObj.o2}&orbit=${stateObj.orbit}&signal=${stateObj.signal}&buffer=${stateObj.buffer}`
+    return {
+      threatQuery: q,
+      threatState: stateObj,
+    }
+  }, [
+    activeMinigame,
+    activeMissionId,
+    activeThreats,
+    battery,
+    dataBuffer,
+    hull,
+    lifeSupport,
+    missionDiff,
+    orbitStability,
+    signalQuality,
+  ])
+
+  const hpRounded = Math.max(0, Math.min(100, Math.round(stationHealth)))
+  const hpCritical = hpRounded < 35
+  const hpAmber = hpRounded >= 35 && hpRounded < 65
 
   return (
     <div
-      className="relative w-full h-full flex flex-col font-pixel text-white overflow-hidden select-none"
+      className={`relative w-full h-full flex flex-col font-pixel text-white overflow-hidden select-none transition-transform duration-75 ${
+        healthDamageFlash ? 'translate-x-1 -translate-y-0.5' : ''
+      }`}
       style={{ background: '#050711' }}
     >
+      {healthDamageFlash && (
+        <div
+          className="pointer-events-none fixed inset-0 z-[150] border-4 border-red-500 animate-pulse"
+          style={{
+            background:
+              'radial-gradient(circle at center, rgba(239,68,68,0.06) 35%, rgba(220,38,38,0.42) 100%)',
+          }}
+        />
+      )}
       {/* =====================================================================
           HEADER SUPERIOR COMPACTO (SIN BARRAS HORIZONTALES ANCHAS DE MISIONES)
          ===================================================================== */}
       <header
-        className="flex flex-wrap items-center justify-between gap-1.5 px-2 py-1 shrink-0 border-b-4 border-black z-30"
+        className="flex flex-wrap items-center justify-between gap-1 px-2 py-0.5 shrink-0 border-b-4 border-black z-30 overflow-x-hidden min-w-0"
         style={{ background: '#10142a', boxShadow: '0 2px 0 #2e3866' }}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1 min-w-0 flex-1">
+          <button
+            onMouseEnter={playHover}
+            onClick={() => {
+              playClick()
+              onExitToMenu()
+            }}
+            className="mc-btn px-1.5 py-0.5 text-[clamp(8px,0.62vw,9px)] shrink-0 whitespace-nowrap"
+            title="Salir de la sala y volver al menú principal"
+          >
+            ← MENÚ
+          </button>
           <button
             onMouseEnter={playHover}
             onClick={() => {
               playClick()
               onBackToWorkshop()
             }}
-            className="mc-btn px-2 py-1 text-[9px] shrink-0"
+            className="mc-btn px-1.5 py-0.5 text-[clamp(8px,0.62vw,9px)] shrink-0 whitespace-nowrap"
           >
             🛠️ TALLER
           </button>
           <div className="min-w-0">
-            <div className="text-[10px] sm:text-[11px] text-cyan-300 truncate">
-              🛰️ ESTACIÓN · {contract.name.toUpperCase()}
+            <div className="text-[clamp(8.5px,0.72vw,11px)] text-cyan-300 truncate">
+              🛰️ ESTACIÓN · ETAPA {activeMissionDef.number}/3 · {activeMissionDef.code} (
+              {contract.orbit})
             </div>
-            <div className="text-[8px] text-gray-300 truncate">
+            <div className="text-[clamp(7px,0.58vw,8px)] text-gray-300 truncate">
               SALA: <strong style={{ color: activeRoleInfo.color }}>{currentRoomLabel}</strong> ·{' '}
               <span className="text-yellow-300">WASD · &quot;E&quot; CONSOLAS</span>
             </div>
@@ -6616,72 +9424,148 @@ export default function StationOperationScreen({
         </div>
 
         {/* Telemetría vital ultra-compacta en píldoras (cero barras anchas) */}
-        <div className="hidden lg:flex items-center gap-1.5 text-[8px] shrink-0">
+        <div className="hidden lg:flex items-center gap-1 text-[clamp(7px,0.58vw,8px)] shrink-0">
           <span
-            className={`px-1.5 py-0.5 border ${
+            className={`px-1 py-0.5 border whitespace-nowrap ${
               battery < 60 ? 'border-amber-400 bg-[#2b1d0e] text-amber-200' : 'border-black bg-[#090c1a] text-yellow-300'
             }`}
           >
             ⚡{Math.round(battery)}%
           </span>
           <span
-            className={`px-1.5 py-0.5 border ${
+            className={`px-1 py-0.5 border whitespace-nowrap ${
               isLowO2 ? 'border-amber-400 bg-[#2b1d0e] text-amber-200 animate-pulse' : 'border-black bg-[#090c1a] text-cyan-300'
             }`}
           >
             🫧{Math.round(lifeSupport)}%
           </span>
           <span
-            className={`px-1.5 py-0.5 border ${
+            className={`px-1 py-0.5 border whitespace-nowrap ${
               dataBuffer >= 50 ? 'border-emerald-400 bg-[#0d2e24] text-emerald-200' : 'border-black bg-[#090c1a] text-emerald-300'
             }`}
           >
             💾{Math.round(dataBuffer)}%
           </span>
           <span
-            className={`px-1.5 py-0.5 border ${
+            className={`px-1 py-0.5 border whitespace-nowrap ${
               isOrbitDrift ? 'border-amber-400 bg-[#2b1d0e] text-amber-200 animate-pulse' : 'border-black bg-[#090c1a] text-purple-300'
             }`}
           >
             🧭{Math.round(orbitStability)}%
           </span>
-          <span className="px-1.5 py-0.5 border border-black bg-[#090c1a] text-blue-300">
+          <span
+            className={`px-1 py-0.5 border whitespace-nowrap ${
+              hull < 70 || signalQuality < 70 || (activeRole === 'comms' && activeThreats.some((t) => t.game === 'cyber'))
+                ? 'border-red-400 bg-[#2d0c16] text-red-200 animate-pulse'
+                : 'border-black bg-[#090c1a] text-blue-300'
+            }`}
+          >
             🛡️{Math.round(hull)}%·📡{Math.round(signalQuality)}%
           </span>
         </div>
 
-        {/* Conmutador Rápido de Especialista (1-4) + Finalizar */}
-        <div className="flex flex-wrap items-center gap-1 shrink-0">
+        {/* Conmutador Rápido de Especialista (1-4) + Sala de Roles + Finalizar */}
+        <div className="flex flex-wrap items-center gap-1 shrink-0 min-w-0 max-w-full">
+          <span
+            className="text-[clamp(7px,0.55vw,8px)] px-1.5 py-0.5 border border-black font-bold whitespace-nowrap max-w-[115px] truncate"
+            style={{
+              background: soloPracticeMode ? '#1e293b' : syncConnected ? '#052e16' : '#3b0712',
+              color: soloPracticeMode ? '#fde047' : syncConnected ? '#7bff9a' : '#fda4af',
+            }}
+            title={
+              soloPracticeMode
+                ? 'Modo Práctica Individual activo'
+                : syncConnected
+                  ? `Conectado a sala ${activeRoomCode ?? 'SQUADRON-DEFAULT'}`
+                  : 'Sin conexión a /api/roles-sync'
+            }
+          >
+            {soloPracticeMode
+              ? '👤 SOLO'
+              : activeRoomCode
+                ? `${syncConnected ? '🔑' : '⚠️'} ${activeRoomCode}`
+                : syncConnected
+                  ? '🌐 LAN'
+                  : '🌐 OFF'}
+          </span>
           {ROLE_ORDER.map((r, i) => {
             const info = ROLE_INFO[r]
             const on = activeRole === r
+            const claim = roleClaims[r]
+            const remoteLiveName = !soloPracticeMode ? remotePlayerRoles[r] : undefined
+            const locked = isRoleLockedByOther(r)
+            const lockedOwnerName = remoteLiveName ?? claim?.playerName ?? 'OTRO'
+            const isPrimaryMine = !soloPracticeMode && r === myClaimedRole
+            const isVacantBot = !soloPracticeMode && !locked && r !== myClaimedRole
             const hasTaskForRole = activeTasks.some((t) => t.role === r)
+            const isMyRoleIssue = hasTaskForRole && on
             return (
               <button
                 key={r}
-                onMouseEnter={playHover}
+                disabled={locked}
+                onMouseEnter={locked ? undefined : playHover}
+                title={
+                  locked
+                    ? `🔒 Bloqueado por ${lockedOwnerName}`
+                    : isVacantBot
+                      ? `${info.code} [BOT / LIBRE] - Vacante, haz clic para operarlo`
+                      : `Tu personaje (${info.code})`
+                }
                 onClick={() => {
+                  if (locked) return
+                  if (!soloPracticeMode && !myClaimedRole) {
+                    void claimRoleRemote(r)
+                    return
+                  }
                   playClick()
                   setVisitingQuadrant(null)
                   setOpenConsoleId(null)
                   actions.setRole(r)
                 }}
-                className={`text-[8px] sm:text-[9px] px-1.5 py-1 flex items-center gap-1 whitespace-nowrap ${
-                  hasTaskForRole && !on ? 'animate-pulse' : ''
+                className={`text-[clamp(7.5px,0.6vw,9px)] px-1.5 py-0.5 flex items-center gap-1 whitespace-nowrap min-w-0 ${
+                  locked ? 'opacity-45 cursor-not-allowed' : ''
                 }`}
                 style={{
-                  background: on ? '#2a3f8f' : '#1b2038',
-                  color: on ? info.color : '#cbd5e1',
-                  border: `2px solid ${hasTaskForRole ? '#fde047' : on ? '#fff' : '#000'}`,
+                  background: locked ? '#0b0e1c' : on ? '#2a3f8f' : '#1b2038',
+                  color: locked ? '#64748b' : on ? info.color : '#cbd5e1',
+                  border: `2px solid ${
+                    locked
+                      ? '#334155'
+                      : isMyRoleIssue
+                        ? '#fde047'
+                        : on
+                          ? '#fff'
+                          : isPrimaryMine
+                            ? '#4ade80'
+                            : '#000'
+                  }`,
                 }}
               >
-                <span>{info.icon}</span>
-                <span>
+                <span className="shrink-0">{locked ? '🔒' : info.icon}</span>
+                <span className="shrink-0">
                   [{i + 1}: {info.animalName}]
                 </span>
-                {hasTaskForRole && (
-                  <span className="px-1 bg-yellow-400 text-black text-[7px] font-bold">!</span>
+                {locked && (
+                  <span className="text-[clamp(6.5px,0.52vw,7.5px)] text-amber-300 font-bold max-w-[52px] truncate">
+                    {lockedOwnerName.slice(0, 6)}
+                  </span>
                 )}
+                {isPrimaryMine && <span className="text-[7px] text-emerald-300 shrink-0">★</span>}
+                {isVacantBot && !on && (
+                  <span className="px-1 bg-cyan-950 border border-cyan-500/60 text-cyan-200 text-[6px] shrink-0">
+                    LIBRE
+                  </span>
+                )}
+                {isMyRoleIssue ? (
+                  <span className="px-1 bg-yellow-400 text-black text-[7px] font-bold shrink-0 animate-pulse">
+                    !
+                  </span>
+                ) : hasTaskForRole ? (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"
+                    title="Compañero atendiendo incidencia"
+                  />
+                ) : null}
               </button>
             )
           })}
@@ -6689,10 +9573,21 @@ export default function StationOperationScreen({
             onMouseEnter={playHover}
             onClick={() => {
               playClick()
-              setMissionCompleted(true)
-              playIntroSweep()
+              setSyncErrorMsg(null)
+              setRoleLobbyOpen(true)
             }}
-            className="mc-btn px-2 py-1 text-[8px] sm:text-[9px]"
+            className="mc-btn px-1.5 py-0.5 text-[clamp(7.5px,0.6vw,9px)] whitespace-nowrap"
+            style={{ background: '#1e1b4b', color: '#a5b4fc', borderColor: '#6366f1' }}
+          >
+            👥 CAMBIAR / SALA DE ROLES
+          </button>
+          <button
+            onMouseEnter={playHover}
+            onClick={() => {
+              playClick()
+              startVictoryCinematicFlow()
+            }}
+            className="mc-btn px-1.5 py-0.5 text-[clamp(7.5px,0.6vw,9px)] whitespace-nowrap"
             style={{ background: '#15803d', color: '#7bff9a', borderColor: '#7bff9a' }}
           >
             🏆 FINALIZAR
@@ -6717,57 +9612,147 @@ export default function StationOperationScreen({
             style={{ imageRendering: 'pixelated' }}
           />
 
-          {/* ALERTA DE BLOQUEO DE SOLO LECTURA AL INTENTAR OPERAR TERMINAL AJENA */}
-          {visitorAlert && (
-            <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 max-w-xl w-[92%] sm:w-auto px-3.5 py-2 border-2 border-red-400 bg-[#2a090d]/95 shadow-2xl text-center">
-              <div className="text-[9px] sm:text-[10px] text-red-200 font-bold leading-snug">
-                {visitorAlert.msg}
+          {/* STACK VERTICAL CENTRAL SUPERIOR (CERO SOLAPAMIENTO ENTRE VIDA, SALA, VISITA Y ALERTAS) */}
+          <div
+            className={`pointer-events-none absolute top-2 left-12 z-30 flex flex-col items-center gap-1.5 min-w-0 pt-7 lg:pt-0 ${
+              missionPanelOpen ? 'right-[240px] lg:right-[472px]' : 'right-14 sm:right-[290px]'
+            }`}
+          >
+            {/* Fila 1 (top-2): Barra compacta ❤️ VIDA GENERAL DE LA ESTACIÓN */}
+            <div
+              className={`pointer-events-auto w-full max-w-md flex items-center gap-2 px-2.5 py-1 border-2 shadow-lg ${
+                hpCritical
+                  ? 'border-red-500 bg-[#2a070f]/95 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.65)]'
+                  : hpAmber
+                    ? 'border-amber-400 bg-[#1f1505]/95'
+                    : 'border-amber-500/80 bg-[#080e1e]/92'
+              }`}
+            >
+              <span
+                className={`shrink-0 text-[10px] font-sans font-bold whitespace-nowrap ${
+                  hpCritical ? 'text-red-300' : hpAmber ? 'text-amber-300' : 'text-emerald-300'
+                }`}
+              >
+                ❤️ VIDA GENERAL DE LA ESTACIÓN ({hpRounded}%)
+              </span>
+              <div className="flex-1 min-w-[64px] h-2.5 bg-black border border-slate-700 overflow-hidden">
+                <div
+                  className="h-full transition-all duration-300"
+                  style={{
+                    width: `${hpRounded}%`,
+                    background: hpCritical
+                      ? 'linear-gradient(90deg, #dc2626 0%, #ef4444 100%)'
+                      : hpAmber
+                        ? 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)'
+                        : 'linear-gradient(90deg, #16a34a 0%, #22c55e 100%)',
+                  }}
+                />
               </div>
-              <div className="text-[8px] text-amber-300 mt-1">
-                PROPIETARIO EXCLUSIVO: {ROLE_INFO[visitorAlert.owner].icon}{' '}
-                {ROLE_INFO[visitorAlert.owner].code} · USA TECLA [1-4] SI DESEAS CONTROLARLO
-              </div>
+              <span
+                className={`shrink-0 text-[10px] font-sans font-bold tabular-nums ${
+                  hpCritical ? 'text-red-400' : hpAmber ? 'text-amber-300' : 'text-emerald-300'
+                }`}
+              >
+                {hpRounded}%
+              </span>
             </div>
-          )}
 
-          {/* PÍLDORA DE MODO VISITANTE / OBSERVACIÓN DE CUADRANTE AJENO */}
-          {!visitorAlert &&
-            (visitingQuadrant && visitingQuadrant !== activeRole ||
-              playerCurrentQuadrant !== activeRole) && (
-              <div className="absolute top-10 left-1/2 -translate-x-1/2 z-20 px-2.5 py-1 bg-[#0b1328]/90 border border-cyan-400/70 flex flex-wrap items-center gap-2 text-[8px]">
-                <span className="text-cyan-200">
-                  👁️ MODO VISITANTE (SOLO LECTURA) · SECTOR DE{' '}
-                  <strong style={{ color: ROLE_INFO[visitingQuadrant ?? playerCurrentQuadrant].color }}>
-                    {ROLE_INFO[visitingQuadrant ?? playerCurrentQuadrant].icon}{' '}
-                    {ROLE_INFO[visitingQuadrant ?? playerCurrentQuadrant].code}
-                  </strong>
-                </span>
-                {visitingQuadrant && visitingQuadrant !== playerCurrentQuadrant && (
-                  <button
-                    onClick={() => {
-                      playClick()
-                      const target = QUADRANT_DEFS[visitingQuadrant].entryPoint
-                      const me = astronautsRef.current[activeRole]
-                      me.waypoints = buildWaypointPath(me.x, me.y, target.x, target.y)
-                    }}
-                    className="px-1.5 py-0.5 bg-cyan-900/90 border border-cyan-400 text-cyan-100 hover:bg-cyan-700"
-                  >
-                    🚶 CAMINAR AQUÍ
-                  </button>
-                )}
-                {visitingQuadrant && (
-                  <button
-                    onClick={() => {
-                      playClick()
-                      setVisitingQuadrant(null)
-                    }}
-                    className="px-1.5 py-0.5 bg-amber-900/90 border border-amber-400 text-amber-100 hover:bg-amber-700"
-                  >
-                    🎯 MI PERSONAJE
-                  </button>
-                )}
+            {/* Fila 2: Nombre de sala actual + Visitando sector + Volver integrado en la misma píldora */}
+            {(() => {
+              const effectiveOwnerHud = visitingQuadrant ?? playerCurrentQuadrant
+              const isForeignHud = !overviewMode && effectiveOwnerHud !== activeRole
+              const roomTitleHud = overviewMode
+                ? 'MAPA ESTACIÓN'
+                : visitingQuadrant
+                  ? `OBS: ${QUADRANT_DEFS[visitingQuadrant].roomsSummary}`
+                  : `${currentRoomLabel}${isForeignHud ? ' · SOLO LECTURA' : ''}`
+              return (
+                <div
+                  className={`pointer-events-auto max-w-[520px] w-fit px-3 py-1 border flex items-center justify-center gap-2 shadow-lg min-w-0 ${
+                    isForeignHud
+                      ? 'border-red-400/80 bg-[#2a0e12]/92 text-red-200'
+                      : 'border-slate-600 bg-[#040711]/90 text-amber-300'
+                  }`}
+                >
+                  <span className="text-[11px] font-sans font-bold tracking-wide truncate min-w-0">
+                    {roomTitleHud}
+                  </span>
+                  {isForeignHud && (
+                    <>
+                      <span className="text-[10px] font-sans text-cyan-200 truncate min-w-0">
+                        · Visitando sector de{' '}
+                        <strong style={{ color: ROLE_INFO[effectiveOwnerHud].color }}>
+                          {ROLE_INFO[effectiveOwnerHud].icon}{' '}
+                          {ROLE_INFO[effectiveOwnerHud].animalName}
+                        </strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick()
+                          teleportActivePlayerTo(
+                            ROLE_SPAWNS[activeRole].x,
+                            ROLE_SPAWNS[activeRole].y,
+                            ROLE_INFO[activeRole].animalName,
+                            activeRoleInfo.color
+                          )
+                        }}
+                        className="shrink-0 px-2 py-0.5 bg-amber-900/95 border border-amber-400 text-[10px] font-sans font-bold text-amber-100 hover:bg-amber-700 whitespace-nowrap"
+                      >
+                        🎯 VOLVER A MI SECTOR
+                      </button>
+                    </>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Fila 3: Alerta de bloqueo de consola ajena */}
+            {visitorAlert && (
+              <div className="pointer-events-auto max-w-xl w-full px-3.5 py-2 border-2 border-red-400 bg-[#2a090d]/95 shadow-2xl text-center">
+                <div className="text-[11px] font-sans text-red-200 font-bold leading-snug">
+                  {visitorAlert.msg}
+                </div>
+                <div className="text-[10px] font-sans text-amber-300 mt-0.5">
+                  PROPIETARIO EXCLUSIVO: {ROLE_INFO[visitorAlert.owner].icon}{' '}
+                  {ROLE_INFO[visitorAlert.owner].code} ·{' '}
+                  {isRoleLockedByOther(visitorAlert.owner)
+                    ? `🔒 BLOQUEADO POR ${
+                        (
+                          remotePlayerRoles[visitorAlert.owner] ??
+                          roleClaims[visitorAlert.owner]?.playerName ??
+                          'OTRO PILOTO'
+                        ).toUpperCase()
+                      } — SOLO LECTURA`
+                    : 'ROL VACANTE [BOT/LIBRE] · PUEDES OPERARLO CON [1-4]'}
+                </div>
               </div>
             )}
+
+            {/* Fila 3 (alterna): Banner compacto exclusivo de fallo remoto en tu propio sector */}
+            {!visitorAlert && !missionCompleted && remoteAlertBanner && (
+              <button
+                type="button"
+                onClick={() => {
+                  playClick()
+                  const tc = CONSOLES.find((cc) => cc.id === remoteAlertBanner.consoleId)
+                  if (tc) openOrWalkToConsole(tc)
+                }}
+                className={`pointer-events-auto max-w-xl w-full px-3 py-1.5 border-2 text-left shadow-xl transition-all hover:brightness-110 ${
+                  remoteAlertBanner.urgency >= 65
+                    ? 'border-red-400 bg-[#2d0a12]/95 text-red-100'
+                    : 'border-amber-400 bg-[#221706]/95 text-amber-100'
+                }`}
+                title="Haz clic para caminar directo hacia tu consola en fallo"
+              >
+                <div className="text-[10px] font-sans font-bold leading-snug truncate">
+                  ⚠️ [FALLO EN TU SECTOR - {remoteAlertBanner.sector} (a {remoteAlertBanner.distM}m{' '}
+                  <span className="text-yellow-300">{remoteAlertBanner.arrow}</span>)]:{' '}
+                  <span className="text-white font-normal">{remoteAlertBanner.hint}</span>
+                </div>
+              </button>
+            )}
+          </div>
 
           {/* Botones flotantes superiores (alineados a la izquierda del panel vertical derecho) */}
           <div
@@ -6810,19 +9795,28 @@ export default function StationOperationScreen({
           </div>
 
           {/* =================================================================
-              MINIMAPA INTERACTIVO DE LOS 4 CUADRANTES (ESQUINA INFERIOR IZQUIERDA)
+              MINIMAPA INTERACTIVO DE LOS 4 SECTORES (CLIC PARA TELETRANSPORTAR SIN CAMBIAR DE ROL)
              ================================================================= */}
           <div
             className="mc-panel absolute bottom-2 left-2 z-20 p-1.5 w-72 border-2 border-cyan-500/50"
             style={{ background: 'rgba(8, 12, 26, 0.90)', backdropFilter: 'blur(4px)' }}
           >
             <div className="flex items-center justify-between text-[7px] text-cyan-300 mb-1">
-              <span>🗺️ 4 CUADRANTES · CLIC PARA VISITAR</span>
+              <span>🗺️ 4 SECTORES · CLIC PARA IR AQUÍ</span>
               <button
                 onClick={() => {
                   playClick()
-                  setOverviewMode(false)
-                  setVisitingQuadrant(null)
+                  if (playerCurrentQuadrant !== activeRole) {
+                    teleportActivePlayerTo(
+                      ROLE_SPAWNS[activeRole].x,
+                      ROLE_SPAWNS[activeRole].y,
+                      ROLE_INFO[activeRole].animalName,
+                      activeRoleInfo.color
+                    )
+                  } else {
+                    setOverviewMode(false)
+                    setVisitingQuadrant(null)
+                  }
                 }}
                 className="px-1 py-0.5 bg-slate-800 border border-slate-600 text-yellow-300 hover:bg-slate-700"
               >
@@ -6835,27 +9829,24 @@ export default function StationOperationScreen({
                 const ownerInfo = ROLE_INFO[qid]
                 const hasIssue = activeTasks.some((t) => t.role === qid)
                 const isPlayerHere = playerCurrentQuadrant === qid
-                const isObserving = visitingQuadrant === qid
                 const isOwnerMe = activeRole === qid
                 return (
                   <button
                     key={qid}
                     onClick={() => {
                       playClick()
-                      setOverviewMode(false)
-                      if (qid === activeRole && playerCurrentQuadrant === activeRole) {
-                        setVisitingQuadrant(null)
-                      } else {
-                        setVisitingQuadrant((prev) => (prev === qid ? null : qid))
-                      }
+                      const dest = qid === activeRole ? ROLE_SPAWNS[activeRole] : q.entryPoint
+                      teleportActivePlayerTo(dest.x, dest.y, q.roomsSummary, ownerInfo.color)
                     }}
                     className={`relative p-1 text-left border transition-colors ${
-                      hasIssue ? 'border-amber-400' : isObserving ? 'border-cyan-400' : isPlayerHere ? 'border-white' : 'border-slate-800'
+                      hasIssue && isOwnerMe
+                        ? 'border-amber-400'
+                        : isPlayerHere
+                          ? 'border-white'
+                          : 'border-slate-800'
                     }`}
                     style={{
-                      background: isObserving
-                        ? 'rgba(14, 116, 144, 0.28)'
-                        : isPlayerHere
+                      background: isPlayerHere
                         ? 'rgba(30, 41, 59, 0.9)'
                         : 'rgba(12, 18, 36, 0.85)',
                     }}
@@ -6864,30 +9855,53 @@ export default function StationOperationScreen({
                       <span className="truncate font-bold" style={{ color: ownerInfo.color }}>
                         {ownerInfo.icon} S{q.sectorNum} {isOwnerMe ? '·TÚ' : ''}
                       </span>
-                      {hasIssue ? (
+                      {hasIssue && isOwnerMe ? (
                         <span className="px-1 bg-red-600 text-yellow-200 font-bold animate-pulse">
                           !
+                        </span>
+                      ) : hasIssue ? (
+                        <span
+                          className="text-amber-400 font-bold"
+                          title="Compañero atendiendo anomalía en este sector"
+                        >
+                          ●
                         </span>
                       ) : (
                         <span className="text-emerald-400 font-bold">●</span>
                       )}
                     </div>
 
-                    {/* Esquema SVG del cuadrante */}
+                    {/* Esquema SVG del cuadrante (clic en cualquier sala teletransporta directo allí) */}
                     <svg viewBox="0 0 100 64" className="w-full h-8 bg-[#040711] border border-slate-900">
-                      {q.miniRooms.map((mr, idx) => (
-                        <rect
-                          key={idx}
-                          x={mr.x}
-                          y={mr.y}
-                          width={mr.w}
-                          height={mr.h}
-                          rx={2}
-                          fill={mr.accent ? `${ownerInfo.color}33` : '#1e293b'}
-                          stroke={ownerInfo.color}
-                          strokeWidth={mr.accent ? 2 : 1.2}
-                        />
-                      ))}
+                      {q.miniRooms.map((mr, idx) => {
+                        const targetRm = ROOM_BY_ID[mr.roomId]
+                        return (
+                          <rect
+                            key={idx}
+                            x={mr.x}
+                            y={mr.y}
+                            width={mr.w}
+                            height={mr.h}
+                            rx={2}
+                            fill={mr.accent ? `${ownerInfo.color}33` : '#1e293b'}
+                            stroke={ownerInfo.color}
+                            strokeWidth={mr.accent ? 2 : 1.2}
+                            className="cursor-pointer hover:opacity-80"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              playClick()
+                              teleportActivePlayerTo(
+                                targetRm.navX,
+                                targetRm.navY,
+                                targetRm.label,
+                                ownerInfo.color
+                              )
+                            }}
+                          >
+                            <title>{targetRm.label}</title>
+                          </rect>
+                        )
+                      })}
                       {/* Marcador del dueño en el cuadrante */}
                       <circle cx={78} cy={14} r={4} fill={ownerInfo.color} />
                       {/* Marcador pulsante si el jugador activo está aquí */}
@@ -6942,8 +9956,14 @@ export default function StationOperationScreen({
               >
                 {/* Progreso y ciencia compactos dentro del panel */}
                 <div className="p-1.5 bg-[#050814]/80 border border-slate-800">
+                  <div className="flex items-center justify-between text-[7px] text-cyan-300 mb-0.5 truncate">
+                    <span>🎯 {activeMissionDef.code}</span>
+                    <span>ETAPA {activeMissionDef.number}/3</span>
+                  </div>
                   <div className="flex items-center justify-between text-[8px]">
-                    <span className="text-yellow-300">⏱️ AVANCE {Math.round(missionProgress)}%</span>
+                    <span className="text-yellow-300">
+                      ⏱️ AVANCE {missionProgress}% ({resolvedCount}/{missionTargetCount})
+                    </span>
                     <span className="text-emerald-300">🔬 {officialScience}</span>
                   </div>
                   <div className="w-full h-1.5 bg-black mt-1">
@@ -6957,68 +9977,160 @@ export default function StationOperationScreen({
                   </div>
                 </div>
 
-                {/* 🔴 / 🟡 MISIONES ACTIVAS / URGENTES */}
+                {/* 👥 ESTADO DISCRETO DE LOS 4 ESPECIALISTAS (PUNTO ● PARA COMPAÑEROS) */}
+                <div className="p-1.5 bg-[#050814]/75 border border-slate-800">
+                  <div className="text-[6.5px] text-slate-400 font-bold mb-1">
+                    👥 ESCUADRA (TU ROL + EQUIPO)
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {ROLE_ORDER.map((r) => {
+                      const info = ROLE_INFO[r]
+                      const hasRoleIssue = activeThreats.some((t) => t.role === r)
+                      const isMeRole = r === activeRole
+                      return (
+                        <div
+                          key={r}
+                          className={`flex items-center justify-between px-1.5 py-0.5 border text-[6.5px] ${
+                            isMeRole
+                              ? 'border-cyan-500/70 bg-cyan-950/35'
+                              : 'border-slate-800 bg-[#090e1d]'
+                          }`}
+                        >
+                          <span className="truncate font-bold" style={{ color: info.color }}>
+                            {info.icon} {info.animalName}
+                          </span>
+                          <span
+                            className={
+                              hasRoleIssue
+                                ? isMeRole
+                                  ? 'text-red-400 font-bold'
+                                  : 'text-amber-400 font-bold'
+                                : 'text-emerald-400'
+                            }
+                            title={
+                              hasRoleIssue
+                                ? 'Incidencia en curso'
+                                : 'Sector nominal'
+                            }
+                          >
+                            {isMeRole && hasRoleIssue ? '!' : '●'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 🔴 / 🟡 TUS ALERTAS ACTIVAS (EXCLUSIVAS DE TU ROL PARA CERO SATURACIÓN) */}
                 <div>
                   <div className="text-[7px] text-red-300 font-bold mb-1 tracking-wide">
-                    🔴 ACTIVAS / URGENTES ({activeTasks.length})
+                    🔴 TUS ALERTAS ({myActiveThreats.length})
                   </div>
-                  <div className="flex flex-col gap-1">
-                    {activeTasks.map((t, idx) => {
+                  <div className="flex flex-col gap-1.5">
+                    {myActiveThreats.length === 0 && (
+                      <div className="p-1.5 border border-emerald-700/60 bg-emerald-950/30 text-[7px] text-emerald-200">
+                        ✅ Tu sector ({activeRoleInfo.animalName}) sin fallos críticos ahora.
+                      </div>
+                    )}
+                    {myActiveThreats.map((t, idx) => {
                       const tOwner = ROLE_INFO[t.role]
-                      const isUrgent = t.kind === 'problem'
+                      const def = UNIQUE_MINIGAME_DEFS[t.game]
+                      const liveMetric = formatThreatMetric(t)
+                      const isUrgent = t.urgency >= 50
+                      const urgColor =
+                        t.urgency >= 75 ? '#f87171' : t.urgency >= 45 ? '#fbbf24' : '#38bdf8'
+                      const c = CONSOLES.find((cc) => cc.id === t.consoleId)
+                      const tcRoomLabel = c ? ROOM_BY_ID[c.roomId].label : def.quadrantTag
                       return (
                         <button
                           key={t.id}
                           onClick={() => {
                             playClick()
-                            if (t.role === activeRole) {
-                              const c = CONSOLES.find((cc) => cc.id === t.consoleId)
-                              if (c) openOrWalkToConsole(c)
+                            if (c) {
+                              openOrWalkToConsole(c)
                             } else {
-                              setOverviewMode(false)
-                              setVisitingQuadrant(t.role)
+                              const dest = QUADRANT_DEFS[t.role].entryPoint
+                              teleportActivePlayerTo(dest.x, dest.y, tOwner.animalName, tOwner.color)
                             }
                           }}
                           className={`w-full text-left p-1.5 border text-[7px] leading-snug transition-colors ${
-                            idx === 0
-                              ? 'border-yellow-400 bg-amber-950/50'
-                              : 'border-slate-700 bg-slate-900/60'
+                            isUrgent || idx === 0
+                              ? 'border-red-400/90 bg-red-950/45'
+                              : 'border-amber-500/80 bg-amber-950/45'
                           } hover:bg-slate-800/80`}
                         >
                           <div className="flex items-center justify-between gap-1 font-bold">
                             <span>
-                              {isUrgent ? '🔴' : '🟡'} {tOwner.icon} {tOwner.animalName}
+                              {isUrgent ? '🔴' : '🟡'} {tcRoomLabel}
                             </span>
-                            <span className="text-[6px] text-cyan-300">
-                              {t.role === activeRole ? 'IR ▶' : 'VER 👁️'}
+                            <span
+                              className="px-1 py-0.5 text-[6px] border border-black"
+                              style={{ background: '#070b18', color: urgColor }}
+                            >
+                              {liveMetric}
                             </span>
                           </div>
-                          <div className="text-white mt-0.5">{t.title}</div>
+                          <div className="text-white mt-0.5 font-bold">{t.title}</div>
+                          <div className="text-[6px] text-amber-200/90 mt-0.5">{def.actionHint}</div>
+                          <div className="w-full h-1 bg-black mt-1">
+                            <div
+                              className="h-full transition-all duration-300"
+                              style={{ width: `${Math.round(t.urgency)}%`, background: urgColor }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[6px] text-cyan-300 mt-0.5">
+                            <span>{def.quadrantTag}</span>
+                            <span>IR ▶</span>
+                          </div>
                         </button>
                       )
                     })}
                   </div>
                 </div>
 
-                {/* ⏳ PENDIENTES POR CUADRANTE */}
+                {/* 🟢 SISTEMAS EN ENFRIAMIENTO (35s - 50s ANTES DE POSIBLE REACTIVACIÓN) */}
+                {myCooldownItems.length > 0 && (
+                  <div>
+                    <div className="text-[7px] text-emerald-300 font-bold mb-1">
+                      🟢 ESTABILIZADOS ({myCooldownItems.length})
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {myCooldownItems.map((item) => (
+                        <div
+                          key={item.game}
+                          className="px-1.5 py-1 border border-emerald-800/80 bg-emerald-950/30 text-[6.5px] text-emerald-200"
+                        >
+                          <div className="font-bold truncate">
+                            🟢 {item.def.title}
+                          </div>
+                          <div className="text-emerald-300/90 mt-0.5">
+                            Enfriamiento: {item.secLeft}s
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ⏳ PENDIENTES DISPONIBLES EN TU SECTOR */}
                 <div>
                   <div className="text-[7px] text-amber-200 font-bold mb-1">
-                    ⏳ PENDIENTES ({pendingBacklog.length})
+                    ⏳ TUS PENDIENTES ({myPendingBacklog.length})
                   </div>
                   <div className="flex flex-col gap-1">
-                    {pendingBacklog.slice(0, 5).map((m) => {
+                    {myPendingBacklog.map((m) => {
                       const mOwner = ROLE_INFO[m.role]
                       return (
                         <button
                           key={m.id}
                           onClick={() => {
                             playClick()
-                            if (m.role === activeRole) {
-                              const targetC = CONSOLES.find((cc) => cc.id === m.consoleIds[0])
-                              if (targetC) openOrWalkToConsole(targetC)
+                            const targetC = CONSOLES.find((cc) => cc.id === m.consoleIds[0])
+                            if (targetC) {
+                              openOrWalkToConsole(targetC)
                             } else {
-                              setOverviewMode(false)
-                              setVisitingQuadrant(m.role)
+                              const dest = QUADRANT_DEFS[m.role].entryPoint
+                              teleportActivePlayerTo(dest.x, dest.y, mOwner.animalName, mOwner.color)
                             }
                           }}
                           className="w-full text-left px-1.5 py-1 border border-slate-800 bg-[#0b1022]/75 hover:border-cyan-500/50 text-[7px]"
@@ -7027,7 +10139,7 @@ export default function StationOperationScreen({
                             <span>
                               ⏳ {mOwner.icon} {m.quadrantTag}
                             </span>
-                            <span>{m.role === activeRole ? 'IR' : 'OBS'}</span>
+                            <span>IR ▶</span>
                           </div>
                           <div className="text-gray-200 truncate mt-0.5">{m.title}</div>
                         </button>
@@ -7036,17 +10148,17 @@ export default function StationOperationScreen({
                   </div>
                 </div>
 
-                {/* ✅ COMPLETADAS */}
+                {/* ✅ HISTORIAL COMPLETADAS EN ETAPA */}
                 {completedBacklog.length > 0 && (
                   <div>
-                    <div className="text-[7px] text-emerald-300 font-bold mb-1">
-                      ✅ COMPLETADAS ({completedBacklog.length})
+                    <div className="text-[7px] text-cyan-300 font-bold mb-1">
+                      📊 HISTORIAL ETAPA ({resolvedCount}/{missionTargetCount})
                     </div>
                     <div className="flex flex-col gap-1">
                       {completedBacklog.map((m) => (
                         <div
                           key={m.id}
-                          className="px-1.5 py-1 border border-emerald-900/70 bg-emerald-950/30 text-[7px] text-emerald-200 truncate"
+                          className="px-1.5 py-1 border border-slate-800 bg-[#070d1c] text-[6.5px] text-emerald-200 truncate"
                         >
                           ✅ {ROLE_INFO[m.role].icon} {m.title}
                         </div>
@@ -7072,33 +10184,18 @@ export default function StationOperationScreen({
       {/* =====================================================================
           MINIJUEGOS DEL EQUIPO (MODAL GRANDE AL PRESIONAR "E" EN LA CONSOLA DEL ROL)
          ===================================================================== */}
-      {activeMinigame === 'nav' && (
-        <NavegacionOrbitalModal
-          satTarget={navSatTarget}
+      {activeMinigame && (
+        <MinigameFrame
+          game={activeMinigame}
+          file={MINIGAME_META[activeMinigame].file}
+          title={MINIGAME_META[activeMinigame].title}
+          accent={MINIGAME_META[activeMinigame].accent}
+          query={activeMinigame === 'nav' ? `sat=${navSatTarget}` : undefined}
           onClose={closeMinigame}
           onComplete={handleMinigameComplete}
+          onFail={handleMinigameFail}
+          {...liveThreatProps}
         />
-      )}
-      {activeMinigame === 'eps' && (
-        <DistribucionElectricaModal onClose={closeMinigame} onComplete={handleMinigameComplete} />
-      )}
-      {activeMinigame === 'eclss' && (
-        <SoporteVitalModal onClose={closeMinigame} onComplete={handleMinigameComplete} />
-      )}
-      {activeMinigame === 'dock' && (
-        <AcoplamientoEspacialModal onClose={closeMinigame} onComplete={handleMinigameComplete} />
-      )}
-      {activeMinigame === 'lander' && (
-        <AterrizajePlanetarioModal onClose={closeMinigame} onComplete={handleMinigameComplete} />
-      )}
-      {activeMinigame === 'telecom' && (
-        <ReparacionTelecomModal onClose={closeMinigame} onComplete={handleMinigameComplete} />
-      )}
-      {activeMinigame === 'comet' && (
-        <ReencuentroCometaModal onClose={closeMinigame} onComplete={handleMinigameComplete} />
-      )}
-      {activeMinigame === 'cyber' && (
-        <CiberdefensaSatelitalModal onClose={closeMinigame} onComplete={handleMinigameComplete} />
       )}
 
       {/* =====================================================================
@@ -7245,105 +10342,385 @@ export default function StationOperationScreen({
       </AnimatePresence>
 
       {/* =====================================================================
-          MODAL DE REPORTE FINAL DE LA NASA (MEDALLA ORO / PLATA / BRONCE)
+          CINEMÁTICAS OFICIALES DE VICTORIA Y CUADRO DE HONOR NASA
+         ===================================================================== */}
+      {missionCompleted && victoryPhase !== 'none' && (
+        <VictoryCinematicModal
+          phase={victoryPhase}
+          missionDef={activeMissionDef}
+          nextMissionId={nextMissionId}
+          baseSciencePoints={officialScience}
+          stationHealth={stationHealth}
+          resolvedCount={resolvedCount}
+          missionTargetCount={missionTargetCount}
+          roleResolvedCounts={roleResolvedCounts}
+          pilotNamesByRole={pilotNamesByRole}
+          chassisName={chassis.name}
+          launcherName={launcher.name}
+          isReplayCinematic={victoryReplayMode}
+          laserNonce={laserCinematicNonce}
+          returnHomeNonce={returnHomeCinematicNonce}
+          onLaserNext={() => {
+            if (victoryReplayMode) {
+              setVictoryReplayMode(false)
+              setVictoryPhase(activeMissionDef.number === 3 ? 'final_honor_roll' : 'stage_summary')
+            } else if (activeMissionDef.number === 3) {
+              setReturnHomeCinematicNonce((n) => n + 1)
+              setVictoryPhase('return_home_cinematic')
+            } else {
+              setVictoryPhase('stage_summary')
+            }
+          }}
+          onReturnHomeFinished={() => {
+            setVictoryReplayMode(false)
+            setVictoryPhase('final_honor_roll')
+          }}
+          onContinueNextMission={(totalScore) => {
+            playClick()
+            if (!nextMissionId) return
+            advancingMissionLockUntilRef.current = Date.now() + 2500
+            setSyncedMissionId(nextMissionId)
+            setVictoryPhase('none')
+            setVictoryReplayMode(false)
+            setMissionCompleted(false)
+            if (onAdvanceMission) {
+              onAdvanceMission(nextMissionId, totalScore)
+            }
+          }}
+          onReplayReturnHome={() => {
+            playClick()
+            setVictoryReplayMode(true)
+            setReturnHomeCinematicNonce((n) => n + 1)
+            setVictoryPhase('return_home_cinematic')
+          }}
+          onReplayLaser={() => {
+            playClick()
+            setVictoryReplayMode(true)
+            setLaserCinematicNonce((n) => n + 1)
+            setVictoryPhase('laser_cinematic')
+          }}
+          onOpenTelemetryReport={() => {
+            playClick()
+            onOpenTelemetryReport()
+          }}
+          onContinueInStation={() => {
+            playClick()
+            setVictoryPhase('none')
+            setVictoryReplayMode(false)
+            setMissionCompleted(false)
+          }}
+          onExitToMenu={() => {
+            playClick()
+            setVictoryPhase('none')
+            setVictoryReplayMode(false)
+            setMissionCompleted(false)
+            onExitToMenu()
+          }}
+        />
+      )}
+
+      {/* =====================================================================
+          MODAL PIXEL-ART: SELECTOR DE ESPECIALISTA DEL ESCUADRÓN ANDINO (MULTI-PC LAN)
          ===================================================================== */}
       <AnimatePresence>
-        {missionCompleted && (
+        {roleLobbyOpen && (
           <motion.div
-            className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-sm"
           >
             <motion.div
-              className="mc-panel w-full max-w-2xl p-5 text-center"
-              initial={{ scale: 0.75, y: 20 }}
+              initial={{ scale: 0.94, y: 12 }}
               animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 8 }}
+              className="w-full max-w-5xl max-h-[92vh] overflow-y-auto bg-[#101428] border-4 border-[#5ef0ff] shadow-[0_0_32px_rgba(34,211,238,0.35)] p-4 sm:p-5"
             >
-              <div className="text-4xl mb-2">{medal.icon}</div>
-              <div
-                className="text-sm sm:text-base font-bold"
-                style={{ color: medal.color, textShadow: '2px 2px 0 #000' }}
-              >
-                {medal.tier}
-              </div>
-              <div className="text-[10px] text-cyan-200 mt-1">{medal.desc}</div>
+              {/* Cabecera */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#232b4f] pb-3">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] sm:text-xs font-bold tracking-wider text-[#5ef0ff]">
+                      🛰️ SELECTOR DE ESPECIALISTA DEL ESCUADRÓN ANDINO
+                    </span>
+                    <span
+                      className="text-[8px] sm:text-[9px] px-2 py-0.5 border font-bold"
+                      style={{
+                        background: soloPracticeMode ? '#1e293b' : syncConnected ? '#052e16' : '#3b0712',
+                        borderColor: soloPracticeMode ? '#facc15' : syncConnected ? '#4ade80' : '#f87171',
+                        color: soloPracticeMode ? '#fde047' : syncConnected ? '#86efac' : '#fca5a5',
+                      }}
+                    >
+                      {soloPracticeMode
+                        ? '🎮 MODO PRÁCTICA INDIVIDUAL (SIN BLOQUEOS)'
+                        : syncConnected
+                          ? `🌐 SALA ${activeRoomCode ?? 'LAN'} EN TIEMPO REAL`
+                          : '⚠️ RECONECTANDO LAN (/api/roles-sync)'}
+                    </span>
+                  </div>
+                  <p className="text-[9px] sm:text-[10px] text-slate-300 mt-1">
+                    {soloPracticeMode
+                      ? 'Controla libremente los 4 especialistas desde este PC (teclas 1–4). Tus cambios no bloquean la sala LAN.'
+                      : 'Cada PC de la red local elige un especialista único. Una vez tomado, queda bloqueado para los demás hasta liberarlo o desconectarse.'}
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 my-4 text-left">
-                <div className="p-2 bg-[#10162b] border-2 border-black">
-                  <div className="text-[9px] text-yellow-300">PUNTAJE TOTAL</div>
-                  <div className="text-xs font-bold text-green-300 mt-1">
-                    {finalScore} PTS
-                  </div>
-                </div>
-                <div className="p-2 bg-[#10162b] border-2 border-black">
-                  <div className="text-[9px] text-emerald-300">CIENCIA TRANSMITIDA</div>
-                  <div className="text-xs font-bold text-white mt-1">
-                    {officialScience} PTS
-                  </div>
-                </div>
-                <div className="p-2 bg-[#10162b] border-2 border-black">
-                  <div className="text-[9px] text-cyan-300">NAVE / COHETE</div>
-                  <div className="text-[10px] font-bold text-white mt-1">
-                    {chassis.name} · {launcher.name}
-                  </div>
-                </div>
-                <div className="p-2 bg-[#10162b] border-2 border-black">
-                  <div className="text-[9px] text-orange-300">PRESUPUESTO</div>
-                  <div className="text-xs font-bold text-white mt-1">
-                    ${baseTel.cost}k / ${baseTel.budget}k
-                  </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onMouseEnter={playHover}
+                    onClick={() => {
+                      playClick()
+                      onExitToMenu()
+                    }}
+                    className="mc-btn px-3 py-1.5 text-[9px] sm:text-[10px]"
+                    style={{ background: '#3b0712', color: '#fecdd3', borderColor: '#f87171' }}
+                  >
+                    ← MENÚ
+                  </button>
+                  {(soloPracticeMode || myClaimedRole !== null) && (
+                    <button
+                      onMouseEnter={playHover}
+                      onClick={() => {
+                        playClick()
+                        setRoleLobbyOpen(false)
+                      }}
+                      className="mc-btn px-3 py-1.5 text-[9px] sm:text-[10px]"
+                      style={{ background: '#1e293b', color: '#f8fafc', borderColor: '#94a3b8' }}
+                    >
+                      ✕ VOLVER A ESTACIÓN
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-2.5 mt-4">
-                <button
-                  onMouseEnter={playHover}
-                  onClick={() => {
-                    playClick()
-                    setMissionCompleted(false)
-                  }}
-                  className="mc-btn px-3.5 py-2.5 text-[10px]"
-                >
-                  🛰️ SEGUIR EN ESTACIÓN
-                </button>
-                <button
-                  onMouseEnter={playHover}
-                  onClick={() => {
-                    playClick()
-                    onReplayCutscene()
-                  }}
-                  className="mc-btn px-3.5 py-2.5 text-[10px]"
-                >
-                  🎬 CINEMÁTICA
-                </button>
-                <button
-                  onMouseEnter={playHover}
-                  onClick={() => {
-                    playClick()
-                    onOpenTelemetryReport()
-                  }}
-                  className="mc-btn px-3.5 py-2.5 text-[10px]"
-                  style={{ color: '#5ef0ff' }}
-                >
-                  📊 VER TELEMETRÍA DETALLADA
-                </button>
-                <button
-                  onMouseEnter={playHover}
-                  onClick={() => {
-                    playClick()
-                    onExitToMenu()
-                  }}
-                  className="mc-btn px-4 py-2.5 text-[10px]"
-                  style={{ color: '#7bff9a' }}
-                >
-                  🏠 MENÚ PRINCIPAL
-                </button>
+              {/* Barra de controles: Nombre de operador, Modo Práctica, Liberar, Resetear Host */}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 bg-[#090c1a] border-2 border-[#1f294d] p-2.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label
+                    htmlFor="squadron-player-name"
+                    className="text-[8px] sm:text-[9px] text-cyan-300 font-bold whitespace-nowrap"
+                  >
+                    TU IDENTIFICADOR PC:
+                  </label>
+                  <input
+                    id="squadron-player-name"
+                    type="text"
+                    maxLength={18}
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
+                    placeholder="OPERADOR-PC"
+                    className="bg-[#131830] border-2 border-[#38bdf8] text-[#f8fafc] text-[9px] sm:text-[10px] px-2 py-1 w-44 outline-none focus:border-yellow-300"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {!activeRoomCode && (
+                    <button
+                      onMouseEnter={playHover}
+                      onClick={() => {
+                        playClick()
+                        setSyncErrorMsg(null)
+                        if (!soloPracticeMode) {
+                          setSoloPracticeMode(true)
+                          if (myClaimedRole) {
+                            void releaseMyRoleRemote(false)
+                          }
+                        } else {
+                          setSoloPracticeMode(false)
+                        }
+                      }}
+                      className="mc-btn px-2.5 py-1.5 text-[8px] sm:text-[9px]"
+                      style={{
+                        background: soloPracticeMode ? '#713f12' : '#1b2038',
+                        color: soloPracticeMode ? '#fef08a' : '#cbd5e1',
+                        borderColor: soloPracticeMode ? '#facc15' : '#475569',
+                      }}
+                    >
+                      {soloPracticeMode ? '✅ MODO LOCAL ACTIVO' : '🛠️ MODO LOCAL'}
+                    </button>
+                  )}
+
+                  <button
+                    disabled={soloPracticeMode || !myClaimedRole}
+                    onMouseEnter={soloPracticeMode || !myClaimedRole ? undefined : playHover}
+                    onClick={() => void releaseMyRoleRemote(true)}
+                    className={`mc-btn px-2.5 py-1.5 text-[8px] sm:text-[9px] ${
+                      soloPracticeMode || !myClaimedRole ? 'opacity-45 cursor-not-allowed' : ''
+                    }`}
+                    style={{ background: '#1e293b', color: '#7dd3fc', borderColor: '#38bdf8' }}
+                  >
+                    🔓 LIBERAR MI ROL
+                  </button>
+
+                  <button
+                    onMouseEnter={playHover}
+                    onClick={() => void resetRoomHostRemote()}
+                    className="mc-btn px-2.5 py-1.5 text-[8px] sm:text-[9px]"
+                    style={{ background: '#450a0a', color: '#fca5a5', borderColor: '#ef4444' }}
+                  >
+                    ↺ RESETEAR SALA (HOST)
+                  </button>
+                </div>
+              </div>
+
+              {syncErrorMsg && (
+                <div className="mt-2.5 px-3 py-2 bg-[#3b0712] border-2 border-red-400 text-red-200 text-[9px] sm:text-[10px]">
+                  ⚠️ {syncErrorMsg}
+                </div>
+              )}
+
+              {/* Tarjetas de los 4 Especialistas */}
+              <div className="mt-3.5 grid grid-cols-1 md:grid-cols-2 gap-3">
+                {ROLE_ORDER.map((r, idx) => {
+                  const info = ROLE_INFO[r]
+                  const claim = roleClaims[r]
+                  const isMine = soloPracticeMode ? activeRole === r : claim?.clientId === clientId
+                  const locked = isRoleLockedByOther(r)
+                  const busy = syncBusyRole === r
+                  const roleGames = missionGames.map((id) => UNIQUE_MINIGAME_DEFS[id]).filter(
+                    (def) => def.role === r
+                  )
+
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      disabled={locked || syncBusyRole !== null}
+                      onMouseEnter={locked ? undefined : playHover}
+                      onClick={() => {
+                        if (locked) return
+                        if (!soloPracticeMode && myClaimedRole) {
+                          playClick()
+                          setVisitingQuadrant(null)
+                          setOpenConsoleId(null)
+                          actions.setRole(r)
+                          setRoleLobbyOpen(false)
+                          return
+                        }
+                        void claimRoleRemote(r)
+                      }}
+                      className={`text-left p-3 sm:p-3.5 border-4 transition-transform ${
+                        locked
+                          ? 'opacity-60 cursor-not-allowed grayscale-[30%]'
+                          : 'cursor-pointer hover:-translate-y-0.5'
+                      }`}
+                      style={{
+                        background: locked ? '#0b0e1b' : isMine ? '#142646' : '#141933',
+                        borderColor: locked
+                          ? '#334155'
+                          : isMine
+                            ? '#7bff9a'
+                            : info.color,
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl sm:text-2xl">{info.icon}</span>
+                          <div>
+                            <div
+                              className="text-[10px] sm:text-xs font-bold tracking-wide"
+                              style={{ color: locked ? '#94a3b8' : info.color }}
+                            >
+                              [{idx + 1}] {info.code} · {info.short}
+                            </div>
+                            <div className="text-[8px] sm:text-[9px] text-slate-300">
+                              {info.specialty}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span
+                          className="text-[7px] sm:text-[8px] px-1.5 py-0.5 border font-bold whitespace-nowrap"
+                          style={{
+                            background: locked
+                              ? '#1e293b'
+                              : isMine
+                                ? '#052e16'
+                                : '#0b2538',
+                            borderColor: locked
+                              ? '#64748b'
+                              : isMine
+                                ? '#4ade80'
+                                : '#38bdf8',
+                            color: locked
+                              ? '#cbd5e1'
+                              : isMine
+                                ? '#86efac'
+                                : '#7dd3fc',
+                          }}
+                        >
+                          {busy
+                            ? 'CONECTANDO...'
+                            : locked
+                              ? remotePlayerRoles[r]
+                                ? `● EN MAPA: ${remotePlayerRoles[r]}`
+                                : `🔒 ${claim?.playerName ?? 'OCUPADO'}`
+                              : isMine
+                                ? '✅ TU ROL ACTIVO'
+                                : '🤖 BOT DE APOYO · ELEGIR'}
+                        </span>
+                      </div>
+
+                      <div className="mt-2.5 space-y-1">
+                        <div className="text-[8px] text-slate-400 font-bold">
+                          2 MINIJUEGOS ÚNICOS ASIGNADOS:
+                        </div>
+                        {roleGames.map((mg) => {
+                          const done = completedMinigames.has(mg.game)
+                          return (
+                            <div
+                              key={mg.game}
+                              className="flex items-center justify-between gap-2 px-2 py-1 bg-[#090c1a] border border-[#232b4f] text-[8px] sm:text-[9px]"
+                            >
+                              <span className="text-slate-100 truncate">
+                                {done ? '✅' : '🕹️'} {mg.title}
+                              </span>
+                              <span className="text-[#5ef0ff] text-[7px] sm:text-[8px] shrink-0">
+                                {mg.quadrantTag}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div className="mt-2.5 flex items-center justify-between text-[8px] font-bold">
+                        {locked ? (
+                          <span className="text-red-300">
+                            🔒 SELECCIONADO POR OTRO JUGADOR ({claim?.playerName ?? 'LAN'})
+                          </span>
+                        ) : isMine ? (
+                          <span className="text-[#7bff9a]">
+                            ▶ CLIC PARA ENTRAR COMO {info.code}
+                          </span>
+                        ) : (
+                          <span className="text-cyan-300">
+                            ▶ CLIC PARA TOMAR ESTE ROL Y DESPLEGAR
+                          </span>
+                        )}
+                        <span className="text-slate-400">{info.animalName}</span>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {isGameOver && (
+        <GameOverExplosionModal
+          reason={
+            gameOverReason ||
+            'Integridad orbital colapsada al 0%: destrucción total de la estación.'
+          }
+          missionLabel={`ETAPA ${activeMissionDef.number}/3 · ${activeMissionDef.code}`}
+          onRetryMission={() => {
+            void handleRetryMissionStage()
+          }}
+          onExitToMenu={onExitToMenu}
+        />
+      )}
     </div>
   )
 }

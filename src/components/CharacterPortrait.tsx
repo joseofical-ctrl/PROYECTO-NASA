@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CharacterId, RoleId } from '../game/catalog'
 import { ROLE_INFO } from '../game/catalog'
+import { renderAstronautSceneCanvas } from '../game/astronautSprite'
 
 interface Props {
   characterId: CharacterId | RoleId
@@ -18,13 +19,6 @@ const CHAR_MAP: Record<CharacterId | RoleId, CharacterId> = {
   comms: 'serpiente',
   science: 'puma',
   director: 'condor',
-}
-
-const QUADRANT_POS: Record<CharacterId, string> = {
-  alpaca: '0% 0%',
-  serpiente: '100% 0%',
-  puma: '0% 100%',
-  condor: '100% 100%',
 }
 
 /** Detailed Pixel-Art SVG Fallbacks & Mini Avatars for each Andean Astronaut */
@@ -168,6 +162,55 @@ function PixelAnimalSvg({ id, className = '' }: { id: CharacterId; className?: s
   )
 }
 
+function CharacterSceneCanvas({ role, color, code }: { role: RoleId; color: string; code: string }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let tick = 0
+    renderAstronautSceneCanvas(ctx, role, canvas.width, canvas.height, tick)
+
+    const timer = window.setInterval(() => {
+      tick = (tick + 1) % 24
+      renderAstronautSceneCanvas(ctx, role, canvas.width, canvas.height, tick)
+    }, 340)
+
+    return () => window.clearInterval(timer)
+  }, [role])
+
+  return (
+    <div
+      className="relative w-full h-full overflow-hidden select-none"
+      style={{
+        border: '3px solid #000',
+        boxShadow: `inset 0 0 0 2px ${color}`,
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        width={132}
+        height={84}
+        className="w-full h-full block"
+        style={{ imageRendering: 'pixelated' }}
+      />
+      <div
+        className="text-[9px] leading-none absolute bottom-1 right-1 px-1.5 py-1 font-pixel pointer-events-none"
+        style={{
+          background: '#0b0d1ce6',
+          color,
+          border: '2px solid #000',
+        }}
+      >
+        {code}
+      </div>
+    </div>
+  )
+}
+
 export default function CharacterPortrait({
   characterId,
   variant = 'scene',
@@ -175,20 +218,11 @@ export default function CharacterPortrait({
   size,
 }: Props) {
   const charId = CHAR_MAP[characterId]
-  const [imgOk, setImgOk] = useState(true)
-
-  useEffect(() => {
-    const img = new Image()
-    img.src = '/personajes.jpg'
-    img.onload = () => setImgOk(true)
-    img.onerror = () => setImgOk(false)
-  }, [])
-
   const roleKey = (Object.keys(ROLE_INFO) as RoleId[]).find((r) => ROLE_INFO[r].characterId === charId)!
   const info = ROLE_INFO[roleKey]
   const sizeStyle = size ? { width: size, height: size } : undefined
 
-  if (variant === 'avatar' || !imgOk) {
+  if (variant === 'avatar') {
     return (
       <div
         className={`relative overflow-hidden select-none shrink-0 ${className}`}
@@ -206,29 +240,10 @@ export default function CharacterPortrait({
 
   return (
     <div
-      className={`relative overflow-hidden select-none shrink-0 ${className}`}
-      style={{
-        ...sizeStyle,
-        backgroundImage: `url('/personajes.jpg')`,
-        backgroundSize: '200% 200%',
-        backgroundPosition: QUADRANT_POS[charId],
-        backgroundRepeat: 'no-repeat',
-        imageRendering: 'pixelated',
-        border: '3px solid #000',
-        boxShadow: `inset 0 0 0 2px ${info.color}`,
-      }}
+      className={`relative w-full h-full overflow-hidden select-none ${className}`}
+      style={sizeStyle}
     >
-      {/* Subtle bottom code tag overlay */}
-      <div
-        className="text-[9px] leading-none absolute bottom-1 right-1 px-1.5 py-1 font-pixel"
-        style={{
-          background: '#0b0d1ce6',
-          color: info.color,
-          border: '2px solid #000',
-        }}
-      >
-        {info.code}
-      </div>
+      <CharacterSceneCanvas role={roleKey} color={info.color} code={info.code} />
     </div>
   )
 }

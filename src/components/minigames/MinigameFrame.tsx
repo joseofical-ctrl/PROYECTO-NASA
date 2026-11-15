@@ -1,10 +1,115 @@
 import { useEffect, useRef, useState } from 'react'
 
-export type MinigameId = 'nav' | 'eps' | 'eclss' | 'dock' | 'lander' | 'telecom' | 'comet' | 'cyber'
+export type MinigameId =
+  | 'nav'
+  | 'eps'
+  | 'eclss'
+  | 'dock'
+  | 'lander'
+  | 'telecom'
+  | 'comet'
+  | 'cyber'
+  | 'gyro'
+  | 'debris'
+  | 'reactor'
+  | 'pcb'
+  | 'spectro'
+  | 'thermal'
+  | 'hga'
+  | 'decrypt'
+
+export const MINIGAME_META: Record<
+  MinigameId,
+  { file: string; title: string; accent: string }
+> = {
+  dock: {
+    file: 'acoplamiento_espacial.html',
+    title: 'ACOPLAMIENTO ESPACIAL 6-DOF APAS · CÓNDOR-4',
+    accent: '#ffd23f',
+  },
+  comet: {
+    file: 'reencuentro_cometa.html',
+    title: 'DEFENSA ORBITAL CONTRA METEORITOS · CÓNDOR-4',
+    accent: '#fb923c',
+  },
+  gyro: {
+    file: 'calibracion_giroscopio.html',
+    title: 'CALIBRACIÓN DE GIROSCOPIO 3D Y CONTROL ADCS · CÓNDOR-4',
+    accent: '#facc15',
+  },
+  debris: {
+    file: 'eyeccion_escombros.html',
+    title: 'RADAR ORBITAL KESSLER Y EYECCIÓN DE ESCOMBROS · CÓNDOR-4',
+    accent: '#f59e0b',
+  },
+  eps: {
+    file: 'distribucion_electrica.html',
+    title: 'DISTRIBUCIÓN ELÉCTRICA EPS · ALPACA-1',
+    accent: '#ff9f1c',
+  },
+  eclss: {
+    file: 'soporte_vital.html',
+    title: 'SOPORTE VITAL ECLSS Y TANQUES O2 · ALPACA-1',
+    accent: '#4ade80',
+  },
+  reactor: {
+    file: 'refrigeracion_reactor.html',
+    title: 'REFRIGERACIÓN CRIOGÉNICA DEL REACTOR · ALPACA-1',
+    accent: '#fb923c',
+  },
+  pcb: {
+    file: 'reparacion_circuitos.html',
+    title: 'ENRUTAMIENTO DE BUSES PCB Y BYPASS · ALPACA-1',
+    accent: '#34d399',
+  },
+  lander: {
+    file: 'aterrizaje_planetario.html',
+    title: 'ATERRIZAJE PLANETARIO DE SONDA CIENTÍFICA · PUMA-3',
+    accent: '#55efc4',
+  },
+  nav: {
+    file: 'navegacion_orbital.html',
+    title: 'NAVEGACIÓN ORBITAL HOHMANN DUAL · PUMA-3',
+    accent: '#2dd4bf',
+  },
+  spectro: {
+    file: 'espectrometria_masas.html',
+    title: 'ESPECTROMETRÍA DE MASAS GLACIAR · PUMA-3',
+    accent: '#22d3ee',
+  },
+  thermal: {
+    file: 'telemetria_multiespectral.html',
+    title: 'TELEMETRÍA MULTIESPECTRAL IR/UV · PUMA-3',
+    accent: '#a78bfa',
+  },
+  telecom: {
+    file: 'reparacion_telecom.html',
+    title: 'SINTONIZACIÓN DE TELECOMUNICACIONES DSN · SERPIENTE-2',
+    accent: '#38bdf8',
+  },
+  cyber: {
+    file: 'ciberdefensa_satelital.html',
+    title: 'CIBERDEFENSA SATELITAL Y FIREWALL 8080 · SERPIENTE-2',
+    accent: '#60a5fa',
+  },
+  hga: {
+    file: 'alineacion_antena_dsn.html',
+    title: 'ALINEACIÓN DE ANTENA DE ALTA GANANCIA DSN · SERPIENTE-2',
+    accent: '#74b9ff',
+  },
+  decrypt: {
+    file: 'desencriptacion_cuantica.html',
+    title: 'DESENCRIPTACIÓN CUÁNTICA Y CHECKSUM CRC · SERPIENTE-2',
+    accent: '#818cf8',
+  },
+}
 
 export interface MinigameModalProps {
   onClose: () => void
   onComplete: (game: MinigameId) => void
+  onFail?: (game: MinigameId) => void
+  threatQuery?: string
+  threatState?: Record<string, number | string>
 }
 
 interface FrameProps extends MinigameModalProps {
@@ -19,30 +124,76 @@ interface FrameProps extends MinigameModalProps {
  * Modal grande a pantalla completa que ejecuta el minijuego original del equipo
  * (HTML/Canvas/Web Audio en /public/minigames) y lo conecta con la estación vía postMessage.
  */
-export default function MinigameFrame({ game, file, query, title, accent, onClose, onComplete }: FrameProps) {
+export default function MinigameFrame({
+  game,
+  file,
+  query,
+  threatQuery,
+  threatState,
+  title,
+  accent,
+  onClose,
+  onComplete,
+  onFail,
+}: FrameProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const [completed, setCompleted] = useState(false)
+  const [wonPending, setWonPending] = useState(false)
   const completedRef = useRef(false)
+  const wonPendingRef = useRef(false)
+  const lastFailAtRef = useRef(0)
+  const onFailRef = useRef(onFail)
+  onFailRef.current = onFail
+
+  const confirmAndClose = () => {
+    if (wonPendingRef.current && !completedRef.current) {
+      completedRef.current = true
+      setCompleted(true)
+      onComplete(game)
+    }
+    onClose()
+  }
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return
       const data = e.data as { type?: string; game?: string; success?: boolean } | null
       if (!data || typeof data !== 'object') return
-      if (data.type === 'minigame-close') {
+      if (data.type === 'MINIGAME_WON_PENDING') {
+        wonPendingRef.current = true
+        setWonPending(true)
+      } else if (data.type === 'minigame-close') {
+        if (wonPendingRef.current && !completedRef.current) {
+          completedRef.current = true
+          setCompleted(true)
+          onComplete(game)
+        }
         onClose()
+      } else if (data.type === 'MINIGAME_FAILED' && !completedRef.current) {
+        const now = Date.now()
+        if (now - lastFailAtRef.current > 400) {
+          lastFailAtRef.current = now
+          onFailRef.current?.(game)
+        }
       } else if (
         (data.type === 'MINIGAME_COMPLETE' && data.success !== false && !completedRef.current) ||
         (data.type === 'minigame-complete' && data.success && !completedRef.current)
       ) {
         completedRef.current = true
+        wonPendingRef.current = true
         setCompleted(true)
+        setWonPending(true)
         onComplete(game)
       }
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
+        if (wonPendingRef.current && !completedRef.current) {
+          completedRef.current = true
+          setCompleted(true)
+          onComplete(game)
+        }
         onClose()
       }
     }
@@ -54,7 +205,10 @@ export default function MinigameFrame({ game, file, query, title, accent, onClos
     }
   }, [game, onClose, onComplete])
 
-  const src = `${import.meta.env.BASE_URL}minigames/${file}${query ? `?${query}` : ''}`
+  const [src] = useState(() => {
+    const combinedQuery = [query, threatQuery].filter(Boolean).join('&')
+    return `${import.meta.env.BASE_URL}minigames/${file}${combinedQuery ? `?${combinedQuery}` : ''}`
+  })
 
   return (
     <div
@@ -71,30 +225,74 @@ export default function MinigameFrame({ game, file, query, title, accent, onClos
           <span className="truncate text-[11px] leading-snug" style={{ color: accent }}>
             {title}
           </span>
-          {completed && (
+          {(completed || wonPending) && (
             <span
               className="shrink-0 border px-2 py-1 text-[9px] leading-snug"
               style={{ color: '#4ade80', borderColor: '#4ade80', background: '#022c22' }}
             >
-              ✔ ESTACIÓN ACTUALIZADA
+              ✔ PROBLEMA RESUELTO
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="shrink-0 border-2 px-3 py-2 text-[10px] leading-snug hover:brightness-125"
-          style={{ color: '#fde047', borderColor: '#fde047', background: '#1a1405' }}
-        >
-          [ ✕ VOLVER A LA ESTACIÓN (ESC) ]
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {!(completed || wonPending) && (
+            <button
+              type="button"
+              onClick={() => {
+                const cw = iframeRef.current?.contentWindow
+                if (cw) {
+                  try {
+                    cw.postMessage({ type: 'REQUEST_VERIFY_MINIGAME', game }, '*')
+                  } catch {
+                    // ignore postMessage errors
+                  }
+                }
+              }}
+              className="shrink-0 border-2 px-3 py-2 text-[9.5px] font-bold leading-snug hover:brightness-125"
+              style={{
+                color: '#ecfeff',
+                borderColor: '#22d3ee',
+                background: 'linear-gradient(180deg, #059669 0%, #0e7490 100%)',
+                boxShadow: '0 0 12px rgba(34, 211, 238, 0.35)',
+              }}
+            >
+              [ ✔ CONFIRMAR Y VALIDAR SISTEMA ]
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={confirmAndClose}
+            className="shrink-0 border-2 px-3 py-2 text-[10px] leading-snug hover:brightness-125"
+            style={{
+              color: completed || wonPending ? '#4ade80' : '#fde047',
+              borderColor: completed || wonPending ? '#4ade80' : '#fde047',
+              background: completed || wonPending ? '#022c22' : '#1a1405',
+            }}
+          >
+            {completed || wonPending
+              ? '[ ✔ VOLVER A LA ESTACIÓN ]'
+              : '[ ✕ VOLVER A LA ESTACIÓN (ESC) ]'}
+          </button>
+        </div>
       </div>
       <iframe
         ref={iframeRef}
         src={src}
         title={title}
         className="min-h-0 w-full flex-1 border-0"
-        onLoad={() => iframeRef.current?.contentWindow?.focus()}
+        onLoad={() => {
+          const cw = iframeRef.current?.contentWindow
+          if (cw) {
+            cw.focus()
+            if (threatState) {
+              try {
+                cw.postMessage({ type: 'THREAT_SYNC', ...threatState }, '*')
+              } catch {
+                // ignore postMessage errors
+              }
+            }
+          }
+        }}
       />
     </div>
   )

@@ -3,933 +3,1201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distribución Eléctrica - Gestión de Potencia EPS</title>
+    <title>EPS // ALPACA-1 - Distribución Eléctrica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg-deep: #050811;
-            --bg-panel: #0d1422;
-            --bg-card: #121c2e;
-            --border-panel: #1e2e48;
-            --border-highlight: #2563eb;
-            --crt-green: #00ff88;
-            --crt-cyan: #00e5ff;
-            --crt-amber: #f59e0b;
-            --crt-red: #ef4444;
-            --text-main: #f1f5f9;
-            --text-dim: #94a3b8;
-            --font-mono: 'Courier New', ui-monospace, monospace;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
+            --bg-void: #04080e;
+            --panel-bg: rgba(9, 17, 29, 0.85);
+            --border-glow: rgba(0, 240, 255, 0.25);
+            --cyan-neon: #00f0ff;
+            --emerald-neon: #00ff88;
+            --amber-neon: #ffaa00;
+            --crimson-neon: #ff2a55;
         }
 
         body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: var(--font-mono);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            background-color: var(--bg-void);
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 50% 45%, rgba(15, 30, 55, 0.45) 0%, rgba(3, 5, 10, 0.98) 100%),
-                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+                radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+                linear-gradient(rgba(14, 28, 48, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14, 28, 48, 0.3) 1px, transparent 1px);
+            background-size: 100% 100%, 32px 32px, 32px 32px;
         }
 
-        header {
-            background: #0a101b;
-            border-bottom: 2px solid var(--border-panel);
-            padding: 8px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 20;
+        /* Bloqueo estricto a una sola pantalla en escritorio/tablet */
+        @media (min-width: 1024px) {
+            body {
+                height: 100vh;
+                overflow: hidden;
+            }
         }
 
-        .header-title-block {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .font-display {
+            font-family: 'Orbitron', sans-serif;
         }
 
-        .badge-system {
-            background: rgba(0, 229, 255, 0.12);
-            color: var(--crt-cyan);
-            border: 1px solid var(--crt-cyan);
-            padding: 2px 8px;
-            font-size: 10px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            border-radius: 2px;
-        }
-
-        h1 {
-            font-size: 14px;
-            letter-spacing: 1.5px;
-            font-weight: bold;
-            color: #ffffff;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 11px;
-        }
-
-        .btn-ui {
-            background: #142033;
-            border: 1px solid #2d4466;
-            color: var(--text-main);
-            padding: 5px 12px;
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 2px;
-            transition: all 0.15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-ui:hover {
-            background: #1e3250;
-            border-color: var(--crt-cyan);
-            color: var(--crt-cyan);
-        }
-
-        .select-diff {
-            background: #142033;
-            color: var(--crt-amber);
-            border: 1px solid #2d4466;
-            padding: 4px 8px;
-            font-family: inherit;
-            font-size: 11px;
-            border-radius: 2px;
-            cursor: pointer;
-        }
-
-        .mission-bar {
-            background: linear-gradient(90deg, #091322 0%, #0d1b30 50%, #091322 100%);
-            border-bottom: 1px solid var(--border-panel);
-            padding: 6px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-        }
-        .mission-text { color: var(--crt-amber); font-weight: bold; }
-        .mission-goal { color: var(--crt-cyan); }
-        .mission-status-pill {
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: bold;
-            background: rgba(0, 255, 136, 0.12);
-            color: var(--crt-green);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-        }
-
-        /* Workspace */
-        .cockpit-grid {
-            flex: 1;
-            display: grid;
-            grid-template-columns: 280px 1fr 60px;
-            gap: 12px;
-            padding: 12px;
-            height: calc(100vh - 80px);
-            overflow: hidden;
-        }
-
-        .card-panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-panel);
-            border-radius: 4px;
-            padding: 10px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .card-header {
-            font-size: 11px;
-            font-weight: bold;
-            color: var(--crt-green);
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            padding-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* Generator Box */
-        .gen-box {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 3px;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .gen-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
-
-        .bar-container {
-            width: 100%; height: 8px; background: #070b12; border: 1px solid #1a273b; border-radius: 2px; overflow: hidden;
-        }
-        .bar-fill {
-            height: 100%; background: linear-gradient(90deg, #10b981 0%, #00ff88 100%); transition: width 0.2s;
-        }
-
-        /* Center Circuit Viewport Panel */
-        .viewport-panel {
-            background: #020408;
-            border: 2px solid var(--border-panel);
-            border-radius: 4px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.85);
-        }
-
-        canvas#circuitCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* Sliders */
-        .consumers-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            background: #08101a;
-            border-top: 2px solid var(--border-panel);
-            padding: 10px;
-        }
-        .consumer-node {
-            background: #0f1928;
-            border: 1px solid #1e2e48;
-            border-radius: 3px;
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-        .consumer-node.critical { border-color: var(--crt-red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
-        .slider-alloc { width: 100%; cursor: pointer; accent-color: var(--crt-cyan); }
-
-        /* Vertical Side PWR Bar */
-        .pwr-sidebar {
-            background: #0a1018;
-            border: 2px solid #1f3345;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 4px;
-            border-radius: 4px;
-        }
-        .pwr-led-meter {
-            flex: 1;
-            width: 20px;
-            background: #03060a;
-            border: 1px solid #1f3345;
-            margin: 8px 0;
-            display: flex;
-            flex-direction: column-reverse;
-            padding: 2px;
-            gap: 2px;
-        }
-        .led-seg { height: 5px; width: 100%; background: #152230; border-radius: 1px; }
-        .led-seg.on-green { background: #00ff88; box-shadow: 0 0 4px #00ff88; }
-        .led-seg.on-yellow { background: #ffb700; box-shadow: 0 0 4px #ffb700; }
-        .led-seg.on-red { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
-
-        /* Modals */
-        .modal-overlay {
+        /* Efecto CRT / Scanlines sutiles */
+        .scanlines {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(3, 6, 12, 0.85);
-            backdrop-filter: blur(5px);
-            z-index: 100;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.22) 50%,
+                rgba(0,0,0,0.22)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.45;
         }
-        .modal-window {
-            background: #0e1726;
-            border: 2px solid var(--border-highlight);
-            border-radius: 4px;
-            width: 100%;
-            max-width: 650px;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            overflow: hidden;
-        }
-        .modal-top {
-            background: #142236;
-            border-bottom: 1px solid var(--border-panel);
-            padding: 10px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            color: var(--crt-cyan);
-            font-size: 13px;
-        }
-        .modal-content {
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-        .history-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
-        .history-table th { background: #17243a; color: var(--text-dim); padding: 6px 8px; border-bottom: 1px solid var(--border-panel); }
-        .history-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        @media (max-width: 900px) {
-            .cockpit-grid { grid-template-columns: 1fr; overflow-y: auto; }
-            .pwr-sidebar { display: none; }
+        /* Paneles Sci-Fi con esquinas cortadas y bordes luminosos */
+        .sci-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(0, 240, 255, 0.03);
+            position: relative;
+        }
+
+        .sci-panel::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 10px; height: 10px;
+            border-top: 2px solid var(--cyan-neon);
+            border-left: 2px solid var(--cyan-neon);
+        }
+
+        .sci-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 10px; height: 10px;
+            border-bottom: 2px solid var(--cyan-neon);
+            border-right: 2px solid var(--cyan-neon);
+        }
+
+        /* Sliders personalizados estilo consola industrial */
+        input[type="range"].cyber-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #0b1626;
+            border: 1px solid #1e3a5f;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"].cyber-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 22px;
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            border: 2px solid #e0f2fe;
+            border-radius: 3px;
+            cursor: grab;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        input[type="range"].cyber-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 18px rgba(0, 240, 255, 1);
+        }
+
+        input[type="range"].cyber-slider.critical::-webkit-slider-thumb {
+            background: linear-gradient(180deg, #ff4d6d 0%, #c9184a 100%);
+            border-color: #ffe5ec;
+            box-shadow: 0 0 14px rgba(255, 42, 85, 0.9);
+        }
+
+        /* Animaciones de pulso y brillo */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px currentColor); }
+            50% { opacity: 0.55; filter: drop-shadow(0 0 2px currentColor); }
+        }
+
+        .animate-status {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        .glow-text-cyan { text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
+        .glow-text-green { text-shadow: 0 0 10px rgba(0, 255, 136, 0.6); }
+        .glow-text-amber { text-shadow: 0 0 10px rgba(255, 170, 0, 0.6); }
+        .glow-text-red { text-shadow: 0 0 10px rgba(255, 42, 85, 0.7); }
+
+        /* Barra de progreso segmentada vertical */
+        .battery-segment {
+            transition: all 0.25s ease;
+        }
+
+        /* Botones tácticos */
+        .btn-tactical {
+            background: linear-gradient(180deg, rgba(16, 36, 62, 0.9) 0%, rgba(8, 20, 38, 0.95) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            transition: all 0.15s ease;
+        }
+        .btn-tactical:hover {
+            border-color: #00f0ff;
+            background: linear-gradient(180deg, rgba(0, 240, 255, 0.2) 0%, rgba(8, 20, 38, 0.95) 100%);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-tactical:active {
+            transform: translateY(1px);
+        }
+
+        @keyframes danger-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+        .shake-alert {
+            animation: danger-shake 0.25s infinite;
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen lg:h-screen flex flex-col justify-between p-2 select-none gap-1.5">
+    <div class="scanlines"></div>
 
-    <header>
-        <div class="header-title-block">
-            <span class="badge-system">EPS // POTENCIA</span>
-            <h1>DISTRIBUCIÓN Y GESTIÓN DE MATRIZ DE POTENCIA</h1>
+    <!-- BARRA SUPERIOR COMPACTA (1 SOLA LÍNEA INTEGRADA) -->
+    <header class="w-full max-w-[1680px] mx-auto shrink-0 flex flex-col gap-1.5">
+        <div class="sci-panel rounded-md px-3 py-1.5 flex flex-wrap items-center justify-between gap-2">
+            <!-- Identidad y Misión -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></div>
+                <div class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-400/50 text-cyan-300 text-[11px] font-bold">
+                    EPS // ALPACA-1
+                </div>
+                <div class="hidden sm:block h-4 w-[1px] bg-slate-700"></div>
+                <div class="text-xs">
+                    <span class="font-display font-bold text-amber-400 tracking-wider">PMAD</span>
+                    <span class="text-slate-400 mx-1">&bull;</span>
+                    <span id="mission-name" class="text-slate-200 font-semibold">Tránsito por Sombra de Eclipse Solar</span>
+                </div>
+            </div>
+
+            <!-- Controles Centrales y Estado -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span id="network-status-badge" class="px-2.5 py-0.5 rounded font-bold text-[11px] bg-emerald-500/20 border border-emerald-400 text-emerald-300 glow-text-green">
+                    RED NOMINAL
+                </span>
+
+                <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700 rounded px-2 py-1">
+                    <label for="difficulty-select" class="text-[10px] text-slate-400 font-bold">NIVEL:</label>
+                    <select id="difficulty-select" class="bg-transparent text-cyan-300 text-[11px] font-bold focus:outline-none cursor-pointer">
+                        <option value="1" class="bg-slate-900">1 - Órbita Diurna</option>
+                        <option value="2" selected class="bg-slate-900">2 - Eclipse Solar</option>
+                        <option value="3" class="bg-slate-900">3 - Tormenta + Fallo</option>
+                    </select>
+                </div>
+
+                <button id="btn-audio" class="btn-tactical px-2.5 py-1 rounded text-[11px] font-bold text-cyan-300" title="Audio">
+                    <span id="audio-icon">🔇</span>
+                </button>
+
+                <button id="btn-guide" class="btn-tactical px-2.5 py-1 rounded text-[11px] font-bold text-slate-200">
+                    ? GUÍA
+                </button>
+
+                <button id="btn-reset" class="btn-tactical px-2.5 py-1 rounded text-[11px] font-bold text-emerald-300">
+                    ↻ REINICIAR
+                </button>
+
+                <button id="btn-exit" class="px-2.5 py-1 rounded bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/60 text-amber-300 text-[11px] font-bold">
+                    ✕ SALIR [ESC]
+                </button>
+            </div>
         </div>
-        <div class="header-actions">
-            <button class="btn-ui" onclick="location.href='index.html'">⌂ HUB</button>
-            <label for="diffSelect" style="color:var(--text-dim)">DIFICULTAD:</label>
-            <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Régimen Nominal Estable</option>
-                <option value="2" selected>Nivel 2 - Tránsito por Sombra de Eclipse</option>
-                <option value="3">Nivel 3 - Desconexión de Barra Colectora A</option>
-                <option value="4">Nivel 4 - Sobretensión por Tormenta Geomagnética</option>
-                <option value="5">Nivel 5 - Simulación Extrema de Blackout</option>
-            </select>
-            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORIAL</button>
-            <button class="btn-ui" onclick="openGuideModal()">? GUÍA</button>
-            <button class="btn-ui" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO</button>
-            <button class="btn-ui" onclick="resetMission()">↻ REINICIAR</button>
+
+        <!-- Barra de Objetivo Ultra-Compacta -->
+        <div class="bg-slate-900/85 border-l-4 border-cyan-400 px-3 py-1 rounded-r flex items-center justify-between text-[11px]">
+            <div class="truncate">
+                <span class="text-cyan-400 font-bold">OBJETIVO TÁCTICO: </span>
+                <span id="mission-objective" class="text-slate-200">
+                    Mantén Sop. Vital &ge; 60 MW, evita que ningún BUS supere 135 MW (sobrecarga) y conserva la batería &gt; 15%.
+                </span>
+            </div>
+            <div class="shrink-0 ml-3 flex items-center gap-2 font-bold">
+                <span class="text-slate-400">INTEGRIDAD:</span>
+                <span id="stability-timer" class="text-cyan-300">100%</span>
+            </div>
         </div>
     </header>
 
-    <div class="mission-bar">
-        <div>
-            <span class="mission-text" id="missionText">MISIÓN: Tránsito por Sombra de Eclipse Solar</span>
-        </div>
-        <div class="mission-goal" id="missionGoal">
-            OBJETIVO: Alimenta el Soporte Vital (&ge; 60 MW) y raciona consumo secundario para no vaciar la batería.
-        </div>
-        <div>
-            ESTADO: <span class="mission-status-pill" id="missionStatusPill">RED NOMINAL</span>
-        </div>
-    </div>
+    <!-- ÁREA CENTRAL FLEXIBLE (OCUPA EL RESTO DEL ALTO DISPONIBLE) -->
+    <main class="w-full max-w-[1680px] mx-auto flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2">
+        
+        <!-- COLUMNA IZQUIERDA: GENERADORES Y TELEMETRÍA (3 cols) -->
+        <section class="lg:col-span-3 sci-panel rounded-md p-2.5 flex flex-col justify-between min-h-0">
+            <div class="space-y-2 overflow-y-auto pr-0.5">
+                <div class="flex items-center justify-between border-b border-slate-700/80 pb-1">
+                    <h2 class="font-display text-[11px] font-bold tracking-wider text-cyan-400">MATRIZ DE GENERACIÓN</h2>
+                    <span id="active-gens-count" class="text-[10px] font-bold text-emerald-400">3 EN LÍNEA</span>
+                </div>
 
-    <div class="cockpit-grid">
-        <!-- Left: Generation & Storage -->
-        <div class="card-panel">
-            <div class="card-header">
-                <span>MATRIZ DE GENERACIÓN</span>
-                <span id="genHealthTag" style="color:var(--crt-green)">3 EN LÍNEA</span>
-            </div>
-
-            <!-- G1 Nuclear -->
-            <div class="gen-box">
-                <div class="gen-row">
-                    <span style="color:var(--crt-cyan); font-weight:bold;">G1 REACTOR NUCLEAR</span>
-                    <button class="btn-ui" style="padding:2px 6px; font-size:10px;" id="btnG1" onclick="toggleGen(0)">ACTIVO</button>
-                </div>
-                <div class="bar-container"><div class="bar-fill" id="barG1" style="width:98%;"></div></div>
-                <div class="gen-row" style="color:var(--text-dim); font-size:10px;">
-                    <span>Potencia: <b id="valG1" style="color:var(--crt-green)">98 MW</b></span>
-                    <span>420°C</span>
-                </div>
-            </div>
-
-            <!-- G2 Solar -->
-            <div class="gen-box">
-                <div class="gen-row">
-                    <span style="color:var(--crt-amber); font-weight:bold;">G2 SOLAR FOTOVOLT.</span>
-                    <button class="btn-ui" style="padding:2px 6px; font-size:10px;" id="btnG2" onclick="toggleGen(1)">ACTIVO</button>
-                </div>
-                <div class="bar-container"><div class="bar-fill" id="barG2" style="width:85%;"></div></div>
-                <div class="gen-row" style="color:var(--text-dim); font-size:10px;">
-                    <span>Potencia: <b id="valG2" style="color:var(--crt-green)">85 MW</b></span>
-                    <span id="sunG2" style="color:var(--crt-amber)">100% SOL</span>
-                </div>
-            </div>
-
-            <!-- G3 RTG -->
-            <div class="gen-box">
-                <div class="gen-row">
-                    <span style="color:var(--crt-green); font-weight:bold;">G3 CELDA RTG</span>
-                    <button class="btn-ui" style="padding:2px 6px; font-size:10px;" id="btnG3" onclick="toggleGen(2)">ACTIVO</button>
-                </div>
-                <div class="bar-container"><div class="bar-fill" id="barG3" style="width:72%;"></div></div>
-                <div class="gen-row" style="color:var(--text-dim); font-size:10px;">
-                    <span>Potencia: <b id="valG3" style="color:var(--crt-green)">72 MW</b></span>
-                    <span>Efic: 94%</span>
-                </div>
-            </div>
-
-            <!-- Battery Storage -->
-            <div style="background:#090f18; border:1px solid var(--border-panel); padding:8px; border-radius:3px; display:flex; flex-direction:column; gap:4px; margin-top:auto;">
-                <div class="gen-row">
-                    <span>GENERACIÓN TOTAL:</span>
-                    <b id="totGenVal" style="color:var(--crt-green)">255 MW</b>
-                </div>
-                <div class="gen-row">
-                    <span>DEMANDA CONSUMOS:</span>
-                    <b id="totDemVal" style="color:var(--crt-cyan)">224 MW</b>
-                </div>
-                <div class="gen-row" style="border-top:1px dashed #1e2e48; padding-top:4px;">
-                    <span>BATERÍA RESERVA:</span>
-                    <b id="batteryVal" style="color:var(--crt-green)">88% (44 MWh)</b>
-                </div>
-                <div class="bar-container"><div class="bar-fill" id="batteryBar" style="width:88%;"></div></div>
-            </div>
-
-            <button class="btn-ui" style="background:#0284c7; color:#fff; justify-content:center; padding:9px;" onclick="autoBalance()">
-                ⚡ AUTO-BALANCEAR CARGAS
-            </button>
-        </div>
-
-        <!-- Center: Circuit Viewport -->
-        <div class="viewport-panel">
-            <canvas id="circuitCanvas"></canvas>
-
-            <!-- Sliders below -->
-            <div class="consumers-grid">
-                <div class="consumer-node" id="nodeLS">
-                    <div style="font-size:10px; font-weight:bold; display:flex; justify-content:space-between;">
-                        <span>SOP. VITAL</span>
-                        <span style="color:var(--crt-red)">★ CRÍTICO</span>
+                <!-- G1 -->
+                <div id="card-g1" class="bg-slate-900/90 border border-cyan-500/30 rounded p-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-status" id="dot-g1"></span>
+                            <span class="text-[11px] font-bold text-cyan-300">G1 REACTOR</span>
+                        </div>
+                        <button onclick="toggleGenerator('g1')" id="btn-g1" class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300">
+                            ACTIVO
+                        </button>
                     </div>
-                    <b style="font-size:12px; color:var(--crt-cyan);" id="txtC0">72 MW</b>
-                    <input type="range" class="slider-alloc" id="sl0" min="20" max="100" value="72" oninput="setAlloc(0, this.value)">
-                    <div style="font-size:9px; color:var(--text-dim); display:flex; justify-content:space-between;">
-                        <span>Mín: 60 MW</span><span id="stC0" style="color:var(--crt-green)">OK</span>
+                    <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden my-1">
+                        <div id="bar-g1" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all" style="width: 82%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px]">
+                        <span class="text-slate-400">Salida: <strong id="val-g1" class="text-emerald-300">98 MW</strong></span>
+                        <span id="temp-g1" class="text-amber-300">420°C</span>
                     </div>
                 </div>
 
-                <div class="consumer-node">
-                    <span style="font-size:10px; font-weight:bold;">PROPULSIÓN</span>
-                    <b style="font-size:12px; color:var(--crt-cyan);" id="txtC1">68 MW</b>
-                    <input type="range" class="slider-alloc" id="sl1" min="0" max="100" value="68" oninput="setAlloc(1, this.value)">
-                    <span style="font-size:9px; color:var(--text-dim);">Mín: 40 MW</span>
+                <!-- G2 -->
+                <div id="card-g2" class="bg-slate-900/90 border border-amber-500/30 rounded p-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-status" id="dot-g2"></span>
+                            <span class="text-[11px] font-bold text-amber-300">G2 SOLAR PV</span>
+                        </div>
+                        <button onclick="toggleGenerator('g2')" id="btn-g2" class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300">
+                            ACTIVO
+                        </button>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden my-1">
+                        <div id="bar-g2" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 transition-all" style="width: 70%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px]">
+                        <span class="text-slate-400">Salida: <strong id="val-g2" class="text-amber-300">85 MW</strong></span>
+                        <span id="eclipse-timer" class="text-amber-400 font-bold">ECLIPSE (18s)</span>
+                    </div>
                 </div>
 
-                <div class="consumer-node">
-                    <span style="font-size:10px; font-weight:bold;">LABORATORIO</span>
-                    <b style="font-size:12px; color:var(--crt-cyan);" id="txtC2">54 MW</b>
-                    <input type="range" class="slider-alloc" id="sl2" min="0" max="100" value="54" oninput="setAlloc(2, this.value)">
-                    <span style="font-size:9px; color:var(--text-dim);">Mín: 10 MW</span>
-                </div>
-
-                <div class="consumer-node">
-                    <span style="font-size:10px; font-weight:bold;">AVIÓNICA</span>
-                    <b style="font-size:12px; color:var(--crt-cyan);" id="txtC3">30 MW</b>
-                    <input type="range" class="slider-alloc" id="sl3" min="15" max="60" value="30" oninput="setAlloc(3, this.value)">
-                    <span style="font-size:9px; color:var(--text-dim);">Mín: 25 MW</span>
+                <!-- G3 -->
+                <div id="card-g3" class="bg-slate-900/90 border border-cyan-500/30 rounded p-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-status" id="dot-g3"></span>
+                            <span class="text-[11px] font-bold text-cyan-300">G3 CELDA RTG</span>
+                        </div>
+                        <button onclick="toggleGenerator('g3')" id="btn-g3" class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300">
+                            ACTIVO
+                        </button>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden my-1">
+                        <div id="bar-g3" class="h-full bg-gradient-to-r from-emerald-500 to-teal-300 transition-all" style="width: 60%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px]">
+                        <span class="text-slate-400">Salida: <strong id="val-g3" class="text-emerald-300">72 MW</strong></span>
+                        <span class="text-slate-400">Efic: <span class="text-cyan-300">94%</span></span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Right: LED PWR Meter -->
-        <div class="pwr-sidebar">
-            <span style="font-size:10px; font-weight:bold; writing-mode:vertical-lr; letter-spacing:2px; color:var(--text-dim);">POTENCIA</span>
-            <div class="pwr-led-meter" id="ledMeter"></div>
-            <span id="pwrPctText" style="font-size:10px; font-weight:bold; color:var(--crt-green);">88%</span>
+            <!-- Resumen y Botón Auto-Balance -->
+            <div class="pt-2 border-t border-slate-700/80 space-y-1.5 shrink-0">
+                <div class="bg-slate-950/90 rounded p-2 border border-slate-800 space-y-1 text-[11px]">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">GENERACIÓN:</span>
+                        <span id="total-gen" class="font-bold text-emerald-400">255 MW</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">DEMANDA:</span>
+                        <span id="total-demand" class="font-bold text-cyan-300">224 MW</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">BALANCE:</span>
+                        <span id="net-balance" class="font-bold text-emerald-400">+31 MW</span>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5">
+                            <span class="text-slate-400">BATERÍA:</span>
+                            <span id="battery-text" class="font-bold text-emerald-300">94% (46.8 MWh)</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-900 rounded-sm overflow-hidden border border-slate-700">
+                            <div id="battery-bar" class="h-full bg-emerald-400 transition-all" style="width: 94%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-autobalance" class="w-full py-1.5 px-2 rounded font-display text-[11px] font-bold tracking-wider text-cyan-100 bg-gradient-to-r from-cyan-600/40 via-blue-600/40 to-cyan-600/40 hover:from-cyan-500/60 hover:to-blue-500/60 border border-cyan-400/70 transition-all flex items-center justify-center gap-1.5">
+                    <span>⚡</span>
+                    <span>ESTABILIZACIÓN DE EMERGENCIA</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- COLUMNA CENTRAL: ESQUEMA INTERACTIVO DE BUSES Y NODOS (8 cols) -->
+        <section class="lg:col-span-8 sci-panel rounded-md p-2 flex flex-col relative min-h-[260px]">
+            <div class="flex flex-wrap items-center justify-between px-2 py-0.5 text-[10px] text-slate-400 border-b border-slate-800/80 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-cyan-400 font-bold">TOPOLOGÍA DE BUSES (MÁX 135 MW / BUS)</span>
+                    <span class="hidden sm:inline text-slate-500">|</span>
+                    <span class="hidden sm:inline text-slate-300">Clic en <strong class="text-cyan-300">Disyuntores</strong> para conmutar &bull; Clic en <strong class="text-amber-300">LOAD</strong> para cambiar de Bus</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Nominal</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Sobrecarga/Fallo</span>
+                </div>
+            </div>
+
+            <div id="canvas-container" class="relative flex-1 w-full h-full overflow-hidden rounded min-h-0">
+                <canvas id="eps-canvas" class="w-full h-full block"></canvas>
+                
+                <div id="canvas-alert-banner" class="hidden absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-rose-950/95 border border-rose-500 text-rose-200 text-[11px] font-bold tracking-wider shadow-lg flex items-center gap-1.5 shake-alert">
+                    <span>⚠️</span>
+                    <span id="canvas-alert-text">ALERTA DE RED</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: MEDIDOR DE RESERVA COMPACTO (1 col) -->
+        <section class="lg:col-span-1 sci-panel rounded-md p-2 flex lg:flex-col items-center justify-between gap-1.5">
+            <div class="font-display text-[10px] font-bold tracking-widest text-cyan-400 uppercase">
+                PWR
+            </div>
+
+            <div id="vertical-meter" class="flex-1 w-full lg:w-6 flex lg:flex-col-reverse gap-0.5 bg-slate-950 p-1 rounded border border-slate-800 min-h-[24px]">
+                <!-- Segmentos -->
+            </div>
+
+            <div id="vertical-meter-val" class="font-bold text-xs text-emerald-400 glow-text-green">
+                94%
+            </div>
+        </section>
+    </main>
+
+    <!-- PANEL INFERIOR COMPACTO: CONTROLES DE DISTRIBUCIÓN DE CARGAS -->
+    <footer class="w-full max-w-[1680px] mx-auto shrink-0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            
+            <!-- LOAD 1: SOPORTE VITAL -->
+            <div id="load-card-0" class="sci-panel rounded-md p-2 border-l-4 border-l-emerald-400">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-1</span>
+                        <span class="font-display text-[11px] font-bold text-white">SOP. VITAL</span>
+                    </div>
+                    <span id="status-load-0" class="text-[10px] font-bold text-emerald-400">OK</span>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                    <span id="val-load-0" class="text-sm font-bold text-cyan-300">72 MW</span>
+                    <button onclick="cycleLoadBus(0)" id="bus-btn-0" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 border border-slate-600 font-bold">
+                        BUS-A ⇄
+                    </button>
+                </div>
+                <input type="range" id="slider-load-0" min="0" max="120" value="72" class="cyber-slider my-1">
+                <div class="flex justify-between text-[9px] text-slate-400">
+                    <span>Mín: <strong class="text-rose-300">60 MW</strong></span>
+                    <span class="text-rose-400 font-bold">★ CRÍTICO</span>
+                </div>
+            </div>
+
+            <!-- LOAD 2: PROPULSIÓN -->
+            <div id="load-card-1" class="sci-panel rounded-md p-2 border-l-4 border-l-cyan-400">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-2</span>
+                        <span class="font-display text-[11px] font-bold text-white">PROPULSIÓN</span>
+                    </div>
+                    <span id="status-load-1" class="text-[10px] font-bold text-emerald-400">NOMINAL</span>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                    <span id="val-load-1" class="text-sm font-bold text-cyan-300">68 MW</span>
+                    <button onclick="cycleLoadBus(1)" id="bus-btn-1" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 border border-slate-600 font-bold">
+                        BUS-B ⇄
+                    </button>
+                </div>
+                <input type="range" id="slider-load-1" min="0" max="120" value="68" class="cyber-slider my-1">
+                <div class="flex justify-between text-[9px] text-slate-400">
+                    <span>Mín: <strong class="text-slate-200">40 MW</strong></span>
+                    <span>ORBITAL</span>
+                </div>
+            </div>
+
+            <!-- LOAD 3: LABORATORIO -->
+            <div id="load-card-2" class="sci-panel rounded-md p-2 border-l-4 border-l-cyan-400">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-3</span>
+                        <span class="font-display text-[11px] font-bold text-white">LABORATORIO</span>
+                    </div>
+                    <span id="status-load-2" class="text-[10px] font-bold text-emerald-400">NOMINAL</span>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                    <span id="val-load-2" class="text-sm font-bold text-cyan-300">54 MW</span>
+                    <button onclick="cycleLoadBus(2)" id="bus-btn-2" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 border border-slate-600 font-bold">
+                        BUS-C ⇄
+                    </button>
+                </div>
+                <input type="range" id="slider-load-2" min="0" max="110" value="54" class="cyber-slider my-1">
+                <div class="flex justify-between text-[9px] text-slate-400">
+                    <span>Mín: <strong class="text-slate-200">10 MW</strong></span>
+                    <span>SECUNDARIO</span>
+                </div>
+            </div>
+
+            <!-- LOAD 4: AVIÓNICA -->
+            <div id="load-card-3" class="sci-panel rounded-md p-2 border-l-4 border-l-cyan-400">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-4</span>
+                        <span class="font-display text-[11px] font-bold text-white">AVIÓNICA</span>
+                    </div>
+                    <span id="status-load-3" class="text-[10px] font-bold text-emerald-400">NOMINAL</span>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                    <span id="val-load-3" class="text-sm font-bold text-cyan-300">30 MW</span>
+                    <button onclick="cycleLoadBus(3)" id="bus-btn-3" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-cyan-900 text-cyan-300 border border-slate-600 font-bold">
+                        BUS-A ⇄
+                    </button>
+                </div>
+                <input type="range" id="slider-load-3" min="0" max="100" value="30" class="cyber-slider my-1">
+                <div class="flex justify-between text-[9px] text-slate-400">
+                    <span>Mín: <strong class="text-rose-300">25 MW</strong></span>
+                    <span>TELEMETRÍA</span>
+                </div>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- MODAL DE GUÍA / MANUAL TÁCTICO -->
+    <div id="guide-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="sci-panel max-w-lg w-full rounded-lg p-5 border border-cyan-400/50 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+                <h3 class="font-display text-base font-bold text-cyan-400">MANUAL TÁCTICO EPS // ALPACA-1</h3>
+                <button id="close-guide" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            </div>
+            <div class="space-y-2.5 text-xs text-slate-300 leading-relaxed">
+                <p><strong class="text-cyan-300">1. Límite Térmico por Bus (135 MW):</strong> Cada bus vertical (BUS-A, BUS-B, BUS-C) soporta un máximo de <strong>135 MW</strong>. Si conectas demasiada carga a un mismo bus, entrará en <strong>SOBRECARGA</strong> y dañará la integridad del sistema.</p>
+                <p><strong class="text-amber-300">2. Enrutamiento Dinámico:</strong> Usa el botón <span class="text-cyan-300 font-bold">[BUS-X ⇄]</span> en cada carga (o haz clic en las cajas LOAD del esquema) para redirigir esa carga a otro bus menos saturado.</p>
+                <p><strong class="text-rose-400">3. Eclipses y Picos de Demanda:</strong> Durante un eclipse solar (G2), la potencia cae bruscamente. Raciona Propulsión y Laboratorio para proteger Soporte Vital (&ge; 60 MW) y Aviónica (&ge; 25 MW).</p>
+            </div>
+            <div class="mt-5 flex justify-end">
+                <button id="btn-understood" class="btn-tactical px-4 py-2 rounded text-xs font-bold text-cyan-300">
+                    ENTENDIDO // VOLVER A CONSOLA
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- History Modal -->
-    <div class="modal-overlay" id="historyModal">
-        <div class="modal-window">
-            <div class="modal-top">
-                <span>HISTORIAL DE GESTIÓN ELÉCTRICA (EPS)</span>
-                <button class="btn-ui" onclick="closeModals()">✕</button>
-            </div>
-            <div class="modal-content">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Misión</th>
-                            <th>Resultado</th>
-                            <th>Reserva Batería</th>
-                            <th>Tiempo</th>
-                            <th>Soporte Vital</th>
-                            <th>Calificación</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody"></tbody>
-                </table>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 registros</span>
-                    <button class="btn-ui" onclick="clearHistory()">LIMPIAR HISTORIAL</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Guide Modal -->
-    <div class="modal-overlay" id="guideModal">
-        <div class="modal-window">
-            <div class="modal-top">
-                <span>MANUAL TÉCNICO DE DISTRIBUCIÓN ELÉCTRICA</span>
-                <button class="btn-ui" onclick="closeModals()">✕</button>
-            </div>
-            <div class="modal-content">
-                <p><b>1. Generación vs Consumo:</b> Los tres generadores (G1 Nuclear, G2 Solar, G3 RTG) inyectan energía a las barras colectoras. Si la demanda supera a la generación, las baterías aportan el déficit.</p>
-                <p><b>2. Priorización de Cargas Críticas:</b> El Soporte Vital requiere al menos 60 MW continuos. Durante la fase de sombra solar (eclipse), reduce el consumo de laboratorio y propulsión para proteger a la tripulación.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Debrief Modal -->
-    <div class="modal-overlay" id="debriefModal">
-        <div class="modal-window">
-            <div class="modal-top">
-                <span id="debTitle" style="color:var(--crt-green)">INFORME DE RED ELÉCTRICA</span>
-                <button class="btn-ui" onclick="closeModals()">✕</button>
-            </div>
-            <div class="modal-content">
-                <p id="debMessage">La red mantuvo la continuidad operacional.</p>
-                <div style="background:#091220; border:1px solid var(--border-panel); padding:10px; border-radius:3px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                    <div>Batería Final: <b id="debBatt" style="color:var(--crt-green)">82%</b></div>
-                    <div>Tiempo Transcurrido: <b id="debTime" style="color:var(--crt-cyan)">45 s</b></div>
-                    <div>Calificación: <b id="debGrade" style="color:var(--crt-green)">A+ EXCELENTE</b></div>
-                </div>
-                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-                    <button class="btn-ui" onclick="closeModals(); resetMission();">REINTENTAR</button>
-                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">SIGUIENTE NIVEL</button>
-                </div>
-            </div>
+    <!-- TOAST DE NOTIFICACIÓN -->
+    <div id="toast-box" class="fixed bottom-20 right-4 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900/95 border border-cyan-400 text-cyan-200 px-3 py-2 rounded shadow-lg text-xs font-bold flex items-center gap-2">
+            <span class="text-cyan-400">◈</span>
+            <span id="toast-msg">Sistema sincronizado</span>
         </div>
     </div>
 
     <script>
-        /* =========================================================================
-           1. BUFFER DE 256x192 POR ELEMENTO (CENTRO DE BARRAS EPS)
-           ========================================================================= */
-        const circuitBuffer = document.createElement('canvas');
-        circuitBuffer.width = 256; circuitBuffer.height = 192;
-        const cbCtx = circuitBuffer.getContext('2d');
-        cbCtx.imageSmoothingEnabled = false;
+        // ==========================================
+        // ESTADO GLOBAL CON MECÁNICAS DE DESAFÍO
+        // ==========================================
+        const BUS_NAMES = ['BUS-A', 'BUS-B', 'BUS-C'];
+        const MAX_BUS_CAPACITY = 135; // MW máximos antes de sobrecarga térmica
 
-        let electronPhase = 0;
+        const state = {
+            level: 2,
+            audioEnabled: false,
+            battery: 88.0,
+            integrity: 100.0,
+            eclipsePhase: 12,
+            isEclipseActive: false,
+            surgeTimer: 16,
+            time: 0,
+            generators: [
+                { id: 'g1', name: 'G1', label: 'REACTOR', basePower: 98, currentPower: 98, maxPower: 120, active: true, bus: 0, temp: 420 },
+                { id: 'g2', name: 'G2', label: 'SOLAR',   basePower: 85, currentPower: 85, maxPower: 110, active: true, bus: 1, temp: 65 },
+                { id: 'g3', name: 'G3', label: 'RTG',     basePower: 72, currentPower: 72, maxPower: 90,  active: true, bus: 2, temp: 310 }
+            ],
+            loads: [
+                { id: 0, name: 'LOAD-1', label: 'SOP. VITAL',  power: 72, min: 60, max: 120, active: true, bus: 0, critical: true },
+                { id: 1, name: 'LOAD-2', label: 'PROPULSIÓN',  power: 68, min: 40, max: 120, active: true, bus: 1, critical: false },
+                { id: 2, name: 'LOAD-3', label: 'LABORATORIO', power: 54, min: 10, max: 110, active: true, bus: 2, critical: false },
+                { id: 3, name: 'LOAD-4', label: 'AVIÓNICA',    power: 35, min: 25, max: 100, active: true, bus: 0, critical: false }
+            ],
+            busLoads: [0, 0, 0],
+            busOverloaded: [false, false, false],
+            particles: [],
+            clickableElements: []
+        };
 
-        function renderCircuitBuffer(activeG, solarFlux) {
-            cbCtx.clearRect(0, 0, 256, 192);
-
-            // Rejilla de circuito
-            cbCtx.strokeStyle = '#091522';
-            cbCtx.lineWidth = 1;
-            for (let x = 0; x < 256; x += 16) {
-                cbCtx.beginPath(); cbCtx.moveTo(x, 0); cbCtx.lineTo(x, 192); cbCtx.stroke();
-            }
-
-            // 3 Barras Colectoras Verticales (Bus A, B, C)
-            const busX = [105, 128, 151];
-            for (let b = 0; b < 3; b++) {
-                cbCtx.strokeStyle = '#00ff88';
-                cbCtx.lineWidth = 2;
-                cbCtx.beginPath(); cbCtx.moveTo(busX[b], 20); cbCtx.lineTo(busX[b], 172); cbCtx.stroke();
-                cbCtx.fillStyle = '#00ff88'; cbCtx.fillRect(busX[b] - 4, 12, 9, 8);
-            }
-
-            // 3 Fuentes de Generación a la Izquierda
-            const genY = [45, 96, 147];
-            for (let g = 0; g < 3; g++) {
-                const gy = genY[g];
-                const on = activeG[g];
-                cbCtx.fillStyle = on ? '#152438' : '#1e293b';
-                cbCtx.fillRect(16, gy - 12, 40, 24);
-                cbCtx.strokeStyle = on ? '#00e5ff' : '#475569';
-                cbCtx.lineWidth = 1;
-                cbCtx.strokeRect(16, gy - 12, 40, 24);
-
-                cbCtx.fillStyle = on ? '#00ff88' : '#94a3b8';
-                cbCtx.font = '9px Courier New';
-                cbCtx.fillText(`G${g+1}`, 30, gy + 3);
-
-                // Conducción de electrones hacia el bus
-                const tbx = busX[g];
-                cbCtx.strokeStyle = on ? '#00e5ff' : '#334155';
-                cbCtx.beginPath(); cbCtx.moveTo(56, gy); cbCtx.lineTo(tbx, gy); cbCtx.stroke();
-
-                if (on) {
-                    const dist = tbx - 56;
-                    const pos = 56 + ((electronPhase * 28) % dist);
-                    cbCtx.fillStyle = '#ffffff'; cbCtx.fillRect(pos, gy - 1, 3, 3);
-                }
-            }
-
-            // 4 Líneas hacia Cargas a la Derecha
-            const conY = [35, 75, 115, 155];
-            for (let c = 0; c < 4; c++) {
-                const cy = conY[c];
-                const sbx = busX[c % 3];
-                cbCtx.strokeStyle = '#00ff88'; cbCtx.beginPath(); cbCtx.moveTo(sbx, cy); cbCtx.lineTo(200, cy); cbCtx.stroke();
-
-                cbCtx.fillStyle = '#152438'; cbCtx.fillRect(200, cy - 10, 42, 20);
-                cbCtx.strokeStyle = '#00ff88'; cbCtx.strokeRect(200, cy - 10, 42, 20);
-
-                cbCtx.fillStyle = '#00e5ff'; cbCtx.font = '8px Courier New'; cbCtx.fillText(`LOAD-${c+1}`, 204, cy + 3);
-
-                const dist = 200 - sbx;
-                const pos = sbx + ((electronPhase * 30 + c * 18) % dist);
-                cbCtx.fillStyle = '#00e5ff'; cbCtx.fillRect(pos, cy - 1, 2, 2);
-            }
-        }
-
-        /* =========================================================================
-           2. ESTADO DE POTENCIA Y SIMULACIÓN
-           ========================================================================= */
-        let difficulty = 2;
-        let isEnded = false;
-        let missionTime = 0;
-
-        const generators = [
-            { id: 'G1', max: 100, current: 98, active: true },
-            { id: 'G2', max: 100, current: 85, active: true, solarFlux: 1.0 },
-            { id: 'G3', max: 80, current: 72, active: true }
-        ];
-
-        const consumers = [
-            { name: "Soporte Vital", min: 60, current: 72, under: 0 },
-            { name: "Propulsión", min: 40, current: 68 },
-            { name: "Laboratorio", min: 10, current: 54 },
-            { name: "Aviónica", min: 25, current: 30 }
-        ];
-
-        let battery = { cap: 50, cur: 44 };
-        let eclipseCountdown = 12;
-        let inEclipse = false;
-        let eclipseTimer = 0;
-
-        function setupDifficulty(lvl) {
-            difficulty = parseInt(lvl);
-            isEnded = false;
-            missionTime = 0;
-            inEclipse = false;
-
-            generators[0].current = 98; generators[0].active = true;
-            generators[1].current = 85; generators[1].active = true; generators[1].solarFlux = 1.0;
-            generators[2].current = 72; generators[2].active = true;
-
-            consumers[0].current = 72; consumers[1].current = 68;
-            consumers[2].current = 54; consumers[3].current = 30;
-            battery.cur = 44;
-
-            if (difficulty === 1) {
-                eclipseCountdown = 999;
-            } else if (difficulty === 2) {
-                eclipseCountdown = 10; eclipseTimer = 18;
-            } else if (difficulty === 3) {
-                eclipseCountdown = 12; eclipseTimer = 22;
-            } else if (difficulty === 4) {
-                eclipseCountdown = 8; eclipseTimer = 25;
-            } else if (difficulty === 5) {
-                eclipseCountdown = 6; eclipseTimer = 30; battery.cur = 25;
-            }
-
-            for (let i = 0; i < 4; i++) {
-                document.getElementById(`sl${i}`).value = consumers[i].current;
-            }
-            updateUI();
-        }
-
-        function changeDifficulty(v) { setupDifficulty(v); }
-        function resetMission() { setupDifficulty(difficulty); }
-
-        function toggleGen(i) {
-            generators[i].active = !generators[i].active;
-            playClickSound();
-            updateUI();
-        }
-
-        function setAlloc(i, val) {
-            consumers[i].current = parseInt(val);
-            document.getElementById(`txtC${i}`).textContent = `${val} MW`;
-            playClickSound();
-            updateUI();
-        }
-
-        function autoBalance() {
-            const totGen = getTotGen();
-            consumers[0].current = 75; // Prioridad vital
-            consumers[3].current = 30; // Aviónica
-            let rem = Math.max(0, totGen - 105);
-            consumers[1].current = Math.min(68, Math.round(rem * 0.65));
-            consumers[2].current = Math.max(0, rem - consumers[1].current);
-
-            for (let i = 0; i < 4; i++) {
-                document.getElementById(`sl${i}`).value = consumers[i].current;
-                document.getElementById(`txtC${i}`).textContent = `${consumers[i].current} MW`;
-            }
-            playClickSound();
-            updateUI();
-        }
-
-        function getTotGen() {
-            let s = 0;
-            if (generators[0].active) s += generators[0].current;
-            if (generators[1].active) s += generators[1].current * generators[1].solarFlux;
-            if (generators[2].active) s += generators[2].current;
-            return Math.round(s);
-        }
-
-        function getTotDem() {
-            return consumers.reduce((a, c) => a + c.current, 0);
-        }
-
-        /* Audio procedural */
-        let audioCtx = null;
-        let soundActive = true;
-        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-        function playClickSound() {
-            if (!soundActive) return;
-            initAudio();
+        // ==========================================
+        // SINTETIZADOR DE AUDIO TÁCTICO
+        // ==========================================
+        let synth = null;
+        function playUiSound(type = 'click') {
+            if (!state.audioEnabled) return;
             try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(550, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.04);
-            } catch(e) {}
+                if (!synth) {
+                    synth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 0.005, decay: 0.08, sustain: 0, release: 0.1 }
+                    }).toDestination();
+                    synth.volume.value = -14;
+                }
+                if (Tone.context.state !== 'running') Tone.start();
+                
+                if (type === 'click') synth.triggerAttackRelease('C6', '32n');
+                else if (type === 'toggle') synth.triggerAttackRelease(['E5', 'B5'], '16n');
+                else if (type === 'auto') synth.triggerAttackRelease(['C5', 'E5', 'G5'], '16n');
+                else if (type === 'warn') synth.triggerAttackRelease('A3', '8n');
+            } catch (e) {}
         }
-        function toggleAudio() { soundActive = !soundActive; document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUDO'; }
 
-        /* Simulación Tick */
-        function updatePhysics(dt) {
-            if (isEnded) return;
+        function showToast(msg) {
+            const box = document.getElementById('toast-box');
+            document.getElementById('toast-msg').textContent = msg;
+            box.classList.remove('translate-y-10', 'opacity-0');
+            clearTimeout(window._toastTimeout);
+            window._toastTimeout = setTimeout(() => {
+                box.classList.add('translate-y-10', 'opacity-0');
+            }, 2400);
+        }
 
-            missionTime += dt;
-            electronPhase += dt * 3;
+        // ==========================================
+        // MEDIDOR VERTICAL
+        // ==========================================
+        const TOTAL_SEGMENTS = 20;
+        function initVerticalMeter() {
+            const container = document.getElementById('vertical-meter');
+            container.innerHTML = '';
+            for (let i = 0; i < TOTAL_SEGMENTS; i++) {
+                const seg = document.createElement('div');
+                seg.className = 'battery-segment flex-1 rounded-[1px] bg-slate-800';
+                seg.id = `v-seg-${i}`;
+                container.appendChild(seg);
+            }
+        }
 
-            if (eclipseCountdown > 0) {
-                eclipseCountdown -= dt;
-                if (eclipseCountdown <= 0) {
-                    inEclipse = true;
-                    generators[1].solarFlux = 0.0;
-                    document.getElementById('missionStatusPill').textContent = "¡EN ECLIPSE SOLAR!";
-                    document.getElementById('missionStatusPill').style.color = "var(--crt-amber)";
-                }
-            } else if (inEclipse) {
-                eclipseTimer -= dt;
-                if (eclipseTimer <= 0) {
-                    inEclipse = false;
-                    generators[1].solarFlux = 1.0;
-                    document.getElementById('missionStatusPill').textContent = "SALIDA DE SOMBRA";
-                    document.getElementById('missionStatusPill').style.color = "var(--crt-green)";
+        function updateVerticalMeter(pct) {
+            const activeCount = Math.round((pct / 100) * TOTAL_SEGMENTS);
+            document.getElementById('vertical-meter-val').textContent = `${Math.round(pct)}%`;
+
+            for (let i = 0; i < TOTAL_SEGMENTS; i++) {
+                const seg = document.getElementById(`v-seg-${i}`);
+                if (!seg) continue;
+                if (i < activeCount) {
+                    if (i < 4) seg.style.backgroundColor = '#ff2a55';
+                    else if (i < 9) seg.style.backgroundColor = '#ffaa00';
+                    else seg.style.backgroundColor = '#00ff88';
+                    seg.style.boxShadow = `0 0 6px ${seg.style.backgroundColor}`;
+                } else {
+                    seg.style.backgroundColor = '#0f172a';
+                    seg.style.boxShadow = 'none';
                 }
             }
+        }
 
-            const gen = getTotGen();
-            const dem = getTotDem();
-            const net = gen - dem;
-
-            battery.cur = Math.max(0, Math.min(battery.cap, battery.cur + (net / 3600) * dt * 25));
-
-            if (consumers[0].current < consumers[0].min || (net < 0 && battery.cur <= 0.1)) {
-                consumers[0].under += dt;
-                if (consumers[0].under >= 14) {
-                    isEnded = true;
-                    showDebriefModal(false);
-                }
-            } else {
-                consumers[0].under = Math.max(0, consumers[0].under - dt);
-            }
-
-            const targetTime = difficulty === 1 ? 25 : difficulty === 2 ? 35 : 45;
-            if (missionTime >= targetTime) {
-                isEnded = true;
-                showDebriefModal(true);
-            }
-
-            renderCircuitBuffer(generators.map(g => g.active), generators[1].solarFlux);
+        // ==========================================
+        // INTERACCIONES DE JUGABILIDAD
+        // ==========================================
+        function toggleGenerator(id) {
+            const gen = state.generators.find(g => g.id === id);
+            if (!gen) return;
+            gen.active = !gen.active;
+            playUiSound('toggle');
+            showToast(`${gen.name}: ${gen.active ? 'EN LÍNEA' : 'AISLADO'}`);
             updateUI();
         }
 
-        /* Historial y modales */
-        const STORAGE_KEY = 'space_sim_power_history';
-        function getHistory() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; } }
-        function saveRecord(rec) {
-            const list = getHistory(); list.unshift(rec);
-            if (list.length > 30) list.pop();
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
-        }
-        function clearHistory() { try { localStorage.removeItem(STORAGE_KEY); } catch(e) {} renderHistoryTable(); }
-        function openHistoryModal() { renderHistoryTable(); document.getElementById('historyModal').style.display = 'flex'; }
-        function openGuideModal() { document.getElementById('guideModal').style.display = 'flex'; }
-        function closeModals() {
-            document.getElementById('historyModal').style.display = 'none';
-            document.getElementById('guideModal').style.display = 'none';
-            document.getElementById('debriefModal').style.display = 'none';
+        // Cambiar a qué Bus está conectada una carga (Para evitar sobrecargas de 135 MW)
+        function cycleLoadBus(loadIdx) {
+            const load = state.loads[loadIdx];
+            load.bus = (load.bus + 1) % 3;
+            document.getElementById(`bus-btn-${loadIdx}`).textContent = `${BUS_NAMES[load.bus]} ⇄`;
+            playUiSound('toggle');
+            showToast(`${load.name} enrutado a ${BUS_NAMES[load.bus]}`);
+            updateUI();
         }
 
-        function renderHistoryTable() {
-            const list = getHistory();
-            const tbody = document.getElementById('historyTableBody');
-            tbody.innerHTML = '';
-            if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-dim); padding:16px;">No hay registros de gestión eléctrica aún.</td></tr>';
-                return;
-            }
-            list.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${r.timestamp}</td>
-                    <td>${r.missionName.replace('MISIÓN: ', '')}</td>
-                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'ÉXITO' : 'FALLO'}</td>
-                    <td>${r.batt}%</td>
-                    <td>${r.time} s</td>
-                    <td>${r.ls}</td>
-                    <td><b>${r.grade}</b></td>
-                `;
-                tbody.appendChild(tr);
+        function emergencyStabilize() {
+            playUiSound('auto');
+            // Redistribuir cargas entre los 3 buses para eliminar sobrecargas
+            state.loads[0].bus = 0; // Bus A
+            state.loads[1].bus = 1; // Bus B
+            state.loads[2].bus = 2; // Bus C
+            state.loads[3].bus = 2; // Bus C (junto con Lab que consume poco)
+
+            state.loads.forEach((l, i) => {
+                l.active = true;
+                document.getElementById(`bus-btn-${i}`).textContent = `${BUS_NAMES[l.bus]} ⇄`;
             });
-            document.getElementById('historyStatsSummary').textContent = `${list.length} vuelos registrados`;
-        }
 
-        function showDebriefModal(success) {
-            const modal = document.getElementById('debriefModal');
-            modal.style.display = 'flex';
-            document.getElementById('debTitle').textContent = success ? "¡RED ESTABILIZADA CON ÉXITO!" : "COLAPSO ELÉCTRICO";
-            document.getElementById('debTitle').style.color = success ? "var(--crt-green)" : "var(--crt-red)";
-            document.getElementById('debBatt').textContent = `${Math.round((battery.cur/battery.cap)*100)}%`;
-            document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
-            document.getElementById('debGrade').textContent = success ? "A+ EXCELENTE" : "F REPROBADO";
+            // Ajustar potencias al mínimo seguro + reparto óptimo
+            const totalGen = state.generators.reduce((acc, g) => acc + (g.active ? g.currentPower : 0), 0);
+            let budget = Math.max(135, totalGen - 10);
 
-            saveRecord({
-                timestamp: new Date().toLocaleTimeString(),
-                missionName: document.getElementById('missionText').textContent,
-                success: success,
-                batt: Math.round((battery.cur/battery.cap)*100),
-                time: Math.round(missionTime),
-                ls: consumers[0].under === 0 ? "NOMINAL" : "DEFICIT",
-                grade: success ? "A+ EXCELENTE" : "F REPROBADO"
+            state.loads[0].power = Math.min(70, Math.max(62, Math.round(budget * 0.34)));
+            state.loads[1].power = Math.min(65, Math.max(42, Math.round(budget * 0.30)));
+            state.loads[2].power = Math.min(45, Math.max(15, Math.round(budget * 0.18)));
+            state.loads[3].power = Math.min(40, Math.max(28, Math.round(budget * 0.18)));
+
+            state.loads.forEach((l, i) => {
+                document.getElementById(`slider-load-${i}`).value = l.power;
             });
+
+            showToast('ENRUTAMIENTO Y CARGAS ESTABILIZADAS');
+            updateUI();
         }
 
-        function nextLevel() {
-            closeModals();
-            if (difficulty < 5) {
-                document.getElementById('diffSelect').value = difficulty + 1;
-                setupDifficulty(difficulty + 1);
+        function applyDifficulty(lvl) {
+            state.level = parseInt(lvl);
+            const missionName = document.getElementById('mission-name');
+            const alertBanner = document.getElementById('canvas-alert-banner');
+
+            if (state.level === 1) {
+                missionName.textContent = 'Órbita Diurna (Calibración de Buses)';
+                state.generators[0].basePower = 100;
+                state.generators[1].basePower = 95;
+                state.generators[2].basePower = 75;
+                state.isEclipseActive = false;
+                alertBanner.classList.add('hidden');
+            } else if (state.level === 2) {
+                missionName.textContent = 'Tránsito por Sombra de Eclipse Solar';
+                state.generators[0].basePower = 98;
+                state.generators[1].basePower = 85;
+                state.generators[2].basePower = 72;
+                state.eclipsePhase = 10;
             } else {
-                alert("¡Has completado todos los escenarios de Distribución Eléctrica!");
-                setupDifficulty(1);
+                missionName.textContent = 'Tormenta Geomagnética + Picos de Demanda';
+                state.generators[0].basePower = 86;
+                state.generators[1].basePower = 35;
+                state.generators[2].basePower = 70;
+                state.isEclipseActive = true;
+                alertBanner.classList.remove('hidden');
+                document.getElementById('canvas-alert-text').textContent = 'TORMENTA SOLAR: FLUCTUACIÓN SEVERA EN RED';
+            }
+            updateUI();
+        }
+
+        // ==========================================
+        // ACTUALIZACIÓN DE TELEMETRÍA Y ESTADO
+        // ==========================================
+        function updateUI() {
+            let totalGen = 0;
+            let activeGens = 0;
+
+            state.generators.forEach(g => {
+                const power = g.active ? Math.round(g.currentPower) : 0;
+                totalGen += power;
+                if (g.active) activeGens++;
+
+                const btn = document.getElementById(`btn-${g.id}`);
+                const dot = document.getElementById(`dot-${g.id}`);
+                const bar = document.getElementById(`bar-${g.id}`);
+                const val = document.getElementById(`val-${g.id}`);
+                const card = document.getElementById(`card-${g.id}`);
+
+                val.textContent = `${power} MW`;
+                bar.style.width = `${(power / g.maxPower) * 100}%`;
+
+                if (g.active) {
+                    btn.textContent = 'ACTIVO';
+                    btn.className = 'px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300';
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-status';
+                    card.classList.remove('opacity-50');
+                } else {
+                    btn.textContent = 'OFFLINE';
+                    btn.className = 'px-1.5 py-0.5 text-[9px] font-bold rounded bg-rose-500/20 border border-rose-500 text-rose-300';
+                    dot.className = 'w-2 h-2 rounded-full bg-rose-500';
+                    card.classList.add('opacity-50');
+                }
+            });
+
+            document.getElementById('active-gens-count').textContent = `${activeGens} EN LÍNEA`;
+
+            // Calcular carga por Bus y detectar sobrecargas (> 135 MW)
+            state.busLoads = [0, 0, 0];
+            let totalDemand = 0;
+            let anyCriticalFail = false;
+
+            state.loads.forEach((l, idx) => {
+                const effectivePower = l.active ? l.power : 0;
+                totalDemand += effectivePower;
+                if (l.active) state.busLoads[l.bus] += effectivePower;
+
+                const valEl = document.getElementById(`val-load-${idx}`);
+                const statusEl = document.getElementById(`status-load-${idx}`);
+                const sliderEl = document.getElementById(`slider-load-${idx}`);
+                const cardEl = document.getElementById(`load-card-${idx}`);
+
+                valEl.textContent = `${effectivePower} MW`;
+
+                if (!l.active) {
+                    statusEl.textContent = 'CORTE';
+                    statusEl.className = 'text-[10px] font-bold text-slate-500';
+                    cardEl.style.borderLeftColor = '#475569';
+                    if (l.min >= 25) anyCriticalFail = true;
+                } else if (effectivePower < l.min) {
+                    statusEl.textContent = `< ${l.min} MW!`;
+                    statusEl.className = 'text-[10px] font-bold text-rose-400 animate-pulse';
+                    sliderEl.classList.add('critical');
+                    cardEl.style.borderLeftColor = '#ff2a55';
+                    anyCriticalFail = true;
+                } else {
+                    statusEl.textContent = idx === 0 ? 'OK' : 'NOMINAL';
+                    statusEl.className = 'text-[10px] font-bold text-emerald-400';
+                    sliderEl.classList.remove('critical');
+                    cardEl.style.borderLeftColor = '#00ff88';
+                }
+            });
+
+            let anyBusOverload = false;
+            for (let b = 0; b < 3; b++) {
+                state.busOverloaded[b] = state.busLoads[b] > MAX_BUS_CAPACITY;
+                if (state.busOverloaded[b]) anyBusOverload = true;
+            }
+
+            const net = totalGen - totalDemand;
+            document.getElementById('total-gen').textContent = `${totalGen} MW`;
+            document.getElementById('total-demand').textContent = `${totalDemand} MW`;
+
+            const netEl = document.getElementById('net-balance');
+            netEl.textContent = `${net >= 0 ? '+' : ''}${net} MW`;
+            netEl.className = net >= 0 ? 'font-bold text-emerald-400' : 'font-bold text-rose-400';
+
+            // Batería e Integridad
+            const mwh = ((state.battery / 100) * 50).toFixed(1);
+            document.getElementById('battery-text').textContent = `${Math.round(state.battery)}% (${mwh} MWh)`;
+            document.getElementById('battery-bar').style.width = `${state.battery}%`;
+            updateVerticalMeter(state.battery);
+
+            const intEl = document.getElementById('stability-timer');
+            intEl.textContent = `${Math.round(state.integrity)}%`;
+            intEl.className = state.integrity < 50 ? 'text-rose-400 animate-pulse' : 'text-cyan-300';
+
+            // Banner de Alerta y Badge Global
+            const badge = document.getElementById('network-status-badge');
+            const alertBanner = document.getElementById('canvas-alert-banner');
+            const alertText = document.getElementById('canvas-alert-text');
+
+            if (anyBusOverload) {
+                badge.textContent = 'SOBRECARGA DE BUS';
+                badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-rose-500/25 border border-rose-500 text-rose-300 animate-pulse';
+                alertBanner.classList.remove('hidden');
+                alertText.textContent = '¡SOBRECARGA TÉRMICA (>135 MW)! REENRUTA UNA CARGA A OTRO BUS';
+            } else if (anyCriticalFail || state.battery < 15) {
+                badge.textContent = 'FALLO CRÍTICO';
+                badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-rose-500/25 border border-rose-500 text-rose-300 animate-pulse';
+                alertBanner.classList.remove('hidden');
+                alertText.textContent = '¡SUMINISTRO INSUFICIENTE EN MÓDULOS VITALES!';
+            } else if (state.isEclipseActive || net < 0) {
+                badge.textContent = 'DRENAJE / ECLIPSE';
+                badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-amber-500/20 border border-amber-400 text-amber-300';
+                if (state.isEclipseActive) {
+                    alertBanner.classList.remove('hidden');
+                    alertText.textContent = 'TRÁNSITO DE ECLIPSE: PANEL SOLAR G2 REDUCIDO';
+                } else {
+                    alertBanner.classList.add('hidden');
+                }
+            } else {
+                badge.textContent = 'RED NOMINAL';
+                badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-emerald-500/20 border border-emerald-400 text-emerald-300 glow-text-green';
+                alertBanner.classList.add('hidden');
             }
         }
 
-        /* Viewport Canvas */
-        const canvas = document.getElementById('circuitCanvas');
+        // ==========================================
+        // RENDERIZADO CANVAS INTERACTIVO
+        // ==========================================
+        const canvas = document.getElementById('eps-canvas');
         const ctx = canvas.getContext('2d');
 
-        function resizeViewport() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight - 85;
-        }
-        window.addEventListener('resize', resizeViewport);
-
-        function drawCircuitScene() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const w = canvas.width; const h = canvas.height;
-            // Dibuja el elemento de circuito (Buffer 256x192 escalado)
-            const cw = Math.min(w * 0.95, (h * 256) / 192);
-            const ch = (cw * 192) / 256;
-            ctx.drawImage(circuitBuffer, (w - cw)/2, (h - ch)/2, cw, ch);
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
-        function updateUI() {
-            const gen = getTotGen();
-            const dem = getTotDem();
-
-            document.getElementById('valG1').textContent = `${generators[0].active ? generators[0].current : 0} MW`;
-            document.getElementById('barG1').style.width = `${generators[0].active ? generators[0].current : 0}%`;
-
-            const sVal = Math.round(generators[1].current * generators[1].solarFlux);
-            document.getElementById('valG2').textContent = `${generators[1].active ? sVal : 0} MW`;
-            document.getElementById('barG2').style.width = `${generators[1].active ? (generators[1].solarFlux * 100) : 0}%`;
-            document.getElementById('sunG2').textContent = inEclipse ? `ECLIPSE (${Math.ceil(eclipseTimer)}s)` : "100% SOL";
-
-            document.getElementById('valG3').textContent = `${generators[2].active ? generators[2].current : 0} MW`;
-            document.getElementById('barG3').style.width = `${generators[2].active ? generators[2].current : 0}%`;
-
-            document.getElementById('totGenVal').textContent = `${gen} MW`;
-            document.getElementById('totDemVal').textContent = `${dem} MW`;
-
-            const bPct = Math.round((battery.cur / battery.cap) * 100);
-            document.getElementById('batteryVal').textContent = `${bPct}% (${battery.cur.toFixed(1)} MWh)`;
-            document.getElementById('batteryBar').style.width = `${bPct}%`;
-
-            const nodeLS = document.getElementById('nodeLS');
-            const stC0 = document.getElementById('stC0');
-            if (consumers[0].current < consumers[0].min) {
-                nodeLS.classList.add('critical');
-                stC0.textContent = "DEFICIT!"; stC0.style.color = "var(--crt-red)";
-            } else {
-                nodeLS.classList.remove('critical');
-                stC0.textContent = "OK"; stC0.style.color = "var(--crt-green)";
+        function initParticles() {
+            state.particles = [];
+            for (let i = 0; i < 45; i++) {
+                state.particles.push({
+                    progress: Math.random(),
+                    speed: 0.0045 + Math.random() * 0.004,
+                    type: i % 2 === 0 ? 'gen' : 'load',
+                    index: i % (i % 2 === 0 ? 3 : 4)
+                });
             }
-
-            updateLEDMeter(bPct);
         }
 
-        const meterBox = document.getElementById('ledMeter');
-        meterBox.innerHTML = '';
-        for (let i = 0; i < 20; i++) {
-            const d = document.createElement('div'); d.className = 'led-seg'; d.id = `led_${i}`; meterBox.appendChild(d);
+        function drawGlowRect(x, y, w, h, strokeColor, fillColor, glowBlur = 10) {
+            ctx.save();
+            ctx.shadowColor = strokeColor;
+            ctx.shadowBlur = glowBlur;
+            ctx.fillStyle = fillColor;
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 5);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
         }
-        function updateLEDMeter(pct) {
-            document.getElementById('pwrPctText').textContent = `${pct}%`;
-            const count = Math.round((pct / 100) * 20);
-            for (let i = 0; i < 20; i++) {
-                const el = document.getElementById(`led_${i}`); el.className = 'led-seg';
-                if (i < count) {
-                    if (i < 4) el.classList.add('on-red');
-                    else if (i < 8) el.classList.add('on-yellow');
-                    else el.classList.add('on-green');
+
+        function renderDiagram() {
+            const container = document.getElementById('canvas-container');
+            const W = container.clientWidth;
+            const H = container.clientHeight;
+
+            ctx.clearRect(0, 0, W, H);
+            state.clickableElements = [];
+
+            // Cuadrícula sutil
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < W; x += 26) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+            for (let y = 0; y < H; y += 26) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+            const boxW = Math.min(125, Math.max(80, W * 0.15));
+            const boxH = Math.min(46, Math.max(34, H * 0.13));
+            const leftX = Math.max(14, W * 0.06);
+            const rightX = W - leftX - boxW;
+
+            const busCenter = W * 0.48;
+            const busSpacing = Math.min(48, Math.max(28, W * 0.065));
+            const busXs = [busCenter - busSpacing, busCenter, busCenter + busSpacing];
+            const busTopY = H * 0.14;
+            const busBottomY = H * 0.90;
+
+            // 1. Dibujar Buses Verticales con indicador de carga MW y Sobrecarga
+            busXs.forEach((bx, idx) => {
+                const isOverloaded = state.busOverloaded[idx];
+                const isEnergized = state.generators[idx]?.active || state.busLoads[idx] > 0;
+                const busColor = isOverloaded ? '#ff2a55' : (isEnergized ? '#00ff88' : '#334155');
+
+                ctx.save();
+                ctx.strokeStyle = busColor;
+                ctx.lineWidth = isOverloaded ? 5 : 3.5;
+                if (isEnergized || isOverloaded) {
+                    ctx.shadowColor = busColor;
+                    ctx.shadowBlur = isOverloaded ? 18 : 10;
                 }
+                ctx.beginPath();
+                ctx.moveTo(bx, busTopY);
+                ctx.lineTo(bx, busBottomY);
+                ctx.stroke();
+                ctx.restore();
+
+                // Terminal superior
+                drawGlowRect(bx - 11, busTopY - 15, 22, 15, busColor, isOverloaded ? '#4c0519' : '#064e3b', 10);
+                
+                // Etiqueta Bus + Carga actual
+                ctx.fillStyle = isOverloaded ? '#fda4af' : '#6ee7b7';
+                ctx.font = 'bold 9px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(BUS_NAMES[idx], bx, busTopY - 28);
+                ctx.fillText(`${state.busLoads[idx]}MW`, bx, busTopY - 18);
+            });
+
+            // 2. Generadores (Izquierda)
+            const genYs = [H * 0.25, H * 0.52, H * 0.79];
+            state.generators.forEach((gen, idx) => {
+                const gy = genYs[idx];
+                const targetBusX = busXs[gen.bus];
+                const isActive = gen.active;
+                const lineColor = !isActive ? '#334155' : (gen.id === 'g2' && state.isEclipseActive ? '#ffaa00' : '#00f0ff');
+
+                ctx.save();
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = 2.5;
+                if (!isActive) ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(leftX + boxW, gy);
+                ctx.lineTo(targetBusX, gy);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.fillStyle = lineColor;
+                ctx.beginPath(); ctx.arc(targetBusX, gy, 4.5, 0, Math.PI * 2); ctx.fill();
+
+                // Disyuntor
+                const breakerX = (leftX + boxW + targetBusX) / 2;
+                drawBreaker(breakerX, gy, isActive, lineColor, () => toggleGenerator(gen.id));
+
+                // Caja Generador
+                drawGlowRect(leftX, gy - boxH / 2, boxW, boxH, lineColor, isActive ? 'rgba(8, 28, 44, 0.92)' : 'rgba(15, 23, 42, 0.7)', isActive ? 10 : 0);
+                ctx.fillStyle = isActive ? '#ffffff' : '#64748b';
+                ctx.font = 'bold 12px "Orbitron", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(gen.name, leftX + boxW / 2, gy - 2);
+                ctx.fillStyle = lineColor;
+                ctx.font = '600 9px "JetBrains Mono", monospace';
+                ctx.fillText(isActive ? `${Math.round(gen.currentPower)} MW` : 'OFFLINE', leftX + boxW / 2, gy + 11);
+            });
+
+            // 3. Cargas / Loads (Derecha) - Clicables para cambiar de Bus
+            const loadYs = [H * 0.20, H * 0.41, H * 0.62, H * 0.83];
+            state.loads.forEach((load, idx) => {
+                const ly = loadYs[idx];
+                const sourceBusX = busXs[load.bus];
+                const isUnderMin = load.active && load.power < load.min;
+                const isBusHot = state.busOverloaded[load.bus];
+                const lineColor = !load.active ? '#334155' : (isUnderMin || isBusHot ? '#ff2a55' : '#00ff88');
+
+                ctx.save();
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = 2.5;
+                if (!load.active) ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(sourceBusX, ly);
+                ctx.lineTo(rightX, ly);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.fillStyle = lineColor;
+                ctx.beginPath(); ctx.arc(sourceBusX, ly, 4.5, 0, Math.PI * 2); ctx.fill();
+
+                // Disyuntor
+                const breakerX = (sourceBusX + rightX) / 2;
+                drawBreaker(breakerX, ly, load.active, lineColor, () => {
+                    load.active = !load.active;
+                    playUiSound('toggle');
+                    updateUI();
+                });
+
+                // Caja LOAD (Clicable para rotar Bus)
+                const boxRect = { x: rightX, y: ly - boxH / 2, w: boxW, h: boxH };
+                state.clickableElements.push({
+                    type: 'rect',
+                    ...boxRect,
+                    onClick: () => cycleLoadBus(idx)
+                });
+
+                drawGlowRect(boxRect.x, boxRect.y, boxRect.w, boxRect.h, lineColor, load.active ? 'rgba(6, 32, 28, 0.92)' : 'rgba(15, 23, 42, 0.7)', load.active ? 10 : 0);
+
+                ctx.fillStyle = load.active ? '#ffffff' : '#64748b';
+                ctx.font = 'bold 11px "Orbitron", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(load.name, rightX + boxW / 2, ly - 2);
+
+                ctx.fillStyle = lineColor;
+                ctx.font = '600 9px "JetBrains Mono", monospace';
+                ctx.fillText(`${load.power}MW [${BUS_NAMES[load.bus]}]`, rightX + boxW / 2, ly + 11);
+            });
+
+            // 4. Partículas de flujo eléctrico
+            state.particles.forEach(p => {
+                p.progress += p.speed;
+                if (p.progress > 1) p.progress = 0;
+
+                if (p.type === 'gen') {
+                    const gen = state.generators[p.index];
+                    if (!gen || !gen.active) return;
+                    const px = (leftX + boxW) + (busXs[gen.bus] - (leftX + boxW)) * p.progress;
+                    drawEnergyPulse(px, genYs[p.index], '#00f0ff');
+                } else {
+                    const load = state.loads[p.index];
+                    if (!load || !load.active) return;
+                    const px = busXs[load.bus] + (rightX - busXs[load.bus]) * p.progress;
+                    drawEnergyPulse(px, loadYs[p.index], load.power < load.min ? '#ff2a55' : '#00ff88');
+                }
+            });
+        }
+
+        function drawBreaker(x, y, isClosed, color, onClick) {
+            state.clickableElements.push({ type: 'circle', x, y, r: 14, onClick });
+            ctx.save();
+            ctx.fillStyle = '#04080e';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+            ctx.beginPath();
+            if (isClosed) { ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); }
+            else { ctx.moveTo(x - 3, y + 3); ctx.lineTo(x + 3, y - 3); }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawEnergyPulse(x, y, color) {
+            ctx.save();
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
+            ctx.beginPath(); ctx.arc(x, y, 2.8, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        // ==========================================
+        // BUCLE DE SIMULACIÓN CON EVENTOS DINÁMICOS
+        // ==========================================
+        let lastTick = performance.now();
+        function simulationLoop(now) {
+            const dt = (now - lastTick) / 1000;
+            lastTick = now;
+            state.time += dt;
+
+            if (Math.floor(state.time) !== Math.floor(state.time - dt)) {
+                // Ciclo de Eclipse Solar
+                if (state.level >= 2) {
+                    state.eclipsePhase--;
+                    if (state.eclipsePhase <= 0) {
+                        state.isEclipseActive = !state.isEclipseActive;
+                        state.eclipsePhase = state.isEclipseActive ? 14 : 16;
+                        if (state.isEclipseActive) playUiSound('warn');
+                    }
+                    const timerEl = document.getElementById('eclipse-timer');
+                    timerEl.textContent = state.isEclipseActive ? `SOMBRA (${state.eclipsePhase}s)` : `ECLIPSE (${state.eclipsePhase}s)`;
+                    timerEl.className = state.isEclipseActive ? 'text-rose-400 font-bold animate-pulse' : 'text-amber-400 font-bold';
+                }
+
+                // Evento dinámico: Pico de demanda en Propulsión o Laboratorio cada 16s
+                state.surgeTimer--;
+                if (state.surgeTimer <= 0) {
+                    state.surgeTimer = 18;
+                    const targetIdx = Math.random() > 0.5 ? 1 : 2;
+                    const spike = 18;
+                    state.loads[targetIdx].power = Math.min(state.loads[targetIdx].max, state.loads[targetIdx].power + spike);
+                    document.getElementById(`slider-load-${targetIdx}`).value = state.loads[targetIdx].power;
+                    showToast(`PICO DE CONSUMO EN ${state.loads[targetIdx].name} (+${spike} MW)`);
+                    playUiSound('warn');
+                }
+
+                // Fluctuación de generadores
+                state.generators.forEach(g => {
+                    if (!g.active) return;
+                    let target = g.basePower;
+                    if (g.id === 'g2' && state.isEclipseActive) target = 22;
+                    g.currentPower = Math.max(0, target + (Math.random() - 0.5) * 4);
+                });
+
+                document.getElementById('temp-g1').textContent = `${state.generators[0].active ? Math.round(418 + Math.sin(state.time) * 8) : 180}°C`;
+
+                // Balance energético e Integridad
+                const totalGen = state.generators.reduce((acc, g) => acc + (g.active ? g.currentPower : 0), 0);
+                const totalDemand = state.loads.reduce((acc, l) => acc + (l.active ? l.power : 0), 0);
+                const net = totalGen - totalDemand;
+
+                state.battery = Math.max(0, Math.min(100, state.battery + net * 0.025));
+
+                // Penalización de integridad si hay sobrecarga de bus o fallo vital
+                const hasOverload = state.busOverloaded.some(Boolean);
+                const hasVitalFail = state.loads.some(l => (!l.active && l.min >= 25) || (l.active && l.power < l.min));
+
+                if (hasOverload || hasVitalFail || state.battery <= 0) {
+                    state.integrity = Math.max(0, state.integrity - 2.5);
+                } else {
+                    state.integrity = Math.min(100, state.integrity + 0.5);
+                }
+
+                updateUI();
             }
+
+            renderDiagram();
+            requestAnimationFrame(simulationLoop);
         }
 
-        let lastT = performance.now();
-        function loop(now) {
-            const dt = Math.min(0.1, (now - lastT) / 1000);
-            lastT = now;
-            updatePhysics(dt);
-            drawCircuitScene();
-            requestAnimationFrame(loop);
-        }
+        // ==========================================
+        // EVENTOS DOM
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            initVerticalMeter();
+            initParticles();
+            resizeCanvas();
+            updateUI();
 
-        window.onload = () => {
-            resizeViewport();
-            setupDifficulty(2);
-            requestAnimationFrame(loop);
-        };
+            state.loads.forEach((load, idx) => {
+                const slider = document.getElementById(`slider-load-${idx}`);
+                slider.addEventListener('input', (e) => {
+                    load.power = parseInt(e.target.value);
+                    if (!load.active && load.power > 0) load.active = true;
+                    updateUI();
+                });
+                slider.addEventListener('change', () => playUiSound('click'));
+            });
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+
+                for (const el of state.clickableElements) {
+                    if (el.type === 'circle' && Math.hypot(mx - el.x, my - el.y) <= el.r + 5) {
+                        el.onClick(); break;
+                    } else if (el.type === 'rect' && mx >= el.x && mx <= el.x + el.w && my >= el.y && my <= el.y + el.h) {
+                        el.onClick(); break;
+                    }
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                const hovering = state.clickableElements.some(el => {
+                    if (el.type === 'circle') return Math.hypot(mx - el.x, my - el.y) <= el.r + 5;
+                    return mx >= el.x && mx <= el.x + el.w && my >= el.y && my <= el.y + el.h;
+                });
+                canvas.style.cursor = hovering ? 'pointer' : 'default';
+            });
+
+            document.getElementById('btn-autobalance').addEventListener('click', emergencyStabilize);
+            document.getElementById('difficulty-select').addEventListener('change', (e) => applyDifficulty(e.target.value));
+
+            document.getElementById('btn-audio').addEventListener('click', () => {
+                state.audioEnabled = !state.audioEnabled;
+                document.getElementById('audio-icon').textContent = state.audioEnabled ? '🔊' : '🔇';
+                if (state.audioEnabled) playUiSound('auto');
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                playUiSound('toggle');
+                state.battery = 88.0;
+                state.integrity = 100.0;
+                state.generators.forEach(g => g.active = true);
+                const defaults = [72, 68, 54, 35];
+                const defaultBuses = [0, 1, 2, 0];
+                state.loads.forEach((l, i) => {
+                    l.active = true;
+                    l.power = defaults[i];
+                    l.bus = defaultBuses[i];
+                    document.getElementById(`slider-load-${i}`).value = defaults[i];
+                    document.getElementById(`bus-btn-${i}`).textContent = `${BUS_NAMES[l.bus]} ⇄`;
+                });
+                applyDifficulty(state.level);
+                showToast('SISTEMA REINICIADO');
+            });
+
+            const modal = document.getElementById('guide-modal');
+            document.getElementById('btn-guide').addEventListener('click', () => modal.classList.remove('hidden'));
+            document.getElementById('close-guide').addEventListener('click', () => modal.classList.add('hidden'));
+            document.getElementById('btn-understood').addEventListener('click', () => modal.classList.add('hidden'));
+
+            document.getElementById('btn-exit').addEventListener('click', () => showToast('VOLVIENDO A LA ESTACIÓN...'));
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (!modal.classList.contains('hidden')) modal.classList.add('hidden');
+                    else showToast('VOLVIENDO A LA ESTACIÓN...');
+                }
+            });
+
+            window.addEventListener('resize', resizeCanvas);
+            requestAnimationFrame(simulationLoop);
+        });
     </script>
 </body>
 </html>
