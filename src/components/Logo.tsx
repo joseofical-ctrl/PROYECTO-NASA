@@ -2,11 +2,11 @@ import { motion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 
 export const SPLASHES = [
-  '¡Ahora con 80% DoD en baterías!',
-  '¡Cuidado con el Link Budget!',
-  '¡Tsiolkovsky aprueba este diseño!',
-  '¡100% Datos del NASA SSRI!',
-  '¡No olvides el blindaje en L1!',
+  'Now with 80% battery DoD!',
+  'Watch that Link Budget!',
+  'Tsiolkovsky approves this bus!',
+  '100% NASA SSRI Engineering Data!',
+  "Don't forget L1 radiation shielding!",
 ]
 
 // Thick black outline + stacked dark blue/grey extrusion going down (block/titanium look)

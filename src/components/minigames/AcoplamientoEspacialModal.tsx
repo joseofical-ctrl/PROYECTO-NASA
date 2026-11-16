@@ -7,7 +7,7 @@ export default function AcoplamientoEspacialModal(props: MinigameModalProps) {
       {...props}
       game="dock"
       file="acoplamiento_espacial.html"
-      title="ACOPLAMIENTO ESPACIAL Y RENDEZVOUS APAS · CÓNDOR-4"
+      title="APAS SPACECRAFT DOCKING & RENDEZVOUS · CONDOR-4"
       accent="#ffd23f"
     />
   )

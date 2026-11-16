@@ -7,7 +7,7 @@ export default function SoporteVitalModal(props: MinigameModalProps) {
       {...props}
       game="eclss"
       file="soporte_vital.html"
-      title="SOPORTE VITAL ECLSS Y TANQUES O2 · ALPACA-1"
+      title="ECLSS LIFE SUPPORT & O2 TANKS · ALPACA-1"
       accent="#55efc4"
     />
   )

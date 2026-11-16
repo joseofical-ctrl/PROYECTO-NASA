@@ -42,16 +42,16 @@ interface VictoryCinematicModalProps {
 const HONOR_ROLE_ORDER: RoleId[] = ['engineer', 'comms', 'science', 'director']
 
 const ROLE_HONOR_TITLES: Record<RoleId, string> = {
-  director: '🏅 Maestro de Atraque y Defensa Orbital',
-  engineer: '🏅 Guardián del Núcleo y Soporte Vital',
-  science: '🏅 Pionero de Exploración Planetaria',
-  comms: '🏅 Escudo Cibernético y Enlace Profundo',
+  director: '🏅 Master of Docking & Orbital Defense',
+  engineer: '🏅 Core & Life Support Guardian',
+  science: '🏅 Planetary Exploration Pioneer',
+  comms: '🏅 Cyber Shield & Deep Space Link',
 }
 
 const MISSION_TRANSMISSION_REPORT: Record<MissionId, string> = {
-  andes: '✔ 4.8 TB de Cartografía Térmica Glaciar enviados a CENEPRED / NASA',
-  luna: '✔ 12.4 TB de Espectrometría de Hielo Lunar enviados a Base Artemis',
-  sol: '✔ Alerta Geomagnética L1 transmitida a tiempo — Red Eléctrica Global Protegida',
+  andes: '✔ 4.8 TB of Glacial Thermal Cartography transmitted to CENEPRED / NASA',
+  luna: '✔ 12.4 TB of Lunar Ice Spectrometry transmitted to Artemis Base',
+  sol: '✔ L1 Geomagnetic Early Warning transmitted on time — Global Power Grid Protected',
 }
 
 interface NasaRankInfo {
@@ -65,7 +65,7 @@ interface NasaRankInfo {
 function getNasaOfficialRank(health: number): NasaRankInfo {
   if (health >= 90) {
     return {
-      label: '★★★ RANGO S+ · LEYENDA DEL ESCUADRÓN ANDINO',
+      label: '★★★ RANK S+ · ANDEAN SQUADRON LEGEND',
       tierShort: 'S+',
       textColor: '#ffd23f',
       borderColor: '#facc15',
@@ -74,7 +74,7 @@ function getNasaOfficialRank(health: number): NasaRankInfo {
   }
   if (health >= 70) {
     return {
-      label: '★★ RANGO A · COMANDANTE ORBITAL NASA',
+      label: '★★ RANK A · NASA ORBITAL COMMANDER',
       tierShort: 'A',
       textColor: '#22d3ee',
       borderColor: '#06b6d4',
@@ -82,7 +82,7 @@ function getNasaOfficialRank(health: number): NasaRankInfo {
     }
   }
   return {
-    label: '★ RANGO B · OFICIAL DE MISIÓN APROBADO',
+    label: '★ RANK B · APPROVED MISSION OFFICER',
     tierShort: 'B',
     textColor: '#34d399',
     borderColor: '#10b981',
@@ -211,7 +211,7 @@ export default function VictoryCinematicModal({
       className="fixed inset-0 z-[180] bg-black/95 flex items-center justify-center overflow-hidden"
       role="dialog"
       aria-modal="true"
-      aria-label="Cinemática Oficial de Victoria NASA"
+      aria-label="Official NASA Victory Cinematic"
       style={{ fontFamily: '"Press Start 2P", monospace' }}
     >
       {/* Escena A: Transmisión Láser Orbital 32x32 */}
@@ -220,7 +220,7 @@ export default function VictoryCinematicModal({
           key={`laser-${laserNonce}`}
           ref={laserIframeRef}
           src={laserSrc}
-          title="Cinemática de Transmisión Láser Orbital 32x32"
+          title="32x32 Orbital Laser Transmission Cinematic"
           className="absolute inset-0 w-full h-full border-0"
         />
       )}
@@ -231,7 +231,7 @@ export default function VictoryCinematicModal({
           key={`return-${returnHomeNonce}`}
           ref={returnIframeRef}
           src={returnHomeSrc}
-          title="Misión Águila · Regreso a Casa"
+          title="Eagle Mission · Return Home"
           className="absolute inset-0 w-full h-full border-0"
         />
       )}
@@ -279,8 +279,8 @@ export default function VictoryCinematicModal({
                   }}
                 >
                   {isFinalCampaign
-                    ? '🏆 GRAN VICTORIA FINAL · CUADRO DE HONOR NASA · CAMPAÑA 3/3'
-                    : `MISSION STAGE COMPLETE · ETAPA ${missionDef.number} DE 3`}
+                    ? '🏆 GRAND FINAL VICTORY · NASA HONOR ROLL · CAMPAIGN 3/3'
+                    : `MISSION STAGE COMPLETE · STAGE ${missionDef.number} OF 3`}
                 </span>
                 <span
                   className="inline-block px-2.5 py-1 border text-[8px] sm:text-[9px] font-bold"
@@ -302,12 +302,12 @@ export default function VictoryCinematicModal({
                 }}
               >
                 {isFinalCampaign
-                  ? `🦅 ¡BIENVENIDOS A CASA, ESCUADRÓN ANDINO! · ${missionDef.code}`
-                  : `✅ MISIÓN ${missionDef.number} COMPLETADA: ${missionDef.code}`}
+                  ? `🦅 WELCOME HOME, ANDEAN SQUADRON! · ${missionDef.code}`
+                  : `✅ MISSION ${missionDef.number} COMPLETE: ${missionDef.code}`}
               </div>
 
               <div className="text-[8px] sm:text-[9px] text-cyan-200 mt-1">
-                {missionDef.title} · {resolvedCount}/{missionTargetCount} Consolas Críticas Estabilizadas ·{' '}
+                {missionDef.title} · {resolvedCount}/{missionTargetCount} Critical Consoles Stabilized ·{' '}
                 {chassisName} / {launcherName}
               </div>
 
@@ -320,7 +320,7 @@ export default function VictoryCinematicModal({
               <div className="mt-3 bg-[#080d1e]/90 border-2 border-slate-700 p-2.5 sm:p-3 text-left">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <span className="text-[8px] sm:text-[9px] text-cyan-300 font-bold">
-                    📊 DESGLOSE DE PUNTUACIÓN Y BONIFICACIONES DE MISIÓN:
+                    📊 MISSION SCORE BREAKDOWN &amp; BONUSES:
                   </span>
                   <span className="text-[9px] sm:text-[11px] text-yellow-300 font-bold">
                     TOTAL: {totalVictoryScore} PTS
@@ -328,34 +328,34 @@ export default function VictoryCinematicModal({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="p-2 bg-[#101730] border border-cyan-500/40">
-                    <div className="text-[7.5px] text-cyan-300">📡 Ciencia Base de Misión</div>
+                    <div className="text-[7.5px] text-cyan-300">📡 Mission Base Science</div>
                     <div className="text-[10px] sm:text-xs font-bold text-white mt-1">
                       +{roundedBaseScience} PTS
                     </div>
                     <div className="text-[7px] text-slate-400 mt-0.5">
-                      {resolvedCount}/{missionTargetCount} consolas resueltas
+                      {resolvedCount}/{missionTargetCount} consoles resolved
                     </div>
                   </div>
                   <div className="p-2 bg-[#101730] border border-emerald-500/40">
                     <div className="text-[7.5px] text-emerald-300">
-                      🛡️ Bono de Integridad Orbital
+                      🛡️ Orbital Integrity Bonus
                     </div>
                     <div className="text-[10px] sm:text-xs font-bold text-emerald-300 mt-1">
                       +{integrityBonus} PTS
                     </div>
                     <div className="text-[7px] text-slate-400 mt-0.5">
-                      Integridad estación: {roundedHealth}% × 2
+                      Station Integrity: {roundedHealth}% × 2
                     </div>
                   </div>
                   <div className="p-2 bg-[#101730] border border-amber-400/45">
                     <div className="text-[7.5px] text-amber-300">
-                      ⚡ Bono de Eficiencia de Satélites
+                      ⚡ Satellite Efficiency Bonus
                     </div>
                     <div className="text-[10px] sm:text-xs font-bold text-yellow-300 mt-1">
                       +{satelliteBonus} PTS
                     </div>
                     <div className="text-[7px] text-slate-400 mt-0.5">
-                      SAT-01 AMARU-COMMS &amp; SAT-02 INTI-SCIENCE
+                      SAT-01 AMARU-COMMS &amp; SAT-02 INTI-SCIENCE active
                     </div>
                   </div>
                 </div>
@@ -364,7 +364,7 @@ export default function VictoryCinematicModal({
               {/* Cuadro de Honor por Especialista (4 Astronautas con Sprite) */}
               <div className="mt-3 bg-[#070b18]/90 border-2 border-slate-800 p-2.5 text-left">
                 <div className="text-[8px] sm:text-[9px] text-yellow-300 font-bold mb-2">
-                  🏅 CUADRO DE HONOR POR ESPECIALISTA DEL ESCUADRÓN ANDINO:
+                  🏅 ANDEAN SQUADRON SPECIALIST HONOR ROLL:
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                   {HONOR_ROLE_ORDER.map((r) => {
@@ -394,7 +394,7 @@ export default function VictoryCinematicModal({
                             {ROLE_HONOR_TITLES[r]}
                           </div>
                           <div className="text-[7.5px] font-bold text-emerald-300 mt-1">
-                            ✔ {solvedByRole} EMERGENCIAS
+                            ✔ {solvedByRole} EMERGENCIES
                           </div>
                         </div>
                       </div>
@@ -407,14 +407,14 @@ export default function VictoryCinematicModal({
               {!isFinalCampaign && nextMissionId && (
                 <div className="mt-3 p-2.5 bg-indigo-950/60 border border-indigo-400/70 text-left">
                   <div className="text-[8px] text-indigo-300 font-bold">
-                    🔭 SIGUIENTE ETAPA DE CAMPAÑA DESBLOQUEADA:
+                    🔭 NEXT CAMPAIGN STAGE UNLOCKED:
                   </div>
                   <div className="text-[9px] sm:text-[10px] text-white font-bold mt-0.5">
-                    MISIÓN {MISSION_CATALOG[nextMissionId].number}:{' '}
+                    MISSION {MISSION_CATALOG[nextMissionId].number}:{' '}
                     {MISSION_CATALOG[nextMissionId].code} — {MISSION_CATALOG[nextMissionId].title}
                   </div>
                   <div className="text-[7.5px] text-cyan-200 mt-0.5">
-                    Meta: {MISSION_CATALOG[nextMissionId].targetResolutions} anomalías (Nivel{' '}
+                    Goal: {MISSION_CATALOG[nextMissionId].targetResolutions} anomalies (Level{' '}
                     {MISSION_CATALOG[nextMissionId].difficulty}) ·{' '}
                     {MISSION_CATALOG[nextMissionId].orbitBadge}
                   </div>
@@ -435,7 +435,7 @@ export default function VictoryCinematicModal({
                         boxShadow: '0 0 18px rgba(34,197,94,0.55)',
                       }}
                     >
-                      [ 🚀 CONTINUAR A LA SIGUIENTE MISIÓN ]
+                      [ 🚀 CONTINUE TO NEXT MISSION ]
                     </button>
                   )}
                   <button
@@ -443,20 +443,20 @@ export default function VictoryCinematicModal({
                     className="mc-btn px-3 py-2 text-[8.5px]"
                     style={{ color: '#67e8f9' }}
                   >
-                    📡 REPETIR TRANSMISIÓN LÁSER
+                    📡 REPLAY LASER LINK
                   </button>
                   <button
                     onClick={onOpenTelemetryReport}
                     className="mc-btn px-3 py-2 text-[8.5px]"
                     style={{ color: '#5ef0ff' }}
                   >
-                    📊 TELEMETRÍA NASA
+                    📊 NASA TELEMETRY
                   </button>
                   <button
                     onClick={onContinueInStation}
                     className="mc-btn px-3 py-2 text-[8.5px]"
                   >
-                    🛰️ SEGUIR EN ESTACIÓN
+                    🛰️ STAY ON STATION
                   </button>
                 </div>
               ) : (
@@ -470,7 +470,7 @@ export default function VictoryCinematicModal({
                       color: '#ffffff',
                     }}
                   >
-                    [ 🎬 REPETIR CINEMÁTICA DE REGRESO A CASA ]
+                    [ 🎬 REPLAY RETURN HOME CINEMATIC ]
                   </button>
                   <button
                     onClick={onReplayLaser}
@@ -481,7 +481,7 @@ export default function VictoryCinematicModal({
                       color: '#ecfeff',
                     }}
                   >
-                    [ 📡 REPETIR TRANSMISIÓN LÁSER 32x32 ]
+                    [ 📡 REPLAY 32x32 LASER TRANSMISSION ]
                   </button>
                   <button
                     onClick={onOpenTelemetryReport}
@@ -492,7 +492,7 @@ export default function VictoryCinematicModal({
                       color: '#ffffff',
                     }}
                   >
-                    [ 📊 ABRIR REPORTE DE INGENIERÍA NASA ]
+                    [ 📊 OPEN NASA ENGINEERING REPORT ]
                   </button>
                   <button
                     onClick={onExitToMenu}
@@ -504,7 +504,7 @@ export default function VictoryCinematicModal({
                       boxShadow: '0 0 18px rgba(234,179,8,0.5)',
                     }}
                   >
-                    [ 🏆 NUEVA PARTIDA / VOLVER AL MENÚ ]
+                    [ 🏆 NEW GAME / RETURN TO MENU ]
                   </button>
                 </div>
               )}

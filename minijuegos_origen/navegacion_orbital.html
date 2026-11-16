@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Navegación Orbital - Astrodinámica y Mecánica Celeste</title>
+    <title>Orbital Navigation - Astrodynamics &amp; Celestial Mechanics</title>
     <style>
         :root {
             --bg-deep: #050811;
@@ -414,35 +414,35 @@
 
     <header>
         <div class="header-title-block">
-            <span class="badge-system">ASTRODINÁMICA // HOHMANN</span>
-            <h1>SISTEMA DE NAVEGACIÓN Y MECÁNICA ORBITAL</h1>
+            <span class="badge-system">ASTRODYNAMICS // HOHMANN</span>
+            <h1>ORBITAL NAVIGATION &amp; CELESTIAL MECHANICS SYSTEM</h1>
         </div>
         <div class="header-actions">
             <button class="btn-ui" onclick="location.href='index.html'">⌂ HUB</button>
-            <label for="diffSelect" style="color:var(--text-dim)">DIFICULTAD:</label>
+            <label for="diffSelect" style="color:var(--text-dim)">DIFFICULTY:</label>
             <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Elevación Orbital LEO Básica</option>
-                <option value="2" selected>Nivel 2 - Transferencia a Estación Alpha</option>
-                <option value="3">Nivel 3 - Inyección en Órbita Elíptica</option>
-                <option value="4">Nivel 4 - Rendezvous con Desfase Angular</option>
-                <option value="5">Nivel 5 - Simulación Extrema Translunar (TLI)</option>
+                <option value="1">Level 1 - Basic LEO Orbit Raising</option>
+                <option value="2" selected>Level 2 - Station Alpha Transfer</option>
+                <option value="3">Level 3 - Elliptical Orbit Injection</option>
+                <option value="4">Level 4 - Phase-Offset Rendezvous</option>
+                <option value="5">Level 5 - Extreme Translunar Injection (TLI)</option>
             </select>
-            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORIAL</button>
-            <button class="btn-ui" onclick="openGuideModal()">? GUÍA</button>
+            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORY</button>
+            <button class="btn-ui" onclick="openGuideModal()">? GUIDE</button>
             <button class="btn-ui" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO</button>
-            <button class="btn-ui" onclick="resetMission()">↻ REINICIAR</button>
+            <button class="btn-ui" onclick="resetMission()">↻ RESET</button>
         </div>
     </header>
 
     <div class="mission-bar">
         <div>
-            <span class="mission-text" id="missionText">MISIÓN: Transferencia a Estación Orbital Alpha</span>
+            <span class="mission-text" id="missionText">MISSION: Transfer to Orbital Station Alpha</span>
         </div>
         <div class="mission-goal" id="missionGoal">
-            OBJETIVO: Iguala la altitud meta (+Δv progrado) y ejecuta el encendido del motor.
+            OBJECTIVE: Match the target altitude (+Δv prograde) and execute the engine burn.
         </div>
         <div>
-            ESTADO: <span class="mission-status-pill" id="missionStatusPill">ÓRBITA ESTABLE</span>
+            STATUS: <span class="mission-status-pill" id="missionStatusPill">STABLE ORBIT</span>
         </div>
     </div>
 
@@ -450,31 +450,31 @@
         <!-- Viewport -->
         <div class="viewport-panel">
             <div class="viewport-header">
-                <span style="color:var(--crt-cyan)">RADAR ORBITAL TERRESTRE // SISTEMA INERCIAL</span>
-                <span id="orbitStatusTag" style="color:var(--crt-green)">LEO CIRCULAR NOMINAL</span>
+                <span style="color:var(--crt-cyan)">EARTH ORBITAL RADAR // INERTIAL FRAME</span>
+                <span id="orbitStatusTag" style="color:var(--crt-green)">NOMINAL CIRCULAR LEO</span>
             </div>
 
             <canvas id="orbitCanvas"></canvas>
 
             <div class="hud-top-left">
                 <div class="hud-row">
-                    <span class="hud-label">ALTITUD ACTUAL (h):</span>
+                    <span class="hud-label">CURRENT ALTITUDE (h):</span>
                     <span class="hud-val" id="hudAlt">412.0 km</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">ALTITUD META:</span>
+                    <span class="hud-label">TARGET ALTITUDE:</span>
                     <span class="hud-val" id="hudTargetAlt" style="color:var(--crt-green)">550.0 km</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">VELOCIDAD (vis-viva):</span>
+                    <span class="hud-label">VELOCITY (vis-viva):</span>
                     <span class="hud-val" id="hudVel">7.68 km/s</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">PERÍODO ORBITAL:</span>
+                    <span class="hud-label">ORBITAL PERIOD:</span>
                     <span class="hud-val" id="hudPeriod">92.8 min</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">COMBUSTIBLE:</span>
+                    <span class="hud-label">PROPELLANT:</span>
                     <span class="hud-val" id="hudFuel">85.0%</span>
                 </div>
             </div>
@@ -484,17 +484,17 @@
         <div class="telemetry-sidebar">
             <div class="card-panel">
                 <div class="card-header">
-                    <span>PLANIFICADOR DE IMPULSO (&Delta;v)</span>
+                    <span>IMPULSE PLANNER (&Delta;v)</span>
                     <span style="color:var(--crt-amber)" id="maneuverReadout">+138 m/s</span>
                 </div>
                 <div class="maneuver-grid">
-                    <span style="font-size:10px; color:var(--text-dim)">ORIENTACIÓN DEL VECTOR:</span>
+                    <span style="font-size:10px; color:var(--text-dim)">VECTOR ORIENTATION:</span>
                     <div class="vector-selector">
-                        <button class="btn-vector active" id="btnProg" onclick="setVector('prograde')">PROGRADO ▲ (SUBIR)</button>
-                        <button class="btn-vector" id="btnRetro" onclick="setVector('retrograde')">RETRÓGRADO ▼ (BAJAR)</button>
+                        <button class="btn-vector active" id="btnProg" onclick="setVector('prograde')">PROGRADE ▲ (RAISE)</button>
+                        <button class="btn-vector" id="btnRetro" onclick="setVector('retrograde')">RETROGRADE ▼ (LOWER)</button>
                     </div>
 
-                    <span style="font-size:10px; color:var(--text-dim)">MAGNITUD DEL IMPULSO:</span>
+                    <span style="font-size:10px; color:var(--text-dim)">IMPULSE MAGNITUDE:</span>
                     <div class="stepper-row">
                         <button class="btn-step" onclick="adjustDeltaV(-25)">-25</button>
                         <button class="btn-step" onclick="adjustDeltaV(-5)">-5</button>
@@ -507,7 +507,7 @@
             <!-- Profile Chart -->
             <div class="card-panel">
                 <div class="card-header">
-                    <span>PERFIL DE ALTITUD EN TIEMPO REAL</span>
+                    <span>REAL-TIME ALTITUDE PROFILE</span>
                     <span style="color:var(--crt-cyan)" id="graphTimeText">T+00:00</span>
                 </div>
                 <div class="chart-box">
@@ -522,11 +522,11 @@
             <!-- Ignition & Thruster -->
             <div class="card-panel">
                 <div class="card-header">
-                    <span>PROPULSIÓN IÓNICA / QUÍMICA</span>
-                    <span id="engineStatusTag" style="color:var(--crt-green)">LISTO</span>
+                    <span>ION / CHEMICAL PROPULSION</span>
+                    <span id="engineStatusTag" style="color:var(--crt-green)">READY</span>
                 </div>
                 <button class="btn-burn" id="btnExecuteBurn" onclick="executeBurn()">
-                    ▶ EJECUTAR MANIOBRA
+                    ▶ EXECUTE MANEUVER
                 </button>
             </div>
         </div>
@@ -536,28 +536,28 @@
     <div class="modal-overlay" id="historyModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span>HISTORIAL DE MANIOBRAS ORBITALES</span>
+                <span>ORBITAL MANEUVER HISTORY</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th>Fecha</th>
-                            <th>Misión</th>
-                            <th>Resultado</th>
-                            <th>Altitud Final</th>
+                            <th>Date</th>
+                            <th>Mission</th>
+                            <th>Outcome</th>
+                            <th>Final Altitude</th>
                             <th>Error</th>
                             <th>Delta-V</th>
-                            <th>Combustible</th>
-                            <th>Calificación</th>
+                            <th>Propellant</th>
+                            <th>Grade</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody"></tbody>
                 </table>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 maniobras registradas</span>
-                    <button class="btn-ui" onclick="clearHistory()">LIMPIAR HISTORIAL</button>
+                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 maneuvers recorded</span>
+                    <button class="btn-ui" onclick="clearHistory()">CLEAR HISTORY</button>
                 </div>
             </div>
         </div>
@@ -567,13 +567,13 @@
     <div class="modal-overlay" id="guideModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span>GUÍA DE ASTRODINÁMICA ORBITAL</span>
+                <span>ORBITAL ASTRODYNAMICS GUIDE</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
-                <p><b>1. Ecuación de Vis-Viva y Transferencia de Hohmann:</b> Para elevar la altitud de una órbita circular, acelera en dirección PROGRADO. Esto creará una elipse de transferencia cuyo punto más alto (apoapsis) alcanzará la órbita deseada.</p>
-                <p><b>2. Proyección en tiempo real:</b> La línea naranja punteada en el radar orbital te muestra exactamente hacia dónde se desplazará tu nave tras el impulso.</p>
-                <p><b>3. Ejecución precisa:</b> Iguala la altitud del apoapsis proyectado con la órbita meta verde antes de presionar el botón de ignición.</p>
+                <p><b>1. Vis-Viva Equation &amp; Hohmann Transfer:</b> To raise a circular orbit altitude, accelerate in the PROGRADE direction. This produces a transfer ellipse whose highest point (apoapsis) reaches the target orbit.</p>
+                <p><b>2. Real-Time Projection:</b> The dashed orange ellipse on the orbital radar shows the exact trajectory your spacecraft will follow after applying the impulse.</p>
+                <p><b>3. Precision Execution:</b> Match the projected apoapsis altitude with the green target orbit before pressing the ignition button.</p>
             </div>
         </div>
     </div>
@@ -582,21 +582,21 @@
     <div class="modal-overlay" id="debriefModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span id="debTitle" style="color:var(--crt-green)">INFORME DE MANIOBRA ORBITAL</span>
+                <span id="debTitle" style="color:var(--crt-green)">ORBITAL MANEUVER REPORT</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
-                <p id="debMessage">Inserción de órbita completada con éxito.</p>
+                <p id="debMessage">Orbit insertion completed successfully.</p>
                 <div style="background:#091220; border:1px solid var(--border-panel); padding:10px; border-radius:3px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                    <div>Altitud Alcanzada: <b id="debAlt" style="color:var(--crt-green)">550 km</b></div>
-                    <div>Discrepancia Residual: <b id="debError" style="color:var(--crt-cyan)">1.2 km</b></div>
-                    <div>Delta-V Empleado: <b id="debDV" style="color:var(--crt-cyan)">+138 m/s</b></div>
-                    <div>Combustible Restante: <b id="debFuel" style="color:var(--crt-amber)">76.5%</b></div>
-                    <div>Calificación: <b id="debGrade" style="color:var(--crt-green)">A+ EXCELENTE</b></div>
+                    <div>Reached Altitude: <b id="debAlt" style="color:var(--crt-green)">550 km</b></div>
+                    <div>Residual Discrepancy: <b id="debError" style="color:var(--crt-cyan)">1.2 km</b></div>
+                    <div>Delta-V Used: <b id="debDV" style="color:var(--crt-cyan)">+138 m/s</b></div>
+                    <div>Remaining Propellant: <b id="debFuel" style="color:var(--crt-amber)">76.5%</b></div>
+                    <div>Grade: <b id="debGrade" style="color:var(--crt-green)">A+ EXCELLENT</b></div>
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-                    <button class="btn-ui" onclick="closeModals(); resetMission();">REINTENTAR</button>
-                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">SIGUIENTE NIVEL</button>
+                    <button class="btn-ui" onclick="closeModals(); resetMission();">RETRY</button>
+                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">NEXT LEVEL</button>
                 </div>
             </div>
         </div>
@@ -751,9 +751,9 @@
         function executeBurn() {
             if (isBurning || orbitState.isEnded || orbitState.deltaV <= 0) return;
             isBurning = true;
-            burnDuration = 2.8; // 2.8s de maniobra dinámica
+            burnDuration = 2.8; // 2.8s dynamic burn
             document.getElementById('btnExecuteBurn').disabled = true;
-            document.getElementById('engineStatusTag').textContent = "IGNICIÓN EN CURSO";
+            document.getElementById('engineStatusTag').textContent = "IGNITION IN PROGRESS";
             document.getElementById('engineStatusTag').style.color = "var(--crt-amber)";
             renderEngineBuffer(true);
             playBurnSound();
@@ -783,7 +783,7 @@
                 noise.start();
             } catch(e) {}
         }
-        function toggleAudio() { soundActive = !soundActive; document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUDO'; }
+        function toggleAudio() { soundActive = !soundActive; document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUTE'; }
 
         /* Simulación Tick */
         function updatePhysics(dt) {
@@ -840,7 +840,7 @@
                 error: error.toFixed(1),
                 deltaV: `${orbitState.vector === 'prograde' ? '+' : '-'}${orbitState.deltaV}`,
                 fuel: orbitState.fuel.toFixed(1),
-                grade: success ? (error < 5 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO"
+                grade: success ? (error < 5 ? "A+ PERFECT" : "A EXCELLENT") : "F FAILED"
             });
 
             showDebriefModal(success, error);
@@ -875,15 +875,15 @@
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
             if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No hay maniobras registradas aún.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No maneuvers recorded yet.</td></tr>';
                 return;
             }
             list.forEach(r => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${r.timestamp}</td>
-                    <td>${r.missionName.replace('MISIÓN: ', '')}</td>
-                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'ÉXITO' : 'FALLO'}</td>
+                    <td>${r.missionName.replace(/^(MISSION|MISIÓN): /, '')}</td>
+                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'PASS' : 'FAIL'}</td>
                     <td>${r.altFinal} km</td>
                     <td>${r.error} km</td>
                     <td>${r.deltaV} m/s</td>
@@ -892,19 +892,19 @@
                 `;
                 tbody.appendChild(tr);
             });
-            document.getElementById('historyStatsSummary').textContent = `${list.length} maniobras registradas`;
+            document.getElementById('historyStatsSummary').textContent = `${list.length} maneuvers recorded`;
         }
 
         function showDebriefModal(success, error) {
             const modal = document.getElementById('debriefModal');
             modal.style.display = 'flex';
-            document.getElementById('debTitle').textContent = success ? "¡INSERCIÓN ORBITAL EXITOSA!" : "MANIOBRA FALLIDA";
+            document.getElementById('debTitle').textContent = success ? "ORBITAL INSERTION SUCCESSFUL!" : "MANEUVER FAILED";
             document.getElementById('debTitle').style.color = success ? "var(--crt-green)" : "var(--crt-red)";
             document.getElementById('debAlt').textContent = `${Math.round(orbitState.altitude)} km`;
             document.getElementById('debError').textContent = `${error.toFixed(1)} km`;
             document.getElementById('debDV').textContent = `${orbitState.vector === 'prograde' ? '+' : '-'}${orbitState.deltaV} m/s`;
             document.getElementById('debFuel').textContent = `${orbitState.fuel.toFixed(1)}%`;
-            document.getElementById('debGrade').textContent = success ? (error < 5 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO";
+            document.getElementById('debGrade').textContent = success ? (error < 5 ? "A+ PERFECT" : "A EXCELLENT") : "F FAILED";
         }
 
         function nextLevel() {
@@ -913,7 +913,7 @@
                 document.getElementById('diffSelect').value = difficulty + 1;
                 setupDifficulty(difficulty + 1);
             } else {
-                alert("¡Has completado todos los escenarios de Navegación Orbital!");
+                alert("All Orbital Navigation scenarios completed!");
                 setupDifficulty(1);
             }
         }
@@ -986,7 +986,7 @@
             ctx.fillStyle = '#f59e0b'; ctx.fillRect(shipX - 3, shipY - 3, 6, 6);
             ctx.fillStyle = '#ffffff'; ctx.fillRect(shipX - 1, shipY - 1, 2, 2);
 
-            // Elemento Tobera proyectado en la esquina derecha del HUD
+            // Thruster nozzle projected in bottom-right HUD corner
             const engScale = 90;
             ctx.drawImage(engineBuffer, w - engScale - 20, h - (engScale*192/256) - 20, engScale, (engScale*192)/256);
         }

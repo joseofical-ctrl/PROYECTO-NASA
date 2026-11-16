@@ -7,7 +7,7 @@ export default function CiberdefensaSatelitalModal(props: MinigameModalProps) {
       {...props}
       game="cyber"
       file="ciberdefensa_satelital.html"
-      title="CIBERDEFENSA SATELITAL Y FIREWALL · SERPIENTE-2"
+      title="SATELLITE CYBER DEFENSE & FIREWALL · SERPIENTE-2"
       accent="#a78bfa"
     />
   )

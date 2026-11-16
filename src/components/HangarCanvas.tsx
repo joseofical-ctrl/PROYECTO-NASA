@@ -39,9 +39,9 @@ interface ShipCfg {
   name: string
 }
 const CFG: Record<string, ShipCfg> = {
-  '3U': { cols: 1, rows: 3, fwMin: 32, noseH: 15, serviceH: 14, bellH: 11, bellTop: 9, bellBot: 17, tank: 4, aux: 0, wing: 30, wingTh: 14, xWings: false, bands: 0, domeR: 7, dishR: 11, name: 'SONDA LIGERA EXPLORADORA' },
-  '6U': { cols: 2, rows: 3, fwMin: 40, noseH: 18, serviceH: 18, bellH: 13, bellTop: 12, bellBot: 22, tank: 5, aux: 2, wing: 44, wingTh: 18, xWings: false, bands: 1, domeR: 9, dishR: 15, name: 'NAVE ORBITAL ESTÁNDAR' },
-  '12U': { cols: 3, rows: 4, fwMin: 50, noseH: 22, serviceH: 22, bellH: 15, bellTop: 15, bellBot: 28, tank: 6, aux: 4, wing: 62, wingTh: 13, xWings: true, bands: 2, domeR: 11, dishR: 21, name: 'CRUCERO PESADO DE ESPACIO PROFUNDO' },
+  '3U': { cols: 1, rows: 3, fwMin: 32, noseH: 15, serviceH: 14, bellH: 11, bellTop: 9, bellBot: 17, tank: 4, aux: 0, wing: 30, wingTh: 14, xWings: false, bands: 0, domeR: 7, dishR: 11, name: 'LIGHT EXPLORER PROBE' },
+  '6U': { cols: 2, rows: 3, fwMin: 40, noseH: 18, serviceH: 18, bellH: 13, bellTop: 12, bellBot: 22, tank: 5, aux: 2, wing: 44, wingTh: 18, xWings: false, bands: 1, domeR: 9, dishR: 15, name: 'STANDARD ORBITAL BUS' },
+  '12U': { cols: 3, rows: 4, fwMin: 50, noseH: 22, serviceH: 22, bellH: 15, bellTop: 15, bellBot: 28, tank: 6, aux: 4, wing: 62, wingTh: 13, xWings: true, bands: 2, domeR: 11, dishR: 21, name: 'DEEP SPACE HEAVY CRUISER' },
 }
 
 const BAY_COL: Record<string, string> = {

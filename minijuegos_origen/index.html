@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consola Central - Simulador Aeroespacial Avanzado</title>
+    <title>Central Console - Advanced Aerospace Simulator</title>
     <style>
         :root {
             --bg-deep: #050811;
@@ -313,11 +313,11 @@
     <header>
         <div class="header-title-block">
             <span class="badge-system">AGY // FLIGHT SIM</span>
-            <h1>CONSOLA CENTRAL DE OPERACIONES ESPACIALES</h1>
+            <h1>SPACE OPERATIONS CENTRAL CONSOLE</h1>
         </div>
         <div style="display:flex; gap:8px;">
-            <button class="btn-ui" onclick="openGlobalHistoryModal()">📊 HISTORIAL GLOBAL</button>
-            <button class="btn-ui" onclick="location.reload()">↻ ACTUALIZAR</button>
+            <button class="btn-ui" onclick="openGlobalHistoryModal()">📊 GLOBAL HISTORY</button>
+            <button class="btn-ui" onclick="location.reload()">↻ REFRESH</button>
         </div>
     </header>
 
@@ -325,9 +325,9 @@
         <!-- Top HUD Row -->
         <div class="top-row-grid">
             <div class="card-panel">
-                <span style="font-size:15px; font-weight:bold; color:var(--crt-green); letter-spacing:1px;">SUITE DE SIMULACIÓN AEROESPACIAL</span>
+                <span style="font-size:15px; font-weight:bold; color:var(--crt-green); letter-spacing:1px;">AEROSPACE SIMULATION SUITE</span>
                 <span style="font-size:11px; color:var(--crt-cyan); margin-top:2px;">
-                    &gt; Módulos independientes con física 6-DOF, astrodinámica y buffers de 256x192 por elemento.
+                    &gt; Independent modules featuring 6-DOF physics, astrodynamics, and 256x192 per-element render buffers.
                 </span>
             </div>
 
@@ -346,9 +346,9 @@
                 <div class="globe-status-box">
                     <canvas id="wireGlobe" width="55" height="55"></canvas>
                     <div style="font-size:11px; line-height:1.5;">
-                        <div>ESTADO SISTEMAS: <b style="color:var(--crt-green)">ÓPTIMO ●</b></div>
-                        <div>RESOLUCIÓN GRÁFICA: <b style="color:var(--crt-cyan)">256 x 192 px por elemento</b></div>
-                        <div>DINÁMICA ESPACIAL: <b style="color:var(--crt-amber)">INERCIA REAL 6-DOF</b></div>
+                        <div>SYSTEMS STATUS: <b style="color:var(--crt-green)">OPTIMAL ●</b></div>
+                        <div>GRAPHICS RESOLUTION: <b style="color:var(--crt-cyan)">256 x 192 px per element</b></div>
+                        <div>SPACE DYNAMICS: <b style="color:var(--crt-amber)">REAL 6-DOF INERTIA</b></div>
                     </div>
                 </div>
             </div>
@@ -357,59 +357,59 @@
         <!-- Bottom Grid: 4 Missions + Info Sidebar -->
         <div class="bottom-row-grid">
             <div class="missions-grid-quad">
-                <!-- 1. Acoplamiento Espacial -->
+                <!-- 1. Space Docking -->
                 <div class="mission-card">
                     <canvas id="thumbDock" class="card-thumb-canvas" width="105" height="105"></canvas>
                     <div class="card-details">
-                        <div class="card-title">ACOPLAMIENTO ESPACIAL</div>
-                        <div class="card-desc">Física espacial 6-DOF completa: inercia, velocidad relativa, rotación en 3 ejes, asistencia SAS y cono de captura ILS.</div>
-                        <a href="acoplamiento_espacial.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                        <div class="card-title">SPACE DOCKING</div>
+                        <div class="card-desc">Full 6-DOF space physics: inertia, relative velocity, 3-axis rotation, SAS damping, and ILS capture corridor.</div>
+                        <a href="acoplamiento_espacial.html" class="btn-launch">&gt; LAUNCH OPERATION</a>
                     </div>
                 </div>
 
-                <!-- 2. Navegación Orbital -->
+                <!-- 2. Orbital Navigation -->
                 <div class="mission-card">
                     <canvas id="thumbNav" class="card-thumb-canvas" width="105" height="105"></canvas>
                     <div class="card-details">
-                        <div class="card-title">NAVEGACIÓN ORBITAL</div>
-                        <div class="card-desc">Mecánica orbital vis-viva, transferencia elíptica de Hohmann, vector de impulso &Delta;v y tobera de plasma reactiva.</div>
-                        <a href="navegacion_orbital.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                        <div class="card-title">ORBITAL NAVIGATION</div>
+                        <div class="card-desc">Vis-viva orbital mechanics, Hohmann transfer ellipses, &Delta;v impulse planning, and reactive plasma thruster.</div>
+                        <a href="navegacion_orbital.html" class="btn-launch">&gt; LAUNCH OPERATION</a>
                     </div>
                 </div>
 
-                <!-- 3. Distribución Eléctrica -->
+                <!-- 3. Electrical Distribution -->
                 <div class="mission-card">
                     <canvas id="thumbPwr" class="card-thumb-canvas" width="105" height="105"></canvas>
                     <div class="card-details">
-                        <div class="card-title">DISTRIBUCIÓN ELÉCTRICA</div>
-                        <div class="card-desc">Matriz EPS: gestión de reactor nuclear, celdas fotovoltaicas durante eclipses, acumuladores MWh y disyuntores.</div>
-                        <a href="distribucion_electrica.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                        <div class="card-title">ELECTRICAL DISTRIBUTION</div>
+                        <div class="card-desc">EPS matrix: nuclear reactor management, photovoltaic arrays during eclipses, MWh batteries, and circuit breakers.</div>
+                        <a href="distribucion_electrica.html" class="btn-launch">&gt; LAUNCH OPERATION</a>
                     </div>
                 </div>
 
-                <!-- 4. Soporte Vital -->
+                <!-- 4. Life Support -->
                 <div class="mission-card">
                     <canvas id="thumbLife" class="card-thumb-canvas" width="105" height="105"></canvas>
                     <div class="card-details">
-                        <div class="card-title">SOPORTE VITAL (ECLSS)</div>
-                        <div class="card-desc">Cinética de gases en cabina: balance de O2 y CO2, filtros LiOH, estanqueidad de esclusa y control barométrico.</div>
-                        <a href="soporte_vital.html" class="btn-launch">&gt; INICIAR OPERACIÓN</a>
+                        <div class="card-title">LIFE SUPPORT (ECLSS)</div>
+                        <div class="card-desc">Cabin gas kinetics: O2 and CO2 balancing, LiOH scrubbers, airlock sealing, and barometric pressure control.</div>
+                        <a href="soporte_vital.html" class="btn-launch">&gt; LAUNCH OPERATION</a>
                     </div>
                 </div>
             </div>
 
             <!-- Sidebar -->
             <div class="info-panel">
-                <div class="info-header">ESPECIFICACIONES DE LA SUITE</div>
-                <p>Simulador técnico de ingeniería espacial con registro persistente de telemetría y audio procedural Web Audio API.</p>
+                <div class="info-header">SUITE SPECIFICATIONS</div>
+                <p>Technical space engineering simulator with persistent telemetry logging and procedural Web Audio API sound synthesis.</p>
 
                 <div style="background:#09101a; border:1px solid var(--border-panel); padding:8px; border-radius:3px; display:flex; flex-direction:column; gap:4px;">
-                    <b style="color:var(--crt-amber)">ARQUITECTURA VISUAL:</b>
+                    <b style="color:var(--crt-amber)">VISUAL ARCHITECTURE:</b>
                     <span style="font-size:10px; color:var(--text-dim); line-height:1.4;">
-                        - Cada vehículo, estructura y puerto cuenta con su propio buffer de 256x192 píxeles.<br>
-                        - Escenario de alta definición con perspectiva tridimensional.<br>
-                        - Historial de intentos guardado en memoria local.<br>
-                        - Sin saturación visual: datos en tiempo real.
+                        - Every vehicle, structure, and port uses a dedicated 256x192 pixel buffer.<br>
+                        - High-definition scene with 3D perspective projection.<br>
+                        - Attempt history persisted in local storage.<br>
+                        - Clean HUD layout with real-time telemetry.
                     </span>
                 </div>
 
@@ -424,18 +424,18 @@
     <div class="modal-overlay" id="historyModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span>HISTORIAL GLOBAL DE VUELOS Y OPERACIONES</span>
+                <span>GLOBAL FLIGHT &amp; OPERATIONS HISTORY</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th>Hora</th>
-                            <th>Módulo</th>
-                            <th>Misión</th>
-                            <th>Resultado</th>
-                            <th>Calificación</th>
+                            <th>Time</th>
+                            <th>Module</th>
+                            <th>Mission</th>
+                            <th>Outcome</th>
+                            <th>Grade</th>
                         </tr>
                     </thead>
                     <tbody id="globalHistoryBody"></tbody>
@@ -455,21 +455,21 @@
             const eclssList = JSON.parse(localStorage.getItem('space_sim_eclss_history') || '[]');
 
             const all = [];
-            dockList.forEach(r => all.push({ time: r.timestamp, mod: 'Acoplamiento', name: r.missionName, ok: r.success, grade: r.grade }));
-            orbitList.forEach(r => all.push({ time: r.timestamp, mod: 'Navegación', name: r.missionName, ok: r.success, grade: r.grade }));
-            powerList.forEach(r => all.push({ time: r.timestamp, mod: 'Potencia', name: r.missionName, ok: r.success, grade: r.grade }));
-            eclssList.forEach(r => all.push({ time: r.timestamp, mod: 'Soporte Vital', name: r.missionName, ok: r.success, grade: r.grade }));
+            dockList.forEach(r => all.push({ time: r.timestamp, mod: 'Docking', name: r.missionName, ok: r.success, grade: r.grade }));
+            orbitList.forEach(r => all.push({ time: r.timestamp, mod: 'Navigation', name: r.missionName, ok: r.success, grade: r.grade }));
+            powerList.forEach(r => all.push({ time: r.timestamp, mod: 'Power', name: r.missionName, ok: r.success, grade: r.grade }));
+            eclssList.forEach(r => all.push({ time: r.timestamp, mod: 'Life Support', name: r.missionName, ok: r.success, grade: r.grade }));
 
             if (all.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:16px;">No hay vuelos registrados en la suite aún.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:16px;">No flights recorded in the suite yet.</td></tr>';
             } else {
                 all.forEach(r => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${r.time}</td>
                         <td style="color:var(--crt-cyan); font-weight:bold;">${r.mod}</td>
-                        <td>${r.name.replace('MISIÓN: ', '')}</td>
-                        <td style="color:${r.ok ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.ok ? 'ÉXITO' : 'FALLO'}</td>
+                        <td>${r.name.replace(/^(MISSION|MISIÓN): /, '')}</td>
+                        <td style="color:${r.ok ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.ok ? 'PASS' : 'FAIL'}</td>
                         <td><b>${r.grade}</b></td>
                     `;
                     tbody.appendChild(tr);

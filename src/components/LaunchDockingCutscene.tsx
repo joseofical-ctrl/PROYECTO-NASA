@@ -33,7 +33,7 @@ const RIM: [number, number, number][] = [
   [255, 196, 92],
   [255, 105, 70],
 ]
-const NAMES = ['ALPACA', 'SERPIENTE', 'PUMA', 'CÓNDOR'] as const
+const NAMES = ['ALPACA', 'SERPIENTE', 'PUMA', 'CONDOR'] as const
 
 interface Puff {
   x: number
@@ -66,12 +66,12 @@ function pal(k: number): [[number, number, number], [number, number, number]] {
 export default function LaunchDockingCutscene({ onComplete }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const [topLeft, setTopLeft] = useState('MISIÓN ÁGUILA · TELEMETRÍA')
+  const [topLeft, setTopLeft] = useState('EAGLE MISSION · TELEMETRY')
   const [topRight, setTopRight] = useState('T-00:07')
-  const [botLeft, setBotLeft] = useState('PLATAFORMA LC-39A · SISTEMAS NOMINALES')
+  const [botLeft, setBotLeft] = useState('PAD LC-39A · SYSTEMS NOMINAL')
   const [botRight, setBotRight] = useState('ALT 0.0 KM · VEL 0 M/S')
-  const [bigText, setBigText] = useState('MISIÓN ÁGUILA')
-  const [subText, setSubText] = useState('LANZAMIENTO ORBITAL')
+  const [bigText, setBigText] = useState('EAGLE MISSION')
+  const [subText, setSubText] = useState('ORBITAL LAUNCH')
   const [bigScale, setBigScale] = useState(1)
   const [showEndBtn, setShowEndBtn] = useState(false)
 
@@ -850,9 +850,9 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
 
         ctx.restore()
 
-        // Textos exactos de Despegue
+        // Launch telemetry and phase callouts
         const tMinus = Math.ceil(LIFT - t)
-        setTopLeft('MISIÓN ÁGUILA · TELEMETRÍA')
+        setTopLeft('EAGLE MISSION · TELEMETRY')
         setTopRight(
           t < LIFT
             ? `T-00:0${Math.max(0, tMinus)}`
@@ -860,20 +860,20 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
         )
         setBotLeft(
           t < IGN
-            ? 'PLATAFORMA LC-39A · SISTEMAS NOMINALES'
+            ? 'PAD LC-39A · SYSTEMS NOMINAL'
             : t < LIFT
-            ? 'IGNICIÓN SSME · EMPUJE 100%'
+            ? 'SSME IGNITION · 100% THRUST'
             : alt < SEP
-            ? 'ASCENSO SUPERSÓNICO · MAX-Q'
-            : 'INSERCIÓN ORBITAL EN PROGRESO'
+            ? 'SUPERSONIC ASCENT · MAX-Q'
+            : 'ORBITAL INSERTION IN PROGRESS'
         )
         setBotRight(
           `ALT ${(alt * 0.18).toFixed(1)} KM · VEL ${Math.round(lt * 420)} M/S`
         )
 
         if (t < 1.5) {
-          setBigText('MISIÓN ÁGUILA')
-          setSubText('LANZAMIENTO ORBITAL')
+          setBigText('EAGLE MISSION')
+          setSubText('ORBITAL LAUNCH')
           setBigScale(1)
         } else if (t < 2.5) {
           setBigText('3')
@@ -888,11 +888,11 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
           setSubText('')
           setBigScale(1 + (1 - (t - 3.5)) * 0.35)
         } else if (t < LIFT) {
-          setBigText('IGNICIÓN')
-          setSubText('MOTORES PRINCIPALES')
+          setBigText('IGNITION')
+          setSubText('MAIN ENGINES')
           setBigScale(1)
         } else if (t < 9.8) {
-          setBigText('¡DESPEGUE!')
+          setBigText('LIFTOFF!')
           setSubText('')
           setBigScale(1)
         } else if (alt < SEP) {
@@ -900,12 +900,12 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
           setSubText('')
           setBigScale(1)
         } else if (lt < 14.5) {
-          setBigText('SEPARACIÓN')
-          setSubText('PROPULSORES LIBERADOS')
+          setBigText('STAGE 1 SEP')
+          setSubText('SRB BOOSTERS JETTISONED')
           setBigScale(1)
         } else {
-          setBigText('EN ÓRBITA')
-          setSubText('MISIÓN CUMPLIDA')
+          setBigText('IN ORBIT')
+          setSubText('MISSION ACCOMPLISHED')
           setBigScale(1)
         }
 
@@ -943,53 +943,53 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
           tunnel(d)
         }
 
-        // Textos exactos de Acoplamiento
-        setTopLeft('MISIÓN ÁGUILA · ACOPLAMIENTO')
-        setTopRight(`ÓRBITA LEO · T+${String(Math.floor(d)).padStart(2, '0')}S`)
+        // Docking telemetry and phase callouts
+        setTopLeft('EAGLE MISSION · DOCKING')
+        setTopRight(`LEO ORBIT · T+${String(Math.floor(d)).padStart(2, '0')}S`)
 
         if (d < 2.6) {
-          setBigText('ESTACIÓN')
-          setSubText('A LA VISTA')
-          setBotLeft('APROXIMACIÓN ORBITAL')
-          setBotRight('VEL REL 12.4 M/S')
+          setBigText('STATION')
+          setSubText('IN SIGHT')
+          setBotLeft('ORBITAL RENDEZVOUS APPROACH')
+          setBotRight('REL VEL 12.4 M/S')
         } else if (d < 4.8) {
-          setBigText('SEPARACIÓN')
-          setSubText('TANQUE EXTERNO LIBERADO')
-          setBotLeft('DESCARGA DE ET COMPLETADA')
-          setBotRight('RCS ACTIVO')
+          setBigText('SEPARATION')
+          setSubText('EXTERNAL TANK JETTISONED')
+          setBotLeft('ET JETTISON COMPLETE')
+          setBotRight('RCS ACTIVE')
         } else if (d < 7.0) {
-          setBigText('MANIOBRA')
-          setSubText('GIRO A VERTICAL')
-          setBotLeft('ALINEACIÓN CON PUERTO PMA-2')
-          setBotRight('ACTITUD 90°')
+          setBigText('MANEUVER')
+          setSubText('PITCH TO VERTICAL')
+          setBotLeft('PMA-2 PORT ALIGNMENT')
+          setBotRight('ATTITUDE 90°')
         } else if (d < 8.5) {
           const distM = Math.max(0, Math.ceil((8.5 - d) * 14))
-          setBigText('ACOPLAMIENTO')
-          setSubText(`DISTANCIA ${distM} m`)
-          setBotLeft('TUBO DE ACOPLE EXTENDIDO')
-          setBotRight(`DIST ${distM} M`)
+          setBigText('DOCKING')
+          setSubText(`RANGE ${distM} M`)
+          setBotLeft('DOCKING PROBE EXTENDED')
+          setBotRight(`RANGE ${distM} M`)
         } else if (d < 10.4) {
-          setBigText('¡ACOPLADO!')
-          setSubText('SELLADO CONFIRMADO')
-          setBotLeft('CAPTURA MECÁNICA COMPLETA')
-          setBotRight('PRESIÓN ESTABLE')
+          setBigText('DOCKED!')
+          setSubText('HARD CAPTURE CONFIRMED')
+          setBotLeft('MECHANICAL CAPTURE COMPLETE')
+          setBotRight('PRESSURE NOMINAL')
         } else if (d < 12.0) {
-          setBigText('ESCOTILLA')
-          setSubText('ABIERTA')
-          setBotLeft('PASILLO DE ABORDAJE PRESURIZADO')
-          setBotRight('INGRESO DE TRIPULACIÓN')
+          setBigText('HATCH')
+          setSubText('OPEN')
+          setBotLeft('BOARDING TUNNEL PRESSURIZED')
+          setBotRight('CREW INGRESS')
         } else if (d < 28.8) {
           const idx = clamp(Math.floor((d - 12.0) / 4.2), 0, 3)
           const name = NAMES[idx]
           setBigText(name)
-          setSubText(`TRIPULANTE ${idx + 1}`)
-          setBotLeft(`TRIPULANTE ${idx + 1}: ${name}`)
-          setBotRight(`${idx + 1}/4 EN ESTACIÓN`)
+          setSubText(`CREW MEMBER ${idx + 1}`)
+          setBotLeft(`CREW ${idx + 1}: ${name}`)
+          setBotRight(`${idx + 1}/4 ABOARD STATION`)
         } else {
-          setBigText('BIENVENIDOS')
-          setSubText('A BORDO DE LA ESTACIÓN')
-          setBotLeft('TRIPULACIÓN COMPLETA: ALPACA · SERPIENTE · PUMA · CÓNDOR')
-          setBotRight('MISIÓN LISTA')
+          setBigText('WELCOME')
+          setSubText('ABOARD THE STATION')
+          setBotLeft('FULL CREW: ALPACA · SERPIENTE · PUMA · CONDOR')
+          setBotRight('MISSION READY')
         }
 
         if (d > 31.0) {
@@ -1092,7 +1092,7 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
                 cursor: 'pointer',
               }}
             >
-              [⏭ SALTAR]
+              [⏭ SKIP]
             </button>
           </div>
         </div>
@@ -1190,7 +1190,7 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
                 boxShadow: '3px 3px 0 #000',
               }}
             >
-              CONTINUAR ▶
+              CONTINUE ▶
             </button>
             <button
               onClick={restartAll}
@@ -1205,7 +1205,7 @@ export default function LaunchDockingCutscene({ onComplete }: Props) {
                 boxShadow: '3px 3px 0 #000',
               }}
             >
-              ↻ REPETIR
+              ↻ REPLAY
             </button>
           </div>
         )}

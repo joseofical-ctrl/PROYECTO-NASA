@@ -60,20 +60,20 @@ export default function OrbitalSimulationScreen({
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b-4 border-black">
           <div>
             <div className="ui-meta text-cyan-300">
-              🛰️ TELEMETRÍA ORBITAL EN VIVO · ÓRBITA {contract.orbit}
+              🛰️ LIVE ORBITAL TELEMETRY · {contract.orbit} ORBIT
             </div>
             <h1
               className="ui-title text-yellow-300 mt-1"
               style={{ textShadow: '3px 3px 0 #000' }}
             >
-              {contract.icon} {contract.name.toUpperCase()} — EN OPERACIÓN
+              {contract.icon} {contract.name.toUpperCase()} — OPERATIONAL
             </h1>
           </div>
           <div
             className="px-3 py-2 text-right border-2 border-black"
             style={{ background: '#0e172f' }}
           >
-            <div className="ui-meta text-gray-400">PUNTAJE OFICIAL NASA</div>
+            <div className="ui-meta text-gray-400">OFFICIAL NASA SCORE</div>
             <div className="ui-title text-green-300 font-bold">{score} PTS</div>
           </div>
         </div>
@@ -81,17 +81,17 @@ export default function OrbitalSimulationScreen({
         {/* 4 Key Orbital KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
           <div className="p-2.5 bg-[#10162b] border-2 border-black">
-            <div className="ui-meta text-yellow-300">💰 PRESUPUESTO</div>
+            <div className="ui-meta text-yellow-300">💰 BUDGET</div>
             <div className="ui-item mt-1 font-bold text-white">
               ${t.cost}k / ${t.budget}k
             </div>
             <div className="ui-meta text-green-300 mt-1">
-              Ahorro: ${Math.max(0, t.budget - t.cost)}k
+              Savings: ${Math.max(0, t.budget - t.cost)}k
             </div>
           </div>
 
           <div className="p-2.5 bg-[#10162b] border-2 border-black">
-            <div className="ui-meta text-orange-300">☀️ ENERGÍA / ΔV</div>
+            <div className="ui-meta text-orange-300">☀️ POWER / ΔV</div>
             <div className="ui-item mt-1 font-bold text-white">
               {t.balanceW >= 0 ? `+${t.balanceW.toFixed(1)}` : t.balanceW.toFixed(1)} W
             </div>
@@ -101,22 +101,22 @@ export default function OrbitalSimulationScreen({
           </div>
 
           <div className="p-2.5 bg-[#10162b] border-2 border-black">
-            <div className="ui-meta text-emerald-300">🔬 CIENCIA LOGRADA</div>
+            <div className="ui-meta text-emerald-300">🔬 SCIENCE ACHIEVED</div>
             <div className="ui-item mt-1 font-bold text-white">
               {t.sciPts.toFixed(0)} / {t.sciGoal} pts
             </div>
             <div className="ui-meta text-emerald-200 mt-1">
-              Chasis {chassis.name} · {launcher.name}
+              {chassis.name} Chassis · {launcher.name}
             </div>
           </div>
 
           <div className="p-2.5 bg-[#10162b] border-2 border-black">
-            <div className="ui-meta text-blue-300">📡 ENLACE DSN/TIERRA</div>
+            <div className="ui-meta text-blue-300">📡 DSN / GROUND LINK</div>
             <div className="ui-item mt-1 font-bold text-white">
               ↓{t.downEffMbps.toFixed(2)} Mbps
             </div>
             <div className="ui-meta text-blue-200 mt-1">
-              Datos: {t.dataGenMbps.toFixed(2)} Mbps
+              Data Gen: {t.dataGenMbps.toFixed(2)} Mbps
             </div>
           </div>
         </div>
@@ -124,12 +124,12 @@ export default function OrbitalSimulationScreen({
         {/* Crew Summary Cards */}
         <div className="mb-4">
           <div className="ui-title text-yellow-300 mb-2">
-            👥 REPORTE DEL ESCUADRÓN ANDINO A BORDO
+            👥 ANDEAN SQUADRON FLIGHT REPORT
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             {ROLE_ORDER.map((r) => {
               const info = ROLE_INFO[r]
-              const pName = s.playerNames?.[r] ?? 'Astronauta'
+              const pName = s.playerNames?.[r] ?? 'Astronaut'
               const spend = t.roleCosts[r] ?? 0
               return (
                 <div
@@ -148,7 +148,7 @@ export default function OrbitalSimulationScreen({
                     </div>
                     <div className="ui-meta text-white truncate">{pName}</div>
                     <div className="ui-meta text-gray-400 mt-0.5">
-                      Inversión: <strong className="text-yellow-300">${spend}k</strong>
+                      Allocation: <strong className="text-yellow-300">${spend}k</strong>
                     </div>
                   </div>
                 </div>
@@ -160,7 +160,7 @@ export default function OrbitalSimulationScreen({
         {/* Installed Hardware Manifest */}
         <div className="p-2.5 bg-[#0a0d1c] border-2 border-black mb-5">
           <div className="ui-meta text-cyan-300 mb-1.5">
-            🔧 MANIFIESTO DE MÓDULOS EN ÓRBITA ({t.slotsUsed}/{t.slotsCap}U · {t.mass.toFixed(1)}/{t.massCap} kg)
+            🔧 IN-ORBIT HARDWARE MANIFEST ({t.slotsUsed}/{t.slotsCap}U · {t.mass.toFixed(1)}/{t.massCap} kg)
           </div>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(s.parts)
@@ -190,7 +190,7 @@ export default function OrbitalSimulationScreen({
             }}
             className="mc-btn px-4 py-3 ui-item"
           >
-            🛠️ VOLVER AL TALLER
+            🛠️ BACK TO WORKSHOP
           </button>
           <div className="flex flex-wrap gap-2">
             <button
@@ -201,7 +201,7 @@ export default function OrbitalSimulationScreen({
               }}
               className="mc-btn px-4 py-3 ui-item"
             >
-              🎬 REPETIR CINEMÁTICA
+              🎬 REPLAY CUTSCENE
             </button>
             <button
               onMouseEnter={playHover}
@@ -212,7 +212,7 @@ export default function OrbitalSimulationScreen({
               className="mc-btn px-4 py-3 ui-item"
               style={{ color: '#7bff9a' }}
             >
-              🏠 MENÚ PRINCIPAL
+              🏠 MAIN MENU
             </button>
           </div>
         </div>

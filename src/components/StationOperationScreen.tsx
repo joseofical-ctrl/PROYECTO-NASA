@@ -178,7 +178,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'ground_segment',
     label: 'GROUND SEGMENT',
-    subLabel: 'PUENTE CENTRAL · COMANDO HOLOGRÁFICO Y SIMULADOR APAS',
+    subLabel: 'CENTRAL BRIDGE · HOLOGRAPHIC COMMAND & APAS SIMULATOR',
     owner: 'director',
     floorStyle: 'command',
     hull: { x: 896, y: 512, w: 576, h: 448 },
@@ -191,7 +191,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'launch_segment',
     label: 'LAUNCH SEGMENT',
-    subLabel: 'HANGAR DEL TRANSBORDADOR · BRAZO HIDRÁULICO',
+    subLabel: 'SHUTTLE BAY · HYDRAULIC MANIPULATOR ARM',
     owner: 'director',
     floorStyle: 'hangar',
     hull: { x: 192, y: 448, w: 576, h: 480 },
@@ -204,7 +204,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'engine_room',
     label: 'ENGINE ROOM',
-    subLabel: 'TURBINA HORIZONTAL PESADA · MANIOBRAS DELTA-V',
+    subLabel: 'HEAVY PROPULSION TURBINE · DELTA-V MANEUVERS',
     owner: 'director',
     floorStyle: 'engine',
     hull: { x: 224, y: 1024, w: 512, h: 352 },
@@ -217,7 +217,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'space_segment',
     label: 'SPACE SEGMENT',
-    subLabel: 'SERVIDORES DSN · TELESCOPIO · 2 SATÉLITES CUBESAT',
+    subLabel: 'DSN SERVERS · OPTICAL TELESCOPE · DUAL CUBESAT ARRAY',
     owner: 'comms',
     floorStyle: 'comms',
     hull: { x: 224, y: 64, w: 544, h: 320 },
@@ -230,7 +230,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'communications',
     label: 'COMMUNICATIONS',
-    subLabel: 'DOMO DSN · MONITORES SAT-01/SAT-02 · ENCRIPTACIÓN',
+    subLabel: 'DSN DOME · SAT-01/SAT-02 MONITORS · QUANTUM ENCRYPTION',
     owner: 'comms',
     floorStyle: 'comms',
     hull: { x: 864, y: 64, w: 480, h: 320 },
@@ -243,7 +243,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'user_segment',
     label: 'USER SEGMENT',
-    subLabel: 'MICROSCOPIOS · INCUBADORAS · MUESTRAS GLACIARES',
+    subLabel: 'MICROSCOPY LAB · BIO-INCUBATORS · GLACIAL CORE SAMPLES',
     owner: 'science',
     floorStyle: 'lab',
     hull: { x: 1504, y: 64, w: 576, h: 320 },
@@ -256,7 +256,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'laboratory',
     label: 'LABORATORY',
-    subLabel: 'CAMPANA EXTRACTORA · MATRACES · PIZARRA CIENTÍFICA',
+    subLabel: 'FUME HOOD · ANALYTICAL FLASKS · SCIENCE TELEMETRY BOARD',
     owner: 'science',
     floorStyle: 'lab',
     hull: { x: 1568, y: 448, w: 480, h: 288 },
@@ -269,7 +269,7 @@ const STATION_ROOMS: StationRoom[] = [
   {
     id: 'power_reactor',
     label: 'POWER MGD & REACTOR',
-    subLabel: 'REACTOR · OSCILOSCOPIOS · PANELES TÉRMICOS · LITERA',
+    subLabel: 'FUSION CORE · OSCILLOSCOPES · THERMAL PANELS · CREW BUNK',
     owner: 'engineer',
     floorStyle: 'reactor',
     hull: { x: 1568, y: 768, w: 576, h: 384 },
@@ -396,61 +396,61 @@ const CONSOLES: ConsoleStation[] = [
     id: 'dir_orbit',
     role: 'director',
     roomId: 'ground_segment',
-    zoneName: 'GROUND SEGMENT (CENTRO)',
-    subsystemLabel: 'ACOPLAMIENTO ESPACIAL 6-DOF APAS',
-    title: 'Consola Curva de 5 Pantallas y Acoplamiento APAS',
-    shortLabel: 'ACOPLAMIENTO APAS',
+    zoneName: 'GROUND SEGMENT (CENTER)',
+    subsystemLabel: '6-DOF APAS ORBITAL DOCKING',
+    title: '5-Display Curved Command Console & APAS Docking',
+    shortLabel: 'APAS DOCKING',
     icon: '🚀',
     x: 1184,
     y: 628,
     standX: 1184,
     standY: 692,
-    hint: 'Ejecuta maniobra 6-DOF de acoplamiento espacial APAS desde el puente central.',
+    hint: 'Execute 6-DOF APAS spacecraft docking maneuver from the central bridge.',
   },
   {
     id: 'dir_shield',
     role: 'director',
     roomId: 'ground_segment',
-    zoneName: 'GROUND SEGMENT (RADAR NORESTE)',
-    subsystemLabel: 'DEFENSA ORBITAL CONTRA METEORITOS',
-    title: 'Estación Radar Polar de Defensa Orbital',
-    shortLabel: 'DEFENSA COMETA',
+    zoneName: 'GROUND SEGMENT (NORTHEAST RADAR)',
+    subsystemLabel: 'ORBITAL METEOROID DEFENSE',
+    title: 'Polar Radar Orbital Defense Station',
+    shortLabel: 'COMET DEFENSE',
     icon: '☄️',
     x: 1330,
     y: 580,
     standX: 1330,
     standY: 634,
-    hint: 'Intercepta con láser orbital los meteoritos entrantes para proteger el Casco al 100%.',
+    hint: 'Intercept incoming meteoroids with the orbital laser turret to maintain 100% hull integrity.',
   },
   {
     id: 'dir_gyro',
     role: 'director',
     roomId: 'launch_segment',
-    zoneName: 'LAUNCH SEGMENT (BRAZO HIDRÁULICO)',
-    subsystemLabel: 'CALIBRACIÓN DE GIROSCOPIO 3D ADCS',
-    title: 'Brazo Hidráulico y Calibrador Giroscópico 3D',
-    shortLabel: 'GIROSCOPIO 3D',
+    zoneName: 'LAUNCH SEGMENT (HYDRAULIC ARM)',
+    subsystemLabel: '3D ADCS GYROSCOPE CALIBRATION',
+    title: 'Hydraulic Arm & 3D Gyroscope Calibrator',
+    shortLabel: '3D GYROSCOPE',
     icon: '🎯',
     x: 618,
     y: 816,
     standX: 618,
     standY: 760,
-    hint: 'Aplica pulsos RCS opuestos en Pitch/Roll/Yaw hasta estabilizar el giroscopio (<0.05 rad/s).',
+    hint: 'Fire counter-acting RCS pulses in Pitch/Roll/Yaw to stabilize the gyroscope (<0.05 rad/s).',
   },
   {
     id: 'dir_engine',
     role: 'director',
     roomId: 'engine_room',
-    zoneName: 'ENGINE ROOM (TURBINA SUR-OESTE)',
-    subsystemLabel: 'RADAR KESSLER Y EYECCIÓN DE ESCOMBROS',
-    title: 'Turbina Pesada y Radar de Eyección Kessler',
-    shortLabel: 'EVASIÓN ESCOMBROS',
+    zoneName: 'ENGINE ROOM (SOUTHWEST TURBINE)',
+    subsystemLabel: 'KESSLER RADAR & DEBRIS EVASION',
+    title: 'Heavy Turbine & Kessler Debris Radar',
+    shortLabel: 'DEBRIS EVASION',
     icon: '💥',
     x: 392,
     y: 1246,
     standX: 480,
     standY: 1284,
-    hint: 'Maniobra con propulsores y deflector EMP para esquivar el cinturón de escombros Kessler.',
+    hint: 'Engage thrusters and EMP deflector to clear the Kessler orbital debris belt.',
   },
 
   // 🦙 ROL 2: ALPACA-1 (POWER MGD & REACTOR x2 + LIFE SUPPORT + ENGINE ROOM)
@@ -458,61 +458,61 @@ const CONSOLES: ConsoleStation[] = [
     id: 'eng_solar',
     role: 'engineer',
     roomId: 'power_reactor',
-    zoneName: 'POWER MGD (PANELES Y BUSES EPS)',
-    subsystemLabel: 'DISTRIBUCIÓN ELÉCTRICA EPS',
-    title: 'Racks de Carga Solar y Matriz de Buses EPS',
-    shortLabel: 'BUSES EPS SOLAR',
+    zoneName: 'POWER MGD (SOLAR ARRAYS & EPS BUSES)',
+    subsystemLabel: 'EPS ELECTRICAL DISTRIBUTION',
+    title: 'Solar Charge Racks & EPS Bus Matrix',
+    shortLabel: 'SOLAR EPS BUSES',
     icon: '⚡',
     x: 1968,
     y: 920,
     standX: 1968,
     standY: 992,
-    hint: 'Balancea los Buses A/B/C y regula las cargas críticas durante eclipses (+100% Batería).',
+    hint: 'Balance Buses A/B/C and regulate critical loads during orbital eclipses (+100% Battery).',
   },
   {
     id: 'eng_cool',
     role: 'engineer',
     roomId: 'power_reactor',
-    zoneName: 'POWER MGD & REACTOR (NÚCLEO)',
-    subsystemLabel: 'REFRIGERACIÓN CRIOGÉNICA DEL REACTOR',
-    title: 'Reactor Cilíndrico Naranja y Bombas NH3',
-    shortLabel: 'REFRIGERACIÓN NH3',
+    zoneName: 'POWER MGD & REACTOR (CORE)',
+    subsystemLabel: 'CRYOGENIC REACTOR COOLING',
+    title: 'Thermal Core Reactor & NH3 Coolant Pumps',
+    shortLabel: 'NH3 COOLING',
     icon: '☢️',
     x: 1836,
     y: 910,
     standX: 1836,
     standY: 978,
-    hint: 'Activa radiadores y bombas de amoníaco para enfriar el reactor debajo de 400°C.',
+    hint: 'Activate radiators and ammonia pumps to bring reactor core temperature below 400°C.',
   },
   {
     id: 'eng_o2',
     role: 'engineer',
     roomId: 'life_electrical',
-    zoneName: 'LIFE SUPPORT (TANQUES O2)',
-    subsystemLabel: 'SOPORTE VITAL ECLSS Y PRESIÓN O2',
-    title: '2 Tanques Azules O2 con Válvulas ECLSS',
-    shortLabel: 'SOPORTE VITAL O2',
+    zoneName: 'LIFE SUPPORT (O2 TANKS)',
+    subsystemLabel: 'ECLSS LIFE SUPPORT & O2 PRESSURE',
+    title: 'Dual Blue O2 Tanks with ECLSS Valves',
+    shortLabel: 'O2 LIFE SUPPORT',
     icon: '🫧',
     x: 980,
     y: 1184,
     standX: 980,
     standY: 1264,
-    hint: 'Regula O2, N2, depuradores de CO2 y climatización en tiempo real en cabina.',
+    hint: 'Regulate cabin O2, N2, CO2 scrubbers, and thermal control in real time.',
   },
   {
     id: 'eng_pcb',
     role: 'engineer',
     roomId: 'engine_room',
-    zoneName: 'ENGINE ROOM (BAHÍA ELÉCTRICA ESTE)',
-    subsystemLabel: 'REPARACIÓN DE CIRCUITOS PCB',
-    title: 'Banco de Diagnóstico PCB y Microsoldadura',
-    shortLabel: 'CIRCUITOS PCB',
+    zoneName: 'ENGINE ROOM (EAST ELECTRICAL BAY)',
+    subsystemLabel: 'PCB CIRCUIT DIAGNOSTICS & REPAIR',
+    title: 'PCB Diagnostics & Micro-Soldering Bench',
+    shortLabel: 'PCB CIRCUITS',
     icon: '🔌',
     x: 634,
     y: 1112,
     standX: 576,
     standY: 1126,
-    hint: 'Rota pistas de cobre y aplica bypass en capacitores quemados para energizar las 3 salidas.',
+    hint: 'Rotate copper traces and bypass blown capacitors to re-energize all 3 output rails.',
   },
 
   // 🐆 ROL 3: PUMA-3 (USER SEGMENT x2 + LABORATORY + LAUNCH SEGMENT)
@@ -520,61 +520,61 @@ const CONSOLES: ConsoleStation[] = [
     id: 'sci_scan',
     role: 'science',
     roomId: 'user_segment',
-    zoneName: 'USER SEGMENT (NORESTE)',
-    subsystemLabel: 'ATERRIZAJE PLANETARIO DE SONDA',
-    title: 'Simulador de Descenso de Sonda Planetaria',
-    shortLabel: 'ATERRIZAJE SONDA',
+    zoneName: 'USER SEGMENT (NORTHEAST)',
+    subsystemLabel: 'PLANETARY PROBE DESCENT',
+    title: 'Planetary Probe Descent Simulator',
+    shortLabel: 'PROBE LANDING',
     icon: '🛬',
     x: 1744,
     y: 168,
     standX: 1744,
     standY: 228,
-    hint: 'Pilota el retro-frenado de la sonda científica hasta tocar superficie (<5.0 m/s).',
+    hint: 'Pilot retro-braking descent of the science lander for safe touchdown (<5.0 m/s).',
   },
   {
     id: 'sat_ctrl_2',
     role: 'science',
     roomId: 'user_segment',
-    zoneName: 'USER SEGMENT (CENTRO SATELITAL 2)',
-    subsystemLabel: 'NAVEGACIÓN ORBITAL HOHMANN DUAL',
-    title: 'Estación Orbital SAT-02 INTI-SCIENCE',
-    shortLabel: 'ÓRBITA HOHMANN',
+    zoneName: 'USER SEGMENT (SATELLITE BAY 2)',
+    subsystemLabel: 'DUAL HOHMANN ORBITAL TRANSFER',
+    title: 'Orbital Tracking Station SAT-02 INTI-SCIENCE',
+    shortLabel: 'HOHMANN ORBIT',
     icon: '🛰️',
     x: 1628,
     y: 298,
     standX: 1718,
     standY: 298,
-    hint: 'Calcula e igniciona el impulso Δv de Hohmann para alinear SAT-02 INTI-SCIENCE.',
+    hint: 'Compute and fire the Hohmann Δv burn to align SAT-02 INTI-SCIENCE.',
   },
   {
     id: 'sci_lab',
     role: 'science',
     roomId: 'laboratory',
-    zoneName: 'LABORATORY (SUB-LAB CIENTÍFICO)',
-    subsystemLabel: 'ESPECTROMETRÍA DE MASAS GLACIAR',
-    title: 'Taladro Láser y Espectrómetro de Masas',
-    shortLabel: 'ESPECTRÓMETRO m/z',
+    zoneName: 'LABORATORY (SCIENCE SUB-LAB)',
+    subsystemLabel: 'GLACIAL MASS SPECTROMETRY',
+    title: 'Laser Drill & Mass Spectrometer',
+    shortLabel: 'm/z SPECTROMETER',
     icon: '🔬',
     x: 1875,
     y: 552,
     standX: 1852,
     standY: 598,
-    hint: 'Sintoniza frecuencia láser y energía térmica para aislar H2O, O-18 y Helio-3.',
+    hint: 'Tune laser frequency and thermal energy to isolate H2O, O-18, and Helium-3.',
   },
   {
     id: 'sci_thermal',
     role: 'science',
     roomId: 'launch_segment',
-    zoneName: 'LAUNCH SEGMENT (MÓDULO DE CARGA ÚTIL)',
-    subsystemLabel: 'TELEMETRÍA MULTIESPECTRAL IR/UV',
-    title: 'Coronógrafo Solar y Visor Multibanda IR/UV/X',
-    shortLabel: 'VISOR IR / UV / X',
+    zoneName: 'LAUNCH SEGMENT (PAYLOAD MODULE)',
+    subsystemLabel: 'MULTISPECTRAL IR/UV TELEMETRY',
+    title: 'Solar Coronagraph & Multiband IR/UV/X Viewer',
+    shortLabel: 'IR / UV / X VIEWER',
     icon: '🌞',
     x: 640,
     y: 580,
     standX: 640,
     standY: 632,
-    hint: 'Calibra el filtro espectral (IR, UV, Rayos-X), enfoque y ganancia sobre anomalías solares.',
+    hint: 'Calibrate spectral filter (IR, UV, X-Ray), focus, and gain on solar anomalies.',
   },
 
   // 🐍 ROL 4: SERPIENTE-2 (SPACE SEGMENT x2 + COMMUNICATIONS x2)
@@ -582,61 +582,61 @@ const CONSOLES: ConsoleStation[] = [
     id: 'sat_ctrl_1',
     role: 'comms',
     roomId: 'space_segment',
-    zoneName: 'SPACE SEGMENT (FIREWALL SATELITAL)',
-    subsystemLabel: 'CIBERDEFENSA Y FIREWALL PUERTO 8080',
-    title: 'Estación Firewall y Defensa SAT-01 AMARU',
-    shortLabel: 'CIBERDEFENSA 8080',
+    zoneName: 'SPACE SEGMENT (SATELLITE FIREWALL)',
+    subsystemLabel: 'CYBER DEFENSE & PORT 8080 FIREWALL',
+    title: 'SAT-01 AMARU-COMMS Firewall & Defense Terminal',
+    shortLabel: 'CYBER DEFENSE 8080',
     icon: '🛡️',
     x: 362,
     y: 286,
     standX: 362,
     standY: 336,
-    hint: 'Inspecciona tramas de red en tiempo real para bloquear inyecciones SQL y exfiltraciones.',
+    hint: 'Inspect live network frames to block SQL injections and data exfiltration attempts.',
   },
   {
     id: 'com_decrypt',
     role: 'comms',
     roomId: 'space_segment',
-    zoneName: 'SPACE SEGMENT (CUBESAT CRIPTOGRAFÍA)',
-    subsystemLabel: 'DESENCRIPTACIÓN CUÁNTICA CRC',
-    title: 'Matriz Hexadecimal CRC y Descifrador Cuántico',
-    shortLabel: 'DESENCRIPTACIÓN CRC',
+    zoneName: 'SPACE SEGMENT (CUBESAT CRYPTOGRAPHY)',
+    subsystemLabel: 'QUANTUM CRC DECRYPTION',
+    title: 'Hexadecimal CRC Matrix & Quantum Decryptor',
+    shortLabel: 'CRC DECRYPTION',
     icon: '🔐',
     x: 644,
     y: 194,
     standX: 644,
     standY: 248,
-    hint: 'Detecta bytes corruptos por radiación cósmica en filas/columnas rojas y repara su paridad CRC.',
+    hint: 'Locate cosmic-ray corrupted bytes in red rows/columns and repair CRC parity.',
   },
   {
     id: 'com_tx',
     role: 'comms',
     roomId: 'communications',
-    zoneName: 'COMMUNICATIONS (DOMO PARABÓLICO)',
-    subsystemLabel: 'SINTONIZACIÓN DE TELECOMUNICACIONES DSN',
-    title: 'Osciloscopio DSN y Sintonizador de Onda',
-    shortLabel: 'TELECOM DSN',
+    zoneName: 'COMMUNICATIONS (PARABOLIC DOME)',
+    subsystemLabel: 'DSN TELECOMMUNICATIONS TUNING',
+    title: 'DSN Oscilloscope & Carrier Wave Tuner',
+    shortLabel: 'DSN TELECOM',
     icon: '📡',
     x: 1104,
     y: 194,
     standX: 1104,
     standY: 260,
-    hint: 'Iguala frecuencia (Hz) y ganancia (%) respecto a la onda objetivo verde del enlace satelital.',
+    hint: 'Match frequency (Hz) and gain (%) to the green target carrier wave for the satellite link.',
   },
   {
     id: 'com_hga',
     role: 'comms',
     roomId: 'communications',
-    zoneName: 'COMMUNICATIONS (SEGUIMIENTO HGA NORESTE)',
-    subsystemLabel: 'ALINEACIÓN DE ANTENA DE ALTA GANANCIA',
-    title: 'Radar Polar de Seguimiento Antena HGA / DSN',
-    shortLabel: 'ANTENA ALTA GAN.',
+    zoneName: 'COMMUNICATIONS (NORTHEAST HGA TRACKING)',
+    subsystemLabel: 'HIGH-GAIN ANTENNA ALIGNMENT',
+    title: 'Polar Tracking Radar for HGA / DSN Antenna',
+    shortLabel: 'HIGH-GAIN ANTENNA',
     icon: '📶',
     x: 1244,
     y: 156,
     standX: 1244,
     standY: 210,
-    hint: 'Rastrea el satélite en Acimut, Elevación y Polarización manteniendo SNR >= 90% hasta completar descarga.',
+    hint: 'Track the satellite in Azimuth, Elevation, and Polarization keeping SNR >= 90% until downlink completes.',
   },
 ]
 
@@ -680,79 +680,79 @@ const UNIQUE_MINIGAME_DEFS: Record<MinigameId, UniqueMinigameDef> = {
     game: 'dock',
     role: 'director',
     primaryConsoleId: 'dir_orbit',
-    title: 'Acoplamiento Espacial APAS',
-    threatTitle: 'Cápsula deriva · Órbita -1.0%/s',
-    actionHint: 'Cápsula desalineada en APAS — Ve a corregir el acoplamiento orbital',
+    title: 'APAS Orbital Docking',
+    threatTitle: 'Capsule drift · Orbit -1.0%/s',
+    actionHint: 'Capsule misaligned at APAS — Proceed to correct orbital docking',
     quadrantTag: 'GROUND SEG',
-    metricLabel: 'ÓRBITA',
+    metricLabel: 'ORBIT',
   },
   comet: {
     game: 'comet',
     role: 'director',
     primaryConsoleId: 'dir_shield',
-    title: 'Defensa Orbital / Meteoritos',
-    threatTitle: 'Meteoritos activos · Casco -1.2%/s',
-    actionHint: 'Enjambre de meteoritos entrante — Ve a interceptar desde la torreta',
+    title: 'Orbital Meteoroid Defense',
+    threatTitle: 'Incoming meteoroids · Hull -1.2%/s',
+    actionHint: 'Incoming meteoroid swarm — Proceed to laser defense turret',
     quadrantTag: 'GROUND SEG',
-    metricLabel: 'CASCO',
+    metricLabel: 'HULL',
   },
   gyro: {
     game: 'gyro',
     role: 'director',
     primaryConsoleId: 'dir_gyro',
-    title: 'Calibración Giroscopio 3D ADCS',
-    threatTitle: 'Par multieje ADCS · Órbita -1.0%/s',
-    actionHint: 'Giroscopio ADCS fuera de eje — Ve a estabilizar los volantes CMG',
+    title: '3D ADCS Gyroscope Calibration',
+    threatTitle: 'ADCS multi-axis torque · Orbit -1.0%/s',
+    actionHint: 'ADCS gyroscope off-axis — Proceed to stabilize CMG flywheels',
     quadrantTag: 'LAUNCH SEG',
-    metricLabel: 'ACTITUD',
+    metricLabel: 'ATTITUDE',
   },
   debris: {
     game: 'debris',
     role: 'director',
     primaryConsoleId: 'dir_engine',
-    title: 'Eyección Escombros Kessler',
-    threatTitle: 'Nube Kessler · Casco -1.3%/s',
-    actionHint: 'Basura espacial en corredor — Ve a activar el radar y escudo deflector',
+    title: 'Kessler Debris Evasion',
+    threatTitle: 'Kessler debris cloud · Hull -1.3%/s',
+    actionHint: 'Orbital debris in flight corridor — Engage radar and deflector shield',
     quadrantTag: 'ENGINE ROOM',
-    metricLabel: 'CASCO',
+    metricLabel: 'HULL',
   },
   eps: {
     game: 'eps',
     role: 'engineer',
     primaryConsoleId: 'eng_solar',
-    title: 'Distribución Eléctrica EPS',
-    threatTitle: 'Eclipse solar · Batería -1.5%/s',
-    actionHint: 'Eclipse Solar drenando batería — Ve a balancear los generadores G1/G2/G3',
+    title: 'EPS Power Distribution',
+    threatTitle: 'Solar eclipse · Battery -1.5%/s',
+    actionHint: 'Solar eclipse draining battery — Proceed to balance G1/G2/G3 generators',
     quadrantTag: 'POWER MGD',
-    metricLabel: 'BATERÍA',
+    metricLabel: 'BATTERY',
   },
   eclss: {
     game: 'eclss',
     role: 'engineer',
     primaryConsoleId: 'eng_o2',
-    title: 'Soporte Vital O2 / CO2',
-    threatTitle: 'CO2 alto · O2 baja -1.5%/s',
-    actionHint: 'Concentración de CO2 elevada — Ve a purificar O2 y sellar presurización',
+    title: 'ECLSS O2 / CO2 Life Support',
+    threatTitle: 'High CO2 · O2 dropping -1.5%/s',
+    actionHint: 'Elevated CO2 concentration — Purge CO2 scrubbers and seal cabin pressure',
     quadrantTag: 'LIFE SUPPORT',
-    metricLabel: 'OXÍGENO',
+    metricLabel: 'OXYGEN',
   },
   reactor: {
     game: 'reactor',
     role: 'engineer',
     primaryConsoleId: 'eng_cool',
-    title: 'Refrigeración de Reactor NH3',
-    threatTitle: 'Sobrecalentamiento · Batería -1.2%/s',
-    actionHint: 'Núcleos térmicos >750°C — Ve a bombear refrigerante NH3 al reactor',
+    title: 'NH3 Reactor Cooling',
+    threatTitle: 'Core overheating · Battery -1.2%/s',
+    actionHint: 'Thermal cores >750°C — Pump NH3 coolant into reactor loop',
     quadrantTag: 'REACTOR CORE',
-    metricLabel: 'NÚCLEO',
+    metricLabel: 'CORE',
   },
   pcb: {
     game: 'pcb',
     role: 'engineer',
     primaryConsoleId: 'eng_pcb',
-    title: 'Reparación de Circuitos PCB',
-    threatTitle: 'Bus PCB en corto · Batería -1.4%/s',
-    actionHint: 'Cortocircuito en bus maestro — Ve a puentear capacitores y disyuntores PCB',
+    title: 'PCB Circuit Repair',
+    threatTitle: 'PCB bus short · Battery -1.4%/s',
+    actionHint: 'Master bus short circuit — Bridge PCB capacitors and breakers',
     quadrantTag: 'ENGINE BAY',
     metricLabel: 'BUSES',
   },
@@ -760,19 +760,19 @@ const UNIQUE_MINIGAME_DEFS: Record<MinigameId, UniqueMinigameDef> = {
     game: 'lander',
     role: 'science',
     primaryConsoleId: 'sci_scan',
-    title: 'Sonda Planetaria PUMA-3',
-    threatTitle: 'Sonda descendiendo (500m → 0m)',
-    actionHint: 'Sonda científica en caída libre — Ve a encender retropropulsores de aterrizaje',
+    title: 'PUMA-3 Planetary Probe',
+    threatTitle: 'Probe descending (500m → 0m)',
+    actionHint: 'Science probe in free fall — Ignite landing retro-thrusters',
     quadrantTag: 'USER SEG',
-    metricLabel: 'ALTITUD',
+    metricLabel: 'ALTITUDE',
   },
   nav: {
     game: 'nav',
     role: 'science',
     primaryConsoleId: 'sat_ctrl_2',
-    title: 'Órbita SAT-02 INTI-SCIENCE',
-    threatTitle: 'SAT-02 fuera de órbita · Señal ↓',
-    actionHint: 'SAT-02 INTI-SCIENCE desviado — Ve a ejecutar maniobra de transferencia Hohmann',
+    title: 'SAT-02 INTI-SCIENCE Orbit',
+    threatTitle: 'SAT-02 off-orbit · Signal ↓',
+    actionHint: 'SAT-02 INTI-SCIENCE off course — Execute Hohmann transfer burn',
     quadrantTag: 'USER SEG',
     metricLabel: 'SAT-02',
   },
@@ -780,9 +780,9 @@ const UNIQUE_MINIGAME_DEFS: Record<MinigameId, UniqueMinigameDef> = {
     game: 'spectro',
     role: 'science',
     primaryConsoleId: 'sci_lab',
-    title: 'Espectrometría de Masas Glaciar',
-    threatTitle: 'Buffer análisis m/z ↑ · Muestras',
-    actionHint: 'Muestras glaciares sin sintonizar — Ve a capturar los picos espectrales',
+    title: 'Glacial Mass Spectrometry',
+    threatTitle: 'm/z analysis buffer ↑ · Samples',
+    actionHint: 'Unresolved glacial samples — Tune and capture spectral peaks',
     quadrantTag: 'LABORATORY',
     metricLabel: 'BUFFER',
   },
@@ -790,19 +790,19 @@ const UNIQUE_MINIGAME_DEFS: Record<MinigameId, UniqueMinigameDef> = {
     game: 'thermal',
     role: 'science',
     primaryConsoleId: 'sci_thermal',
-    title: 'Telemetría Multiespectral IR/UV',
-    threatTitle: 'Anomalía coronal · Señal ↓',
-    actionHint: 'Anomalías térmicas solares sin enfoque — Ve al sensor IR/UV a escanear',
+    title: 'Multispectral IR/UV Telemetry',
+    threatTitle: 'Coronal anomaly · Signal ↓',
+    actionHint: 'Unfocused solar thermal anomalies — Scan via IR/UV optics',
     quadrantTag: 'LAUNCH LAB',
-    metricLabel: 'ÓPTICA',
+    metricLabel: 'OPTICS',
   },
   telecom: {
     game: 'telecom',
     role: 'comms',
     primaryConsoleId: 'com_tx',
-    title: 'Reparación Telecom DSN',
-    threatTitle: 'Antena desfasada · Buffer ↑ 100%',
-    actionHint: 'Enlace DSN desfasado y buffer llenándose — Ve a sintonizar frecuencia y ganancia',
+    title: 'DSN Telecom Repair',
+    threatTitle: 'Antenna desynced · Buffer ↑ 100%',
+    actionHint: 'DSN link out of phase and buffer filling — Tune frequency and gain',
     quadrantTag: 'COMMS DSN',
     metricLabel: 'BUFFER',
   },
@@ -810,31 +810,31 @@ const UNIQUE_MINIGAME_DEFS: Record<MinigameId, UniqueMinigameDef> = {
     game: 'cyber',
     role: 'comms',
     primaryConsoleId: 'sat_ctrl_1',
-    title: 'Ciberdefensa Firewall 8080',
-    threatTitle: 'Hackeo puerto 8080 · Señal ↓',
-    actionHint: 'Intrusión activa en puerto 8080 — Ve a filtrar tramas maliciosas en firewall',
+    title: 'Port 8080 Firewall Defense',
+    threatTitle: 'Port 8080 intrusion · Signal ↓',
+    actionHint: 'Active intrusion on port 8080 — Filter malicious firewall packets',
     quadrantTag: 'SPACE SEG',
-    metricLabel: 'SEÑAL',
+    metricLabel: 'SIGNAL',
   },
   hga: {
     game: 'hga',
     role: 'comms',
     primaryConsoleId: 'com_hga',
-    title: 'Alineación Antena Alta Ganancia',
-    threatTitle: 'Satélite sin lock HGA · Buffer ↑',
-    actionHint: 'Pérdida de haz Ka en antena HGA — Ve a fijar azimut, elevación y polarización',
+    title: 'High-Gain Antenna Alignment',
+    threatTitle: 'Satellite missing HGA lock · Buffer ↑',
+    actionHint: 'Ka-band beam lost on HGA — Lock azimuth, elevation, and polarization',
     quadrantTag: 'COMMS HGA',
-    metricLabel: 'SNR HGA',
+    metricLabel: 'HGA SNR',
   },
   decrypt: {
     game: 'decrypt',
     role: 'comms',
     primaryConsoleId: 'com_decrypt',
-    title: 'Desencriptación Cuántica CRC',
-    threatTitle: 'Paquetes corruptos · Señal -1.4%/s',
-    actionHint: 'Rayos cósmicos corrompen matriz CRC — Ve a reparar bits de paridad cuántica',
+    title: 'Quantum CRC Decryption',
+    threatTitle: 'Corrupted packets · Signal -1.4%/s',
+    actionHint: 'Cosmic rays corrupting CRC matrix — Repair quantum parity bits',
     quadrantTag: 'SPACE CRC',
-    metricLabel: 'CRC RED',
+    metricLabel: 'CRC NET',
   },
 }
 
@@ -1196,7 +1196,7 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
   director: {
     id: 'director',
     sectorNum: 1,
-    title: 'CUADRANTE 1 · MANDO Y HANGAR',
+    title: 'QUADRANT 1 · COMMAND & HANGAR',
     roomsSummary: 'GROUND · LAUNCH · ENGINE',
     entryPoint: { x: 1184, y: 692 },
     cameraFocus: { x: 1184, y: 736, zoom: 0.72 },
@@ -1209,7 +1209,7 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
   engineer: {
     id: 'engineer',
     sectorNum: 2,
-    title: 'CUADRANTE 2 · POTENCIA Y SOPORTE O2',
+    title: 'QUADRANT 2 · POWER & O2 SUPPORT',
     roomsSummary: 'POWER · LIFE SUPPORT · ELEC',
     entryPoint: { x: 1836, y: 1004 },
     cameraFocus: { x: 1856, y: 960, zoom: 0.72 },
@@ -1221,7 +1221,7 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
   science: {
     id: 'science',
     sectorNum: 3,
-    title: 'CUADRANTE 3 · CIENCIA Y SONDAS',
+    title: 'QUADRANT 3 · SCIENCE & PROBES',
     roomsSummary: 'USER SEGMENT · LABORATORY',
     entryPoint: { x: 1792, y: 244 },
     cameraFocus: { x: 1792, y: 224, zoom: 0.74 },
@@ -1233,7 +1233,7 @@ const QUADRANT_DEFS: Record<QuadrantId, QuadrantDef> = {
   comms: {
     id: 'comms',
     sectorNum: 4,
-    title: 'CUADRANTE 4 · ESPACIO Y COMMS',
+    title: 'QUADRANT 4 · SPACE & COMMS',
     roomsSummary: 'SPACE SEGMENT · DSN COMMS',
     entryPoint: { x: 512, y: 244 },
     cameraFocus: { x: 800, y: 224, zoom: 0.58 },
@@ -1262,7 +1262,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'dock',
     role: 'director',
     consoleIds: ['dir_orbit'],
-    title: 'Acoplamiento Espacial APAS',
+    title: 'APAS Orbital Docking',
     quadrantTag: 'GROUND SEG',
   },
   {
@@ -1270,7 +1270,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'comet',
     role: 'director',
     consoleIds: ['dir_shield'],
-    title: 'Defensa Cometa y Meteoritos',
+    title: 'Comet & Meteoroid Defense',
     quadrantTag: 'GROUND SEG',
   },
   {
@@ -1278,7 +1278,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'gyro',
     role: 'director',
     consoleIds: ['dir_gyro'],
-    title: 'Calibración Giroscopio 3D ADCS',
+    title: '3D ADCS Gyroscope Calibration',
     quadrantTag: 'LAUNCH SEG',
   },
   {
@@ -1286,7 +1286,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'debris',
     role: 'director',
     consoleIds: ['dir_engine'],
-    title: 'Eyección Escombros Kessler',
+    title: 'Kessler Debris Evasion',
     quadrantTag: 'ENGINE ROOM',
   },
   // 🦙 ALPACA-1 (4)
@@ -1295,7 +1295,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'eps',
     role: 'engineer',
     consoleIds: ['eng_solar'],
-    title: 'Distribución Eléctrica EPS',
+    title: 'EPS Power Distribution',
     quadrantTag: 'POWER MGD',
   },
   {
@@ -1303,7 +1303,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'eclss',
     role: 'engineer',
     consoleIds: ['eng_o2'],
-    title: 'Soporte Vital ECLSS (O2 / CO2)',
+    title: 'ECLSS Life Support (O2 / CO2)',
     quadrantTag: 'LIFE SUPPORT',
   },
   {
@@ -1311,7 +1311,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'reactor',
     role: 'engineer',
     consoleIds: ['eng_cool'],
-    title: 'Refrigeración del Reactor NH3',
+    title: 'NH3 Reactor Cooling',
     quadrantTag: 'REACTOR CORE',
   },
   {
@@ -1319,7 +1319,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'pcb',
     role: 'engineer',
     consoleIds: ['eng_pcb'],
-    title: 'Reparación Circuitos PCB',
+    title: 'PCB Circuit Repair',
     quadrantTag: 'ENGINE BAY',
   },
   // 🐆 PUMA-3 (4)
@@ -1328,7 +1328,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'lander',
     role: 'science',
     consoleIds: ['sci_scan'],
-    title: 'Aterrizaje Sonda Planetaria',
+    title: 'Planetary Probe Landing',
     quadrantTag: 'USER SEG',
   },
   {
@@ -1336,7 +1336,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'nav',
     role: 'science',
     consoleIds: ['sat_ctrl_2'],
-    title: 'Navegación Orbital Hohmann SAT-02',
+    title: 'Hohmann Orbital Navigation SAT-02',
     quadrantTag: 'USER SEG',
   },
   {
@@ -1344,7 +1344,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'spectro',
     role: 'science',
     consoleIds: ['sci_lab'],
-    title: 'Espectrometría de Masas Glaciar',
+    title: 'Glacial Mass Spectrometry',
     quadrantTag: 'LABORATORY',
   },
   {
@@ -1352,7 +1352,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'thermal',
     role: 'science',
     consoleIds: ['sci_thermal'],
-    title: 'Telemetría Multiespectral IR/UV',
+    title: 'Multispectral IR/UV Telemetry',
     quadrantTag: 'LAUNCH LAB',
   },
   // 🐍 SERPIENTE-2 (4)
@@ -1361,7 +1361,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'telecom',
     role: 'comms',
     consoleIds: ['com_tx'],
-    title: 'Reparación Telecom y Enlace DSN',
+    title: 'Telecom & DSN Link Repair',
     quadrantTag: 'COMMS DSN',
   },
   {
@@ -1369,7 +1369,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'cyber',
     role: 'comms',
     consoleIds: ['sat_ctrl_1'],
-    title: 'Ciberdefensa Firewall 8080',
+    title: 'Port 8080 Firewall Defense',
     quadrantTag: 'SPACE SEG',
   },
   {
@@ -1377,7 +1377,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'hga',
     role: 'comms',
     consoleIds: ['com_hga'],
-    title: 'Alineación Antena Alta Ganancia DSN',
+    title: 'DSN High-Gain Antenna Alignment',
     quadrantTag: 'COMMS HGA',
   },
   {
@@ -1385,7 +1385,7 @@ const MISSION_BACKLOG: BacklogMissionDef[] = [
     game: 'decrypt',
     role: 'comms',
     consoleIds: ['com_decrypt'],
-    title: 'Desencriptación Cuántica CRC',
+    title: 'Quantum CRC Decryption',
     quadrantTag: 'SPACE CRC',
   },
 ]
@@ -2858,7 +2858,7 @@ function drawSpaceStationWorld(
       ctx.save()
       ctx.font = 'bold 10px "Press Start 2P", monospace'
       ctx.textAlign = 'center'
-      const t2 = sat2OffOrbit ? 'SAT-02 INTI-SCIENCE [DERIVA!]' : 'SAT-02 INTI-SCIENCE'
+      const t2 = sat2OffOrbit ? 'SAT-02 INTI-SCIENCE [DRIFT!]' : 'SAT-02 INTI-SCIENCE'
       const w2 = ctx.measureText(t2).width + 12
       ctx.fillStyle = sat2OffOrbit ? 'rgba(69, 10, 10, 0.92)' : 'rgba(9, 13, 26, 0.85)'
       ctx.fillRect(sat2.x - w2 / 2, sat2.y + 78, w2, 18)
@@ -2914,7 +2914,7 @@ function drawSpaceStationWorld(
     ctx.fillStyle = 'rgba(69, 10, 10, 0.9)'
     ctx.fillRect(capX - 58, capY + 26, 116, 15)
     ctx.fillStyle = '#fde047'
-    ctx.fillText('CÁPSULA EN DERIVA', capX, capY + 37)
+    ctx.fillText('DRIFTING CAPSULE', capX, capY + 37)
     ctx.restore()
   }
 
@@ -5471,8 +5471,8 @@ function drawSpaceStationWorld(
     // Indicador verde cuando la consola está en enfriamiento temporal o etapa completada ✅
     if (isSolved) {
       const solvedLabel = isInCooldown
-        ? `🟢 ESTABILIZADO · ${cooldownSecLeft}s`
-        : '✅ COMPLETADO'
+        ? `🟢 STABILIZED · ${cooldownSecLeft}s`
+        : '✅ COMPLETED'
       ctx.font = 'bold 6px "Press Start 2P", monospace'
       const gw = Math.max(64, Math.ceil(ctx.measureText(solvedLabel).width + 10))
       const gx = Math.round(c.x - gw / 2)
@@ -5611,7 +5611,7 @@ function getDefaultPlayerName(clientId: string): string {
   } catch {
     // ignorar errores de almacenamiento
   }
-  return `OPERADOR-${clientId.slice(-4).toUpperCase()}`
+  return `OPERATOR-${clientId.slice(-4).toUpperCase()}`
 }
 
 export default function StationOperationScreen({
@@ -5936,7 +5936,7 @@ export default function StationOperationScreen({
       syncedInitialClaimRef.current = false
       setRoleLobbyOpen(true)
       setSyncErrorMsg(
-        'Tu rol fue liberado o la sala fue reiniciada. Selecciona un especialista disponible.'
+        'Your role was released or the room was reset. Select an available specialist.'
       )
     }
   }, [myClaimedRole, isRoleLockedByOther, s.activeRole, soloPracticeMode])
@@ -6037,7 +6037,7 @@ export default function StationOperationScreen({
             clientId,
             ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
             playerName:
-              playerNameRef.current.trim() || `OPERADOR-${clientId.slice(-4).toUpperCase()}`,
+              playerNameRef.current.trim() || `OPERATOR-${clientId.slice(-4).toUpperCase()}`,
           }),
         })
         if (res.status === 404 && activeRoomCode) {
@@ -6105,7 +6105,7 @@ export default function StationOperationScreen({
       }
       setSyncBusyRole(r)
       const cleanName =
-        playerNameRef.current.trim() || `OPERADOR-${clientId.slice(-4).toUpperCase()}`
+        playerNameRef.current.trim() || `OPERATOR-${clientId.slice(-4).toUpperCase()}`
       try {
         const res = await fetch('/api/roles-sync', {
           method: 'POST',
@@ -6129,8 +6129,8 @@ export default function StationOperationScreen({
           broadcastRolesUpdate(data.claims)
         }
         if (res.status === 409 || !res.ok || data.ok === false) {
-          const owner = data.ownerName || data.claims?.[r]?.playerName || 'otro jugador'
-          setSyncErrorMsg(`El rol ${ROLE_INFO[r].code} ya está seleccionado por ${owner}.`)
+          const owner = data.ownerName || data.claims?.[r]?.playerName || 'another operator'
+          setSyncErrorMsg(`Role ${ROLE_INFO[r].code} is already claimed by ${owner}.`)
           return
         }
         setVisitingQuadrant(null)
@@ -6139,7 +6139,7 @@ export default function StationOperationScreen({
         setRoleLobbyOpen(false)
       } catch {
         setSyncErrorMsg(
-          'No se pudo conectar con /api/roles-sync en la red LAN. Puedes activar el Modo Práctica Individual.'
+          'Unable to connect to /api/roles-sync on the LAN network. You can enable Solo Practice Mode.'
         )
       } finally {
         setSyncBusyRole(null)
@@ -6206,7 +6206,7 @@ export default function StationOperationScreen({
         }
       }
     } catch {
-      setSyncErrorMsg('Sin respuesta de /api/roles-sync al intentar resetear la sala.')
+      setSyncErrorMsg('No response from /api/roles-sync while resetting the room.')
     }
   }, [applySyncedClaims, broadcastRolesUpdate, soloPracticeMode])
 
@@ -6256,7 +6256,7 @@ export default function StationOperationScreen({
       id: 1,
       from: 'director',
       kind: 'ok',
-      text: `"¡${activeMissionDef.code} en órbita! Acércate a una consola con alerta (!) y presiona 'E'. Son ${missionGames.length} problemas únicos (Nivel ${missionDiff})."`,
+      text: `"${activeMissionDef.code} on orbit! Approach an alerted console (!) and press 'E'. ${missionGames.length} unique anomalies active (Level ${missionDiff})."`,
     },
   ])
 
@@ -6409,7 +6409,7 @@ export default function StationOperationScreen({
       const ownerRole: RoleId = typeof target === 'string' ? target : target.role
       const ownerInfo = ROLE_INFO[ownerRole]
       const now = performance.now() / 1000
-      const lockMsg = `🔒 Consola exclusiva de ${ownerInfo.animalName} — Solo puedes observar`
+      const lockMsg = `🔒 Exclusive console for ${ownerInfo.animalName} — Read-only access`
 
       setVisitorAlert({ msg: lockMsg, owner: ownerRole })
       if (typeof target !== 'string') {
@@ -6605,7 +6605,7 @@ export default function StationOperationScreen({
         pushLog(
           'director',
           'ok',
-          '"🔄 MISIÓN REINICIADA AL 100% POR EL EQUIPO. ¡Sistemas restablecidos!"'
+          '"🔄 MISSION RESET TO 100% BY SQUADRON. All systems restored!"'
         )
         return
       }
@@ -6629,7 +6629,7 @@ export default function StationOperationScreen({
         isGameOverRef.current = true
         setIsGameOver(true)
         setGameOverReason(
-          shared.gameOverReason || 'Colapso crítico de la Estación Espacial: integridad agotada.'
+          shared.gameOverReason || 'Critical Space Station failure: hull & core integrity depleted.'
         )
         setActiveMinigame(null)
         setOpenConsoleIdRaw(null)
@@ -6724,12 +6724,12 @@ export default function StationOperationScreen({
               playConsoleBeep(880, true)
               const c = CONSOLES.find((cc) => cc.id === def.primaryConsoleId)
               if (c) {
-                spawnCanvasFloating(c.x, c.y - 34, `🟢 ${def.title.toUpperCase()} ESTABILIZADO`, '#4ade80')
+                spawnCanvasFloating(c.x, c.y - 34, `🟢 ${def.title.toUpperCase()} STABILIZED`, '#4ade80')
               }
               pushLog(
                 def.role,
                 'ok',
-                `"🟢 ${ROLE_INFO[def.role].animalName} estabilizó ${def.title} (${incomingResolvedCount}/${missionTargetCountRef.current})."`
+                `"🟢 ${ROLE_INFO[def.role].animalName} stabilized ${def.title} (${incomingResolvedCount}/${missionTargetCountRef.current})."`
               )
             }
           }
@@ -6862,7 +6862,7 @@ export default function StationOperationScreen({
         action: 'sync',
         clientId,
         ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
-        playerName: playerNameRef.current.trim() || `OPERADOR-${clientId.slice(-4).toUpperCase()}`,
+        playerName: playerNameRef.current.trim() || `OPERATOR-${clientId.slice(-4).toUpperCase()}`,
         seedStation: {
           completedMinigames: Array.from(completedMinigamesRef.current),
           activeThreats: activeThreatsRef.current,
@@ -6879,7 +6879,7 @@ export default function StationOperationScreen({
                 dir: me.dir,
                 walkFrame: Math.round(me.walkFrame * 100) / 100,
                 isInteracting: me.isInteracting,
-                currentRoom: curRm ? curRm.label : 'PASILLO DE CONEXIÓN',
+                currentRoom: curRm ? curRm.label : 'CONNECTING CORRIDOR',
               },
             }
           : {}),
@@ -7008,7 +7008,7 @@ export default function StationOperationScreen({
     playClick()
     if (soloPracticeModeRef.current || !activeRoomCode) {
       resetCurrentStageForRetry(retryEpochRef.current + 1)
-      pushLog('director', 'ok', '"🔄 MISIÓN ACTUAL REINICIADA AL 100% DE INTEGRIDAD."')
+      pushLog('director', 'ok', '"🔄 CURRENT MISSION RESET TO 100% INTEGRITY."')
       return
     }
     try {
@@ -7028,7 +7028,7 @@ export default function StationOperationScreen({
         pushLog(
           'director',
           'ok',
-          '"🔄 MISIÓN ACTUAL REINICIADA AL 100% PARA TODA LA ESCUADRA."'
+          '"🔄 CURRENT MISSION RESET TO 100% FOR THE ENTIRE SQUADRON."'
         )
         return
       }
@@ -7047,7 +7047,7 @@ export default function StationOperationScreen({
     pushLog(
       'director',
       'ok',
-      `"🧭 MISIÓN ${nextDef.number} (${nextDef.code}) ACTIVA: Meta ${nextDef.targetResolutions} anomalías (Nivel ${nextDef.difficulty})."`
+      `"🧭 MISSION ${nextDef.number} (${nextDef.code}) ACTIVE: Target ${nextDef.targetResolutions} anomalies (Level ${nextDef.difficulty})."`
     )
   }, [activeMissionId, pushLog, resetCurrentStageForRetry])
 
@@ -7061,12 +7061,12 @@ export default function StationOperationScreen({
           const def = UNIQUE_MINIGAME_DEFS[mg]
           playConsoleBeep(420, false)
           if (c) {
-            spawnCanvasFloating(c.x, c.y - 26, '⏳ TERMINAL EN RESERVA · ETAPA POSTERIOR', '#94a3b8')
+            spawnCanvasFloating(c.x, c.y - 26, '⏳ STANDBY TERMINAL · LATER STAGE', '#94a3b8')
           }
           pushLog(
             def.role,
             'info',
-            `"⏳ ${def.title} está en modo reserva para otra etapa de la campaña científica."`
+            `"⏳ ${def.title} is on standby for another stage of the science campaign."`
           )
           setOpenConsoleIdRaw(null)
           return
@@ -7083,14 +7083,14 @@ export default function StationOperationScreen({
               spawnCanvasFloating(
                 c.x,
                 c.y - 26,
-                `🟢 ESTABILIZADO (Enfriamiento: ${secLeft}s)`,
+                `🟢 STABILIZED (Cooldown: ${secLeft}s)`,
                 '#55efc4'
               )
             }
             pushLog(
               def.role,
               'ok',
-              `"🟢 ESTABILIZADO (Enfriamiento: ${secLeft}s) · ${def.title} listo tras enfriarse."`
+              `"🟢 STABILIZED (Cooldown: ${secLeft}s) · ${def.title} nominal until cooldown expires."`
             )
             setOpenConsoleIdRaw(null)
             return
@@ -7098,7 +7098,7 @@ export default function StationOperationScreen({
           if (missionCompletedRef.current) {
             const c = CONSOLES.find((cc) => cc.id === id)
             if (c) {
-              spawnCanvasFloating(c.x, c.y - 26, '✅ ETAPA COMPLETADA', '#55efc4')
+              spawnCanvasFloating(c.x, c.y - 26, '✅ STAGE COMPLETED', '#55efc4')
             }
             setOpenConsoleIdRaw(null)
             return
@@ -7172,7 +7172,7 @@ export default function StationOperationScreen({
             if (c) {
               spawnCanvasFloating(c.x, c.y - 26, `⚠️ ${def.title.toUpperCase()}`, '#ff7b7b')
             }
-            pushLog(def.role, 'warn', `"⚠️ FALLO EN TU SECTOR (${def.quadrantTag}): ${def.threatTitle}"`)
+            pushLog(def.role, 'warn', `"⚠️ SECTOR ANOMALY (${def.quadrantTag}): ${def.threatTitle}"`)
           }
           nextThreatCountdownRef.current = 18
         }
@@ -7198,7 +7198,7 @@ export default function StationOperationScreen({
               pushLog(
                 def.role,
                 'warn',
-                `"🚨 NUEVO FALLO EN TU SECTOR (${def.quadrantTag}): ${def.threatTitle}"`
+                `"🚨 NEW SECTOR ANOMALY (${def.quadrantTag}): ${def.threatTitle}"`
               )
             }
           }
@@ -7286,7 +7286,7 @@ export default function StationOperationScreen({
         pushLog(
           'science',
           'warn',
-          '"🛬 ¡Sonda PUMA-3 rozó terreno a 0m! Casco -8%, altímetro reactivado a 420m para maniobra."'
+          '"🛬 PUMA-3 probe grazed surface at 0m! Hull -8%, altimeter reset to 420m for recovery maneuver."'
         )
       }
 
@@ -7330,16 +7330,16 @@ export default function StationOperationScreen({
       let collapseReason = ''
       if (nextStationHp <= 0) {
         collapseReason =
-          'La Vida General de la Estación cayó al 0% por acumulación prolongada de fallos orbitales.'
+          'Station Hull & Core Integrity dropped to 0% due to prolonged unresolved orbital anomalies.'
       } else if (nextStats.hull <= 0) {
         collapseReason =
-          'Fractura total del Casco Estructural (0%) tras múltiples impactos de escombros/meteoritos.'
+          'Catastrophic Structural Hull fracture (0%) following repeated orbital debris and meteoroid impacts.'
       } else if (nextStats.battery <= 0) {
         collapseReason =
-          'Apagón eléctrico total del subsistema EPS (Batería 0%): pérdida irreversible de control.'
+          'Total EPS electrical blackout (Battery 0%): irreversible loss of station control.'
       } else if (nextStats.lifeSupport <= 0) {
         collapseReason =
-          'Colapso crítico de Soporte Vital ECLSS (Oxígeno/Presión 0%) en todos los módulos.'
+          'Critical ECLSS Life Support collapse (Oxygen/Pressure 0%) across all pressurized modules.'
       }
 
       const tickNonce =
@@ -7422,11 +7422,11 @@ export default function StationOperationScreen({
           setBattery((b) => clamp(b - 28, 35, 100))
           advanceProgress(12)
 
-          spawnCanvasFloating(c.x, c.y - 24, '+55% DATOS · ⚡ SOBRECARGA REACTOR', '#55efc4')
+          spawnCanvasFloating(c.x, c.y - 24, '+55% DATA · ⚡ REACTOR OVERLOAD', '#55efc4')
           pushLog(
             'science',
             'warn',
-            `"🐆 PUMA-3 analizó muestras en USER SEGMENT (+55% Buffer), pero sobrecargó el núcleo naranja. ¡🦙 ALPACA-1 estabiliza POWER MGD & REACTOR y 🐍 SERPIENTE-2 transmite en COMMUNICATIONS!"`
+            `"🐆 PUMA-3 analyzed samples in USER SEGMENT (+55% Buffer), overloading the thermal reactor core. 🦙 ALPACA-1, stabilize POWER MGD & REACTOR; 🐍 SERPIENTE-2, transmit via COMMUNICATIONS!"`
           )
 
           upsertReactiveTasks(c.id, [
@@ -7435,18 +7435,18 @@ export default function StationOperationScreen({
               role: 'engineer',
               consoleId: 'eng_cool',
               kind: 'problem',
-              title: 'Estabilizar Reactor Naranja en POWER MGD',
+              title: 'Stabilize Thermal Reactor Core in POWER MGD',
               reason:
-                'El láser multiespectral de PUMA-3 calentó el núcleo cilíndrico naranja y consumió carga de las baterías.',
+                'PUMA-3 multispectral laser overheated the thermal reactor core and drained battery reserves.',
             },
             {
               id: `task_com_${Date.now()}`,
               role: 'comms',
               consoleId: 'com_tx',
               kind: 'mission',
-              title: 'Transmitir Datos DSN en COMMUNICATIONS',
+              title: 'Transmit DSN Telemetry in COMMUNICATIONS',
               reason:
-                'Hay un paquete científico listo en el Buffer de Memoria esperando ser enviado a la Tierra por la antena parabólica.',
+                'A science telemetry packet is queued in the Data Buffer awaiting Earth downlink via the parabolic dish.',
             },
           ])
           break
@@ -7457,11 +7457,11 @@ export default function StationOperationScreen({
           setOfficialScience((sPts) => sPts + 25)
           setDataBuffer((v) => clamp(v + 40, 0, 100))
           advanceProgress(10)
-          spawnCanvasFloating(c.x, c.y - 24, '⚗️ MATRACES PROCESADOS (+25 PTS)', '#7bff9a')
+          spawnCanvasFloating(c.x, c.y - 24, '⚗️ SAMPLES PROCESSED (+25 PTS)', '#7bff9a')
           pushLog(
             'science',
             'ok',
-            `"🐆 PUMA-3 procesó los matraces en la campana extractora de LABORATORY. ¡Paquete listo para 🐍 SERPIENTE-2 en COMMUNICATIONS!"`
+            `"🐆 PUMA-3 processed lab samples under the LABORATORY fume hood. Telemetry packet ready for 🐍 SERPIENTE-2 in COMMUNICATIONS!"`
           )
           upsertReactiveTasks(c.id, [
             {
@@ -7469,9 +7469,9 @@ export default function StationOperationScreen({
               role: 'comms',
               consoleId: 'com_tx',
               kind: 'mission',
-              title: 'Transmitir Paquetes DSN en COMMUNICATIONS',
+              title: 'Downlink DSN Packets in COMMUNICATIONS',
               reason:
-                'El servidor científico de LABORATORY comprimió nuevos resultados listos para descarga orbital.',
+                'The LABORATORY science server compressed new assay results ready for orbital downlink.',
             },
           ])
           break
@@ -7485,11 +7485,11 @@ export default function StationOperationScreen({
           setOrbitStability(58)
           advanceProgress(18)
 
-          spawnCanvasFloating(c.x, c.y - 24, `🚀 +${gainedSci} PTS A TIERRA · 🧭 DERIVA ORBITAL`, '#74b9ff')
+          spawnCanvasFloating(c.x, c.y - 24, `🚀 +${gainedSci} PTS DOWNLINKED · 🧭 ORBITAL DRIFT`, '#74b9ff')
           pushLog(
             'comms',
             'warn',
-            `"🐍 SERPIENTE-2 transmitió por el plato parabólico de COMMUNICATIONS (+${gainedSci} PTS), pero el giro movió la actitud orbital. ¡🦅 CÓNDOR-4, corrige la órbita en GROUND SEGMENT!"`
+            `"🐍 SERPIENTE-2 transmitted via the COMMUNICATIONS parabolic dish (+${gainedSci} PTS), inducing attitude drift. 🦅 CONDOR-4, correct orbit in GROUND SEGMENT!"`
           )
 
           upsertReactiveTasks(c.id, [
@@ -7498,9 +7498,9 @@ export default function StationOperationScreen({
               role: 'director',
               consoleId: 'dir_orbit',
               kind: 'problem',
-              title: 'Corregir Altitud en las 5 Pantallas (GROUND SEGMENT)',
+              title: 'Correct Attitude on 5-Display Console (GROUND SEGMENT)',
               reason:
-                'El retroceso de la transmisión en Banda X en COMMUNICATIONS desvió el apuntamiento orbital de la estación al 58%.',
+                'X-band transmission recoil in COMMUNICATIONS shifted station orbital attitude to 58%.',
             },
           ])
           break
@@ -7512,11 +7512,11 @@ export default function StationOperationScreen({
           setSignalQuality(100)
           if (activeEvent === 'solar_storm') setActiveEvent('none')
           advanceProgress(9)
-          spawnCanvasFloating(c.x, c.y - 24, '📡 SPACE SEGMENT SINCRONIZADO AL 100%', '#74b9ff')
+          spawnCanvasFloating(c.x, c.y - 24, '📡 SPACE SEGMENT SYNCHRONIZED 100%', '#74b9ff')
           pushLog(
             'comms',
             'ok',
-            `"🐍 SERPIENTE-2 alineó el telescopio y los 2 CubeSats en SPACE SEGMENT. Cruza al módulo contiguo COMMUNICATIONS para transmitir a Tierra."`
+            `"🐍 SERPIENTE-2 aligned the telescope and both CubeSats in SPACE SEGMENT. Proceed to COMMUNICATIONS to downlink to Earth."`
           )
           upsertReactiveTasks(c.id, [
             {
@@ -7524,8 +7524,8 @@ export default function StationOperationScreen({
               role: 'comms',
               consoleId: 'com_tx',
               kind: 'mission',
-              title: 'Transmitir en el Domo de COMMUNICATIONS',
-              reason: 'Telescopio óptico y constelación CubeSat alineados al 100% con la Tierra.',
+              title: 'Transmit from COMMUNICATIONS Dome',
+              reason: 'Optical telescope and CubeSat constellation aligned 100% with Earth ground stations.',
             },
           ])
           break
@@ -7538,11 +7538,11 @@ export default function StationOperationScreen({
           setLifeSupport(58)
           advanceProgress(15)
 
-          spawnCanvasFloating(c.x, c.y - 24, '🧭 ÓRBITA 100% · 🫧 PRESURIZAR O2', '#ffd23f')
+          spawnCanvasFloating(c.x, c.y - 24, '🧭 ORBIT 100% · 🫧 PRESSURIZE O2', '#ffd23f')
           pushLog(
             'director',
             'warn',
-            `"🦅 CÓNDOR-4 estabilizó la órbita al 100%. El impulso de la turbina consumió presión de cabina: ¡🦙 ALPACA-1, presuriza los 2 Tanques Azules O2 en LIFE SUPPORT!"`
+            `"🦅 CONDOR-4 stabilized orbit to 100%. Thruster burn depleted cabin pressure: 🦙 ALPACA-1, pressurize the dual O2 tanks in LIFE SUPPORT!"`
           )
 
           upsertReactiveTasks(c.id, [
@@ -7551,9 +7551,9 @@ export default function StationOperationScreen({
               role: 'engineer',
               consoleId: 'eng_o2',
               kind: 'problem',
-              title: 'Presurizar Tanques O2 en LIFE SUPPORT',
+              title: 'Pressurize O2 Tanks in LIFE SUPPORT',
               reason:
-                'La maniobra de corrección orbital de CÓNDOR-4 consumió presión del circuito de Soporte Vital O2 (58%).',
+                'CONDOR-4 orbital correction burn depleted O2 Life Support loop pressure (58%).',
             },
           ])
           break
@@ -7563,11 +7563,11 @@ export default function StationOperationScreen({
           playConsoleBeep(720, true)
           setHull(100)
           advanceProgress(12)
-          spawnCanvasFloating(c.x, c.y - 24, '🛡️ TRANSBORDADOR Y BRAZO AL 100%', '#5ef0ff')
+          spawnCanvasFloating(c.x, c.y - 24, '🛡️ SHUTTLE & ARM AT 100%', '#5ef0ff')
           pushLog(
             'director',
             'ok',
-            `"🦅 CÓNDOR-4 aseguró el brazo hidráulico naranja y el transbordador blanco en LAUNCH SEGMENT."`
+            `"🦅 CONDOR-4 secured the hydraulic manipulator arm and orbiter shuttle in LAUNCH SEGMENT."`
           )
           upsertReactiveTasks(c.id, [
             {
@@ -7575,8 +7575,8 @@ export default function StationOperationScreen({
               role: 'science',
               consoleId: 'sci_lab',
               kind: 'mission',
-              title: 'Procesar Muestras en LABORATORY',
-              reason: 'Hangar estabilizado y listo para nuevo lote de análisis químico.',
+              title: 'Process Samples in LABORATORY',
+              reason: 'Hangar stabilized and cleared for the next chemical assay batch.',
             },
           ])
           break
@@ -7590,11 +7590,11 @@ export default function StationOperationScreen({
           if (activeEvent === 'eclipse') setActiveEvent('none')
           advanceProgress(14)
 
-          spawnCanvasFloating(c.x, c.y - 24, '⚡ REACTOR Y MASTER SWITCH AL 98%', '#ffd23f')
+          spawnCanvasFloating(c.x, c.y - 24, '⚡ REACTOR & MASTER SWITCH AT 98%', '#ffd23f')
           pushLog(
             'engineer',
             'ok',
-            `"🦙 ALPACA-1 estabilizó el núcleo naranja del REACTOR y los racks de baterías (+98% Energía). ¡🐍 SERPIENTE-2 tiene potencia máxima en COMMUNICATIONS!"`
+            `"🦙 ALPACA-1 stabilized the REACTOR core and battery racks (+98% Power). 🐍 SERPIENTE-2 now has full power in COMMUNICATIONS!"`
           )
 
           upsertReactiveTasks(c.id, [
@@ -7605,9 +7605,9 @@ export default function StationOperationScreen({
               kind: 'mission',
               title:
                 dataBuffer >= 30
-                  ? 'Transmitir Paquetes DSN en COMMUNICATIONS'
-                  : 'Alinear Telescopio en SPACE SEGMENT',
-              reason: 'ALPACA-1 restableció el 98% de potencia en el Reactor y los paneles solares.',
+                  ? 'Downlink DSN Packets in COMMUNICATIONS'
+                  : 'Align Telescope in SPACE SEGMENT',
+              reason: 'ALPACA-1 restored 98% power across the Reactor and solar array buses.',
             },
           ])
           break
@@ -7619,11 +7619,11 @@ export default function StationOperationScreen({
           setHull(100)
           advanceProgress(15)
 
-          spawnCanvasFloating(c.x, c.y - 24, '🫧 TANQUES O2 AL 100% · NAVE NOMINAL', '#7bff9a')
+          spawnCanvasFloating(c.x, c.y - 24, '🫧 O2 TANKS 100% · STATION NOMINAL', '#7bff9a')
           pushLog(
             'engineer',
             'ok',
-            `"🦙 ALPACA-1 presurizó los 2 tanques azules de O2 en LIFE SUPPORT al 100%. ¡Sistema listo para la sonda científica en USER SEGMENT!"`
+            `"🦙 ALPACA-1 pressurized the dual O2 tanks in LIFE SUPPORT to 100%. Systems nominal for science probe ops in USER SEGMENT!"`
           )
 
           upsertReactiveTasks(c.id, [
@@ -7632,8 +7632,8 @@ export default function StationOperationScreen({
               role: 'science',
               consoleId: 'sci_holo',
               kind: 'mission',
-              title: 'Descenso Planetario en USER SEGMENT',
-              reason: 'Soporte vital O2 y válvulas restaurados al 100% por ALPACA-1.',
+              title: 'Planetary Descent Ops in USER SEGMENT',
+              reason: 'O2 Life Support and pressure valves restored to 100% by ALPACA-1.',
             },
           ])
           break
@@ -7762,11 +7762,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '🚀 ACOPLAMIENTO APAS 100% · +35 PTS', '#ffd23f')
+          spawnCanvasFloating(fx, fy, '🚀 APAS DOCKING 100% · +35 PTS', '#ffd23f')
           pushLog(
             activeRole,
             'ok',
-            '"🚀 CÓNDOR-4 completó el acoplamiento APAS: órbita 100%, casco +15% (+35 PTS)."'
+            '"🚀 CONDOR-4 completed APAS docking: orbit 100%, hull +15% (+35 PTS)."'
           )
           break
         }
@@ -7786,11 +7786,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '☄️ COMETA DESVIADO · CASCO 100% · +40 PTS', '#ffd23f')
+          spawnCanvasFloating(fx, fy, '☄️ METEOROID DEFLECTED · HULL 100% · +40 PTS', '#ffd23f')
           pushLog(
             activeRole,
             'ok',
-            '"☄️ Defensa orbital completada por CÓNDOR-4: meteoritos despejados y casco al 100% (+40 PTS)."'
+            '"☄️ Orbital defense completed by CONDOR-4: meteoroids cleared and hull at 100% (+40 PTS)."'
           )
           break
         }
@@ -7803,11 +7803,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '⚡ POTENCIA EPS 100% · ECLIPSE SUPERADO · +35 PTS', '#ffd23f')
+          spawnCanvasFloating(fx, fy, '⚡ EPS POWER 100% · ECLIPSE CLEARED · +35 PTS', '#ffd23f')
           pushLog(
             activeRole,
             'ok',
-            '"⚡ ALPACA-1 equilibró los buses EPS: batería e iluminación al 100% (+35 PTS)."'
+            '"⚡ ALPACA-1 balanced EPS buses: battery and cabin power at 100% (+35 PTS)."'
           )
           break
 
@@ -7819,11 +7819,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '🫧 SOPORTE VITAL O2 100% · CO2 CERO · +35 PTS', '#55efc4')
+          spawnCanvasFloating(fx, fy, '🫧 O2 LIFE SUPPORT 100% · CO2 ZERO · +35 PTS', '#55efc4')
           pushLog(
             activeRole,
             'ok',
-            '"🫧 ECLSS purificado por ALPACA-1: O2 al 100%, neblina CO2 eliminada (+35 PTS)."'
+            '"🫧 ECLSS scrubbed by ALPACA-1: O2 at 100%, CO2 haze cleared (+35 PTS)."'
           )
           break
 
@@ -7838,11 +7838,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '🛬 SONDA EN SUPERFICIE · +45 PTS', '#55efc4')
+          spawnCanvasFloating(fx, fy, '🛬 PROBE TOUCHDOWN CONFIRMED · +45 PTS', '#55efc4')
           pushLog(
             activeRole,
             'ok',
-            '"🛬 PUMA-3 posó la sonda planetaria con éxito: muestras recolectadas (+45 PTS)."'
+            '"🛬 PUMA-3 landed the planetary probe safely: surface samples collected (+45 PTS)."'
           )
           break
         }
@@ -7857,11 +7857,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '🛰️ SAT-02 INTI-SCIENCE EN ÓRBITA · 100% · +40 PTS', '#74b9ff')
+          spawnCanvasFloating(fx, fy, '🛰️ SAT-02 INTI-SCIENCE ON ORBIT · 100% · +40 PTS', '#74b9ff')
           pushLog(
             activeRole,
             'ok',
-            '"🛰️ PUMA-3 alineó SAT-02 INTI-SCIENCE en su órbita nominal: señal 100% (+40 PTS)."'
+            '"🛰️ PUMA-3 aligned SAT-02 INTI-SCIENCE into nominal orbit: signal 100% (+40 PTS)."'
           )
           break
 
@@ -7875,11 +7875,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '📡 TELECOM DSN 100% · BUFFER 0% · +35 PTS', '#74b9ff')
+          spawnCanvasFloating(fx, fy, '📡 DSN TELECOM 100% · BUFFER 0% · +35 PTS', '#74b9ff')
           pushLog(
             activeRole,
             'ok',
-            '"📡 SERPIENTE-2 sincronizó la antena DSN: buffer enviado y señal 100% (+35 PTS)."'
+            '"📡 SERPIENTE-2 synchronized the DSN antenna: buffer downlinked and signal 100% (+35 PTS)."'
           )
           break
 
@@ -7891,11 +7891,11 @@ export default function StationOperationScreen({
             officialScienceRef.current += pointsDelta
             setOfficialScience((v) => v + pointsDelta)
           }
-          spawnCanvasFloating(fx, fy, '🛡️ FIREWALL 8080 SEGURO · 100% · +40 PTS', '#74b9ff')
+          spawnCanvasFloating(fx, fy, '🛡️ FIREWALL 8080 SECURED · 100% · +40 PTS', '#74b9ff')
           pushLog(
             activeRole,
             'ok',
-            '"🛡️ SERPIENTE-2 selló el puerto 8080: intrusión neutralizada al 100% (+40 PTS)."'
+            '"🛡️ SERPIENTE-2 sealed port 8080: intrusion neutralized at 100% (+40 PTS)."'
           )
           break
 
@@ -7905,8 +7905,8 @@ export default function StationOperationScreen({
           applyReward(
             40,
             '#ffd23f',
-            '🧭 GIROSCOPIO CMG CALIBRADO · 100% · +40 PTS',
-            '"🧭 CÓNDOR-4 estabilizó los volantes de inercia CMG: actitud orbital al 100% (+40 PTS)."'
+            '🧭 CMG GYROSCOPE CALIBRATED · 100% · +40 PTS',
+            '"🧭 CONDOR-4 stabilized CMG flywheels: orbital attitude at 100% (+40 PTS)."'
           )
           break
 
@@ -7919,8 +7919,8 @@ export default function StationOperationScreen({
           applyReward(
             45,
             '#ffd23f',
-            '🛰️ ESCOMBROS EYECTADOS · CASCO 100% · +45 PTS',
-            '"🛰️ CÓNDOR-4 despejó la basura orbital del corredor solar: casco al 100% (+45 PTS)."'
+            '🛰️ DEBRIS CLEARED · HULL 100% · +45 PTS',
+            '"🛰️ CONDOR-4 cleared orbital debris from the solar corridor: hull at 100% (+45 PTS)."'
           )
           break
         }
@@ -7934,8 +7934,8 @@ export default function StationOperationScreen({
           applyReward(
             40,
             '#55efc4',
-            '☢️ REACTOR REFRIGERADO · ENERGÍA 100% · +40 PTS',
-            '"☢️ ALPACA-1 equilibró los bucles criogénicos del reactor: energía al 100% (+40 PTS)."'
+            '☢️ REACTOR COOLED · POWER 100% · +40 PTS',
+            '"☢️ ALPACA-1 balanced cryogenic reactor loops: power at 100% (+40 PTS)."'
           )
           break
         }
@@ -7946,8 +7946,8 @@ export default function StationOperationScreen({
           applyReward(
             45,
             '#55efc4',
-            '🔌 BUSES PCB PUENTEADOS · ENERGÍA 100% · +45 PTS',
-            '"🔌 ALPACA-1 reparó los buses del tablero maestro PCB tras la tormenta solar: energía al 100% (+45 PTS)."'
+            '🔌 PCB BUSES BRIDGED · POWER 100% · +45 PTS',
+            '"🔌 ALPACA-1 repaired the master PCB bus after the solar storm: power at 100% (+45 PTS)."'
           )
           break
 
@@ -7961,8 +7961,8 @@ export default function StationOperationScreen({
           applyReward(
             40,
             '#a29bfe',
-            '🧪 ESPECTROMETRÍA VERIFICADA · +40 PTS',
-            '"🧪 PUMA-3 analizó las líneas espectrales del muestreo científico (+40 PTS)."'
+            '🧪 SPECTROMETRY VERIFIED · +40 PTS',
+            '"🧪 PUMA-3 resolved spectral peaks from glacial science samples (+40 PTS)."'
           )
           break
         }
@@ -7976,8 +7976,8 @@ export default function StationOperationScreen({
           applyReward(
             45,
             '#a29bfe',
-            '🌡️ TELEMETRÍA MULTIESPECTRAL 100% · +45 PTS',
-            '"🌡️ PUMA-3 calibró el mapeo térmico infrarrojo contra llamaradas solares: señal al 100% (+45 PTS)."'
+            '🌡️ MULTISPECTRAL TELEMETRY 100% · +45 PTS',
+            '"🌡️ PUMA-3 calibrated infrared thermal mapping against solar flares: signal at 100% (+45 PTS)."'
           )
           break
         }
@@ -7990,8 +7990,8 @@ export default function StationOperationScreen({
           applyReward(
             40,
             '#74b9ff',
-            '🛰️ ANTENA DSN ALINEADA · 100% · BUFFER 0% · +40 PTS',
-            '"🛰️ SERPIENTE-2 fijó el haz Ka de la antena DSN: enlace al 100% y buffer transmitido (+40 PTS)."'
+            '🛰️ DSN ANTENNA ALIGNED · 100% · BUFFER 0% · +40 PTS',
+            '"🛰️ SERPIENTE-2 locked the DSN Ka-band beam: link at 100% and buffer downlinked (+40 PTS)."'
           )
           break
 
@@ -8001,8 +8001,8 @@ export default function StationOperationScreen({
           applyReward(
             45,
             '#74b9ff',
-            '🔐 CLAVE CUÁNTICA ESTABLECIDA · 100% · +45 PTS',
-            '"🔐 SERPIENTE-2 desencriptó el canal cuántico de emergencia: red segura al 100% (+45 PTS)."'
+            '🔐 QUANTUM KEY ESTABLISHED · 100% · +45 PTS',
+            '"🔐 SERPIENTE-2 decrypted the emergency quantum channel: network secured at 100% (+45 PTS)."'
           )
           break
       }
@@ -8047,7 +8047,7 @@ export default function StationOperationScreen({
             pushLog(
               def.role,
               'warn',
-              `"⚠️ SIGUIENTE FALLO (${def.quadrantTag}): ${def.threatTitle}"`
+              `"⚠️ NEXT ANOMALY (${def.quadrantTag}): ${def.threatTitle}"`
             )
           }
         }
@@ -8101,17 +8101,17 @@ export default function StationOperationScreen({
 
       const me = astronautsRef.current[activeRoleRef.current]
       if (me) {
-        spawnCanvasFloating(me.x, me.y - 46, '💥 -20% VIDA ESTACIÓN', '#ff4d6d')
+        spawnCanvasFloating(me.x, me.y - 46, '💥 -20% STATION INTEGRITY', '#ff4d6d')
       }
       pushLog(
         def.role,
         'warn',
-        `"💥 FALLO EN ${def.title.toUpperCase()}: -20% Vida General de la Estación (actual: ${Math.round(nextHealth)}%)."`
+        `"💥 FAILURE IN ${def.title.toUpperCase()}: -20% Station Hull & Core Integrity (current: ${Math.round(nextHealth)}%)."`
       )
 
       const failNonce = `fail-${clientId}-${game}-${Date.now().toString(36)}`
       if (nextHealth <= 0) {
-        const reasonText = `Fallo crítico en ${def.title}: Vida General de la Estación agotada al 0%.`
+        const reasonText = `Critical failure in ${def.title}: Station Hull & Core Integrity depleted to 0%.`
         if (!soloPracticeModeRef.current) {
           void sendStationSync({
             healthDelta: -20,
@@ -8217,13 +8217,13 @@ export default function StationOperationScreen({
           const owner =
             remotePlayerRoles[targetRole] ??
             roleClaims[targetRole]?.playerName ??
-            'otro jugador'
+            'another operator'
           const me = astronautsRef.current[activeRole]
           spawnCanvasFloating(me.x, me.y - 44, `🔒 ${ROLE_INFO[targetRole].code} (${owner})`, '#f87171')
           pushLog(
             targetRole,
             'warn',
-            `"🔒 Rol bloqueado: ${ROLE_INFO[targetRole].code} pertenece en otro PC a ${owner}."`
+            `"🔒 Role locked: ${ROLE_INFO[targetRole].code} is operated remotely by ${owner}."`
           )
           return
         }
@@ -8622,7 +8622,7 @@ export default function StationOperationScreen({
       // Actualizar sala actual y cuadrante actual del jugador activo
       const activeEnt = astronautsRef.current[st.activeRole]
       const curRm = findRoomAtPoint(activeEnt.x, activeEnt.y)
-      const nextRoomLabel = curRm ? curRm.label : 'PASILLO DE CONEXIÓN'
+      const nextRoomLabel = curRm ? curRm.label : 'CONNECTING CORRIDOR'
       setCurrentRoomLabel((prev) => (prev !== nextRoomLabel ? nextRoomLabel : prev))
       const detectedQuad = findQuadrantAtPoint(activeEnt.x, activeEnt.y)
       if (detectedQuad !== st.playerCurrentQuadrant) {
@@ -8819,9 +8819,9 @@ export default function StationOperationScreen({
             if (rawX < -70 || rawX > cw + 70 || rawY < -30 || rawY > ch + 30) continue
 
             const tagText = isRemoteConnected
-              ? `[JUGADOR] ${info.animalName}`
+              ? `[PLAYER] ${info.animalName}`
               : isMe && !soloPracticeModeRef.current && myClaimedRoleRef.current === vr.role
-                ? `[TÚ] ${info.animalName}`
+                ? `[YOU] ${info.animalName}`
                 : !isMe
                   ? `[BOT] ${info.animalName}`
                   : info.animalName
@@ -8907,7 +8907,7 @@ export default function StationOperationScreen({
           const lockBannerConsole = activeDenied ?? activeForeignConsole
           if (lockBannerConsole && !canUseConsole(lockBannerConsole, st.activeRole)) {
             const ownerInfoLock = ROLE_INFO[lockBannerConsole.role]
-            const lockLabel = `🔒 Consola exclusiva de ${ownerInfoLock.animalName} — Solo puedes observar`
+            const lockLabel = `🔒 Exclusive console for ${ownerInfoLock.animalName} — Read-only access`
             const rawCx = (lockBannerConsole.x - camRef.current.x) * camRef.current.zoom + cw / 2
             const rawCy = (lockBannerConsole.y - 44 - camRef.current.y) * camRef.current.zoom + ch / 2
             const lockFont = cw >= 580 ? 'bold 7px "Press Start 2P", monospace' : 'bold 6px "Press Start 2P", monospace'
@@ -9088,14 +9088,14 @@ export default function StationOperationScreen({
                 (isCooldownConsole || (st.missionCompleted && st.completedMinigames.has(promptMg)))
             )
             const promptText = !canOperate
-              ? `🔒 Consola exclusiva de ${ROLE_INFO[promptConsole.role].animalName} — Solo puedes observar`
+              ? `🔒 Exclusive console for ${ROLE_INFO[promptConsole.role].animalName} — Read-only access`
               : isReserveConsole
-              ? '[ MÓDULO EN RESERVA · OTRA ETAPA ]'
+              ? '[ STANDBY MODULE · LATER STAGE ]'
               : isCooldownConsole
-              ? `[ 🟢 ESTABILIZADO (Enfriamiento: ${promptCdSecLeft}s) ]`
+              ? `[ 🟢 STABILIZED (Cooldown: ${promptCdSecLeft}s) ]`
               : isSolvedConsole
-              ? '[ SISTEMA ESTABILIZADO ✅ ]'
-              : '[ PRESIONA "E" VER CONSOLA ]'
+              ? '[ SYSTEM STABILIZED ✅ ]'
+              : '[ PRESS "E" TO INSPECT CONSOLE ]'
             let promptFont =
               cw >= 600
                 ? 'bold 9px "Press Start 2P", monospace'
@@ -9229,7 +9229,7 @@ export default function StationOperationScreen({
               ? remotePlayerRoles[r] || roleClaims[r]?.playerName
               : undefined) ||
             roleClaims[r]?.playerName ||
-            `IA ${ROLE_INFO[r].animalName}`
+            `AI ${ROLE_INFO[r].animalName}`
     }
     return out
   }, [activeRole, playerName, soloPracticeMode, remotePlayerRoles, roleClaims])
@@ -9284,19 +9284,19 @@ export default function StationOperationScreen({
         case 'lander':
           return `ALT ${Math.round(t.probeAlt)}m ↓`
         case 'comet':
-          return `CASCO ${Math.round(hull)}%`
+          return `HULL ${Math.round(hull)}%`
         case 'dock':
-          return `ÓRBITA ${Math.round(orbitStability)}%`
+          return `ORBIT ${Math.round(orbitStability)}%`
         case 'gyro':
           return `ATT ${Math.round(orbitStability)}%`
         case 'debris':
-          return `ESC ${Math.round(hull)}%`
+          return `DEB ${Math.round(hull)}%`
         case 'eps':
           return `BAT ${Math.round(battery)}%`
         case 'eclss':
           return `O2 ${Math.round(lifeSupport)}%`
         case 'reactor':
-          return `NÚCLEO ${Math.round(battery)}%`
+          return `CORE ${Math.round(battery)}%`
         case 'pcb':
           return `BUS ${Math.round(battery)}%`
         case 'nav':
@@ -9310,7 +9310,7 @@ export default function StationOperationScreen({
         case 'hga':
           return `HGA ${Math.round(signalQuality)}%`
         case 'cyber':
-          return `RED ${Math.round(signalQuality)}%`
+          return `NET ${Math.round(signalQuality)}%`
         case 'decrypt':
           return `QKD ${Math.round(signalQuality)}%`
       }
@@ -9397,9 +9397,9 @@ export default function StationOperationScreen({
               onExitToMenu()
             }}
             className="mc-btn px-1.5 py-0.5 text-[clamp(8px,0.62vw,9px)] shrink-0 whitespace-nowrap"
-            title="Salir de la sala y volver al menú principal"
+            title="Leave room and return to main menu"
           >
-            ← MENÚ
+            ← MENU
           </button>
           <button
             onMouseEnter={playHover}
@@ -9409,16 +9409,16 @@ export default function StationOperationScreen({
             }}
             className="mc-btn px-1.5 py-0.5 text-[clamp(8px,0.62vw,9px)] shrink-0 whitespace-nowrap"
           >
-            🛠️ TALLER
+            🛠️ WORKSHOP
           </button>
           <div className="min-w-0">
             <div className="text-[clamp(8.5px,0.72vw,11px)] text-cyan-300 truncate">
-              🛰️ ESTACIÓN · ETAPA {activeMissionDef.number}/3 · {activeMissionDef.code} (
+              🛰️ STATION · STAGE {activeMissionDef.number}/3 · {activeMissionDef.code} (
               {contract.orbit})
             </div>
             <div className="text-[clamp(7px,0.58vw,8px)] text-gray-300 truncate">
-              SALA: <strong style={{ color: activeRoleInfo.color }}>{currentRoomLabel}</strong> ·{' '}
-              <span className="text-yellow-300">WASD · &quot;E&quot; CONSOLAS</span>
+              MODULE: <strong style={{ color: activeRoleInfo.color }}>{currentRoomLabel}</strong> ·{' '}
+              <span className="text-yellow-300">WASD / ARROWS · &quot;E&quot; / SPACE CONSOLES</span>
             </div>
           </div>
         </div>
@@ -9474,10 +9474,10 @@ export default function StationOperationScreen({
             }}
             title={
               soloPracticeMode
-                ? 'Modo Práctica Individual activo'
+                ? 'Solo Practice Mode active'
                 : syncConnected
-                  ? `Conectado a sala ${activeRoomCode ?? 'SQUADRON-DEFAULT'}`
-                  : 'Sin conexión a /api/roles-sync'
+                  ? `Connected to room ${activeRoomCode ?? 'SQUADRON-DEFAULT'}`
+                  : 'Disconnected from /api/roles-sync'
             }
           >
             {soloPracticeMode
@@ -9494,7 +9494,7 @@ export default function StationOperationScreen({
             const claim = roleClaims[r]
             const remoteLiveName = !soloPracticeMode ? remotePlayerRoles[r] : undefined
             const locked = isRoleLockedByOther(r)
-            const lockedOwnerName = remoteLiveName ?? claim?.playerName ?? 'OTRO'
+            const lockedOwnerName = remoteLiveName ?? claim?.playerName ?? 'OTHER'
             const isPrimaryMine = !soloPracticeMode && r === myClaimedRole
             const isVacantBot = !soloPracticeMode && !locked && r !== myClaimedRole
             const hasTaskForRole = activeTasks.some((t) => t.role === r)
@@ -9506,10 +9506,10 @@ export default function StationOperationScreen({
                 onMouseEnter={locked ? undefined : playHover}
                 title={
                   locked
-                    ? `🔒 Bloqueado por ${lockedOwnerName}`
+                    ? `🔒 Locked by ${lockedOwnerName}`
                     : isVacantBot
-                      ? `${info.code} [BOT / LIBRE] - Vacante, haz clic para operarlo`
-                      : `Tu personaje (${info.code})`
+                      ? `${info.code} [BOT / OPEN] - Vacant, click to operate`
+                      : `Your specialist (${info.code})`
                 }
                 onClick={() => {
                   if (locked) return
@@ -9553,7 +9553,7 @@ export default function StationOperationScreen({
                 {isPrimaryMine && <span className="text-[7px] text-emerald-300 shrink-0">★</span>}
                 {isVacantBot && !on && (
                   <span className="px-1 bg-cyan-950 border border-cyan-500/60 text-cyan-200 text-[6px] shrink-0">
-                    LIBRE
+                    OPEN
                   </span>
                 )}
                 {isMyRoleIssue ? (
@@ -9563,7 +9563,7 @@ export default function StationOperationScreen({
                 ) : hasTaskForRole ? (
                   <span
                     className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"
-                    title="Compañero atendiendo incidencia"
+                    title="Squadmate handling active anomaly"
                   />
                 ) : null}
               </button>
@@ -9579,7 +9579,7 @@ export default function StationOperationScreen({
             className="mc-btn px-1.5 py-0.5 text-[clamp(7.5px,0.6vw,9px)] whitespace-nowrap"
             style={{ background: '#1e1b4b', color: '#a5b4fc', borderColor: '#6366f1' }}
           >
-            👥 CAMBIAR / SALA DE ROLES
+            👥 SWITCH / ROLE LOBBY
           </button>
           <button
             onMouseEnter={playHover}
@@ -9590,7 +9590,7 @@ export default function StationOperationScreen({
             className="mc-btn px-1.5 py-0.5 text-[clamp(7.5px,0.6vw,9px)] whitespace-nowrap"
             style={{ background: '#15803d', color: '#7bff9a', borderColor: '#7bff9a' }}
           >
-            🏆 FINALIZAR
+            🏆 FINISH MISSION
           </button>
         </div>
       </header>
@@ -9618,7 +9618,7 @@ export default function StationOperationScreen({
               missionPanelOpen ? 'right-[240px] lg:right-[472px]' : 'right-14 sm:right-[290px]'
             }`}
           >
-            {/* Fila 1 (top-2): Barra compacta ❤️ VIDA GENERAL DE LA ESTACIÓN */}
+            {/* Fila 1 (top-2): Barra compacta ❤️ STATION HULL & CORE INTEGRITY */}
             <div
               className={`pointer-events-auto w-full max-w-md flex items-center gap-2 px-2.5 py-1 border-2 shadow-lg ${
                 hpCritical
@@ -9633,7 +9633,7 @@ export default function StationOperationScreen({
                   hpCritical ? 'text-red-300' : hpAmber ? 'text-amber-300' : 'text-emerald-300'
                 }`}
               >
-                ❤️ VIDA GENERAL DE LA ESTACIÓN ({hpRounded}%)
+                ❤️ STATION HULL &amp; CORE INTEGRITY ({hpRounded}%)
               </span>
               <div className="flex-1 min-w-[64px] h-2.5 bg-black border border-slate-700 overflow-hidden">
                 <div
@@ -9662,10 +9662,10 @@ export default function StationOperationScreen({
               const effectiveOwnerHud = visitingQuadrant ?? playerCurrentQuadrant
               const isForeignHud = !overviewMode && effectiveOwnerHud !== activeRole
               const roomTitleHud = overviewMode
-                ? 'MAPA ESTACIÓN'
+                ? 'STATION MAP'
                 : visitingQuadrant
                   ? `OBS: ${QUADRANT_DEFS[visitingQuadrant].roomsSummary}`
-                  : `${currentRoomLabel}${isForeignHud ? ' · SOLO LECTURA' : ''}`
+                  : `${currentRoomLabel}${isForeignHud ? ' · READ-ONLY' : ''}`
               return (
                 <div
                   className={`pointer-events-auto max-w-[520px] w-fit px-3 py-1 border flex items-center justify-center gap-2 shadow-lg min-w-0 ${
@@ -9680,7 +9680,7 @@ export default function StationOperationScreen({
                   {isForeignHud && (
                     <>
                       <span className="text-[10px] font-sans text-cyan-200 truncate min-w-0">
-                        · Visitando sector de{' '}
+                        · VISITING SECTOR OF{' '}
                         <strong style={{ color: ROLE_INFO[effectiveOwnerHud].color }}>
                           {ROLE_INFO[effectiveOwnerHud].icon}{' '}
                           {ROLE_INFO[effectiveOwnerHud].animalName}
@@ -9699,7 +9699,7 @@ export default function StationOperationScreen({
                         }}
                         className="shrink-0 px-2 py-0.5 bg-amber-900/95 border border-amber-400 text-[10px] font-sans font-bold text-amber-100 hover:bg-amber-700 whitespace-nowrap"
                       >
-                        🎯 VOLVER A MI SECTOR
+                        🎯 RETURN TO MY SECTOR
                       </button>
                     </>
                   )}
@@ -9714,17 +9714,17 @@ export default function StationOperationScreen({
                   {visitorAlert.msg}
                 </div>
                 <div className="text-[10px] font-sans text-amber-300 mt-0.5">
-                  PROPIETARIO EXCLUSIVO: {ROLE_INFO[visitorAlert.owner].icon}{' '}
+                  EXCLUSIVE OWNER: {ROLE_INFO[visitorAlert.owner].icon}{' '}
                   {ROLE_INFO[visitorAlert.owner].code} ·{' '}
                   {isRoleLockedByOther(visitorAlert.owner)
-                    ? `🔒 BLOQUEADO POR ${
+                    ? `🔒 LOCKED BY ${
                         (
                           remotePlayerRoles[visitorAlert.owner] ??
                           roleClaims[visitorAlert.owner]?.playerName ??
-                          'OTRO PILOTO'
+                          'OTHER PILOT'
                         ).toUpperCase()
-                      } — SOLO LECTURA`
-                    : 'ROL VACANTE [BOT/LIBRE] · PUEDES OPERARLO CON [1-4]'}
+                      } — READ-ONLY`
+                    : 'VACANT ROLE [BOT/OPEN] · OPERATE WITH KEYS [1-4]'}
                 </div>
               </div>
             )}
@@ -9743,12 +9743,17 @@ export default function StationOperationScreen({
                     ? 'border-red-400 bg-[#2d0a12]/95 text-red-100'
                     : 'border-amber-400 bg-[#221706]/95 text-amber-100'
                 }`}
-                title="Haz clic para caminar directo hacia tu consola en fallo"
+                title="Click to navigate directly to the affected console"
               >
-                <div className="text-[10px] font-sans font-bold leading-snug truncate">
-                  ⚠️ [FALLO EN TU SECTOR - {remoteAlertBanner.sector} (a {remoteAlertBanner.distM}m{' '}
-                  <span className="text-yellow-300">{remoteAlertBanner.arrow}</span>)]:{' '}
-                  <span className="text-white font-normal">{remoteAlertBanner.hint}</span>
+                <div className="flex items-center justify-between gap-2 text-[10px] font-sans font-bold leading-snug">
+                  <span className="truncate">
+                    ⚠️ [SECTOR ALERT - {remoteAlertBanner.sector} ({remoteAlertBanner.distM}m away{' '}
+                    <span className="text-yellow-300">{remoteAlertBanner.arrow}</span>)]:{' '}
+                    <span className="text-white font-normal">{remoteAlertBanner.hint}</span>
+                  </span>
+                  <span className="shrink-0 text-[9px] text-yellow-300 uppercase">
+                    {remoteAlertBanner.urgency >= 65 ? 'CRITICAL · ENGAGE ▶' : 'CAUTION · ENGAGE ▶'}
+                  </span>
                 </div>
               </button>
             )}
@@ -9790,7 +9795,7 @@ export default function StationOperationScreen({
                 color: overviewMode ? '#86efac' : '#67e8f9',
               }}
             >
-              {overviewMode ? '🔍 SEGUIR JUGADOR' : '👁️ MAPA GLOBAL'}
+              {overviewMode ? '🔍 FOLLOW CREW' : '👁️ GLOBAL MAP'}
             </button>
           </div>
 
@@ -9802,7 +9807,7 @@ export default function StationOperationScreen({
             style={{ background: 'rgba(8, 12, 26, 0.90)', backdropFilter: 'blur(4px)' }}
           >
             <div className="flex items-center justify-between text-[7px] text-cyan-300 mb-1">
-              <span>🗺️ 4 SECTORES · CLIC PARA IR AQUÍ</span>
+              <span>🗺️ 4 SECTORS · CLICK TO JUMP</span>
               <button
                 onClick={() => {
                   playClick()
@@ -9820,7 +9825,7 @@ export default function StationOperationScreen({
                 }}
                 className="px-1 py-0.5 bg-slate-800 border border-slate-600 text-yellow-300 hover:bg-slate-700"
               >
-                🎯 YO
+                🎯 ME
               </button>
             </div>
             <div className="grid grid-cols-2 gap-1 bg-[#050814] p-1 border border-black">
@@ -9853,7 +9858,7 @@ export default function StationOperationScreen({
                   >
                     <div className="flex items-center justify-between gap-1 text-[7px] leading-none mb-0.5">
                       <span className="truncate font-bold" style={{ color: ownerInfo.color }}>
-                        {ownerInfo.icon} S{q.sectorNum} {isOwnerMe ? '·TÚ' : ''}
+                        {ownerInfo.icon} S{q.sectorNum} {isOwnerMe ? '·YOU' : ''}
                       </span>
                       {hasIssue && isOwnerMe ? (
                         <span className="px-1 bg-red-600 text-yellow-200 font-bold animate-pulse">
@@ -9862,7 +9867,7 @@ export default function StationOperationScreen({
                       ) : hasIssue ? (
                         <span
                           className="text-amber-400 font-bold"
-                          title="Compañero atendiendo anomalía en este sector"
+                          title="Squadmate handling anomaly in this sector"
                         >
                           ●
                         </span>
@@ -9942,7 +9947,7 @@ export default function StationOperationScreen({
               className="pointer-events-auto mb-1 px-2 py-1 text-[8px] border border-cyan-500/60 bg-[#080d1e]/90 text-cyan-200 hover:bg-[#101a38]"
             >
               {missionPanelOpen
-                ? `📋 MISIONES (${Math.round(missionProgress)}%) ▾`
+                ? `📋 MISSIONS (${Math.round(missionProgress)}%) ▾`
                 : `📋 ${Math.round(missionProgress)}%`}
             </button>
 
@@ -9958,11 +9963,11 @@ export default function StationOperationScreen({
                 <div className="p-1.5 bg-[#050814]/80 border border-slate-800">
                   <div className="flex items-center justify-between text-[7px] text-cyan-300 mb-0.5 truncate">
                     <span>🎯 {activeMissionDef.code}</span>
-                    <span>ETAPA {activeMissionDef.number}/3</span>
+                    <span>STAGE {activeMissionDef.number}/3</span>
                   </div>
                   <div className="flex items-center justify-between text-[8px]">
                     <span className="text-yellow-300">
-                      ⏱️ AVANCE {missionProgress}% ({resolvedCount}/{missionTargetCount})
+                      ⏱️ PROGRESS {missionProgress}% ({resolvedCount}/{missionTargetCount})
                     </span>
                     <span className="text-emerald-300">🔬 {officialScience}</span>
                   </div>
@@ -9980,7 +9985,7 @@ export default function StationOperationScreen({
                 {/* 👥 ESTADO DISCRETO DE LOS 4 ESPECIALISTAS (PUNTO ● PARA COMPAÑEROS) */}
                 <div className="p-1.5 bg-[#050814]/75 border border-slate-800">
                   <div className="text-[6.5px] text-slate-400 font-bold mb-1">
-                    👥 ESCUADRA (TU ROL + EQUIPO)
+                    👥 SQUADRON (YOUR ROLE + CREW)
                   </div>
                   <div className="grid grid-cols-2 gap-1">
                     {ROLE_ORDER.map((r) => {
@@ -10009,7 +10014,7 @@ export default function StationOperationScreen({
                             }
                             title={
                               hasRoleIssue
-                                ? 'Incidencia en curso'
+                                ? 'Active anomaly'
                                 : 'Sector nominal'
                             }
                           >
@@ -10024,12 +10029,12 @@ export default function StationOperationScreen({
                 {/* 🔴 / 🟡 TUS ALERTAS ACTIVAS (EXCLUSIVAS DE TU ROL PARA CERO SATURACIÓN) */}
                 <div>
                   <div className="text-[7px] text-red-300 font-bold mb-1 tracking-wide">
-                    🔴 TUS ALERTAS ({myActiveThreats.length})
+                    🔴 YOUR ALERTS ({myActiveThreats.length})
                   </div>
                   <div className="flex flex-col gap-1.5">
                     {myActiveThreats.length === 0 && (
                       <div className="p-1.5 border border-emerald-700/60 bg-emerald-950/30 text-[7px] text-emerald-200">
-                        ✅ Tu sector ({activeRoleInfo.animalName}) sin fallos críticos ahora.
+                        ✅ Your sector ({activeRoleInfo.animalName}) is currently nominal.
                       </div>
                     )}
                     {myActiveThreats.map((t, idx) => {
@@ -10080,7 +10085,7 @@ export default function StationOperationScreen({
                           </div>
                           <div className="flex items-center justify-between text-[6px] text-cyan-300 mt-0.5">
                             <span>{def.quadrantTag}</span>
-                            <span>IR ▶</span>
+                            <span>GO ▶</span>
                           </div>
                         </button>
                       )
@@ -10092,7 +10097,7 @@ export default function StationOperationScreen({
                 {myCooldownItems.length > 0 && (
                   <div>
                     <div className="text-[7px] text-emerald-300 font-bold mb-1">
-                      🟢 ESTABILIZADOS ({myCooldownItems.length})
+                      🟢 STABILIZED ({myCooldownItems.length})
                     </div>
                     <div className="flex flex-col gap-1">
                       {myCooldownItems.map((item) => (
@@ -10104,7 +10109,7 @@ export default function StationOperationScreen({
                             🟢 {item.def.title}
                           </div>
                           <div className="text-emerald-300/90 mt-0.5">
-                            Enfriamiento: {item.secLeft}s
+                            Cooldown: {item.secLeft}s
                           </div>
                         </div>
                       ))}
@@ -10115,7 +10120,7 @@ export default function StationOperationScreen({
                 {/* ⏳ PENDIENTES DISPONIBLES EN TU SECTOR */}
                 <div>
                   <div className="text-[7px] text-amber-200 font-bold mb-1">
-                    ⏳ TUS PENDIENTES ({myPendingBacklog.length})
+                    ⏳ YOUR QUEUE ({myPendingBacklog.length})
                   </div>
                   <div className="flex flex-col gap-1">
                     {myPendingBacklog.map((m) => {
@@ -10139,7 +10144,7 @@ export default function StationOperationScreen({
                             <span>
                               ⏳ {mOwner.icon} {m.quadrantTag}
                             </span>
-                            <span>IR ▶</span>
+                            <span>GO ▶</span>
                           </div>
                           <div className="text-gray-200 truncate mt-0.5">{m.title}</div>
                         </button>
@@ -10152,7 +10157,7 @@ export default function StationOperationScreen({
                 {completedBacklog.length > 0 && (
                   <div>
                     <div className="text-[7px] text-cyan-300 font-bold mb-1">
-                      📊 HISTORIAL ETAPA ({resolvedCount}/{missionTargetCount})
+                      📊 STAGE LOG ({resolvedCount}/{missionTargetCount})
                     </div>
                     <div className="flex flex-col gap-1">
                       {completedBacklog.map((m) => (
@@ -10175,8 +10180,8 @@ export default function StationOperationScreen({
               missionPanelOpen ? 'right-[240px]' : 'right-2'
             }`}
           >
-            🕹️ <strong className="text-yellow-300">WASD / Clic</strong> · Terminal:{' '}
-            <strong className="text-cyan-300">[&quot;E&quot;]</strong>
+            🕹️ <strong className="text-yellow-300">WASD / Arrows / Click</strong> · Interact:{' '}
+            <strong className="text-cyan-300">[E] / SPACE</strong>
           </div>
         </div>
       </div>
@@ -10227,7 +10232,7 @@ export default function StationOperationScreen({
                   <span className="text-3xl">{openConsole.icon}</span>
                   <div>
                     <div className="text-[11px] text-cyan-300 tracking-wide">
-                      TERMINAL NASA · {openConsole.zoneName}
+                      NASA TERMINAL · {openConsole.zoneName}
                     </div>
                     <h2
                       className="text-[14px] sm:text-[16px] font-bold text-yellow-300 mt-0.5 leading-snug"
@@ -10244,25 +10249,25 @@ export default function StationOperationScreen({
                     color: openConsoleTask ? '#000' : '#fff',
                   }}
                 >
-                  {openConsoleTask ? '⚠️ REQUIERE ACCIÓN' : '✅ SUBSISTEMA OPERATIVO'}
+                  {openConsoleTask ? '⚠️ ACTION REQUIRED' : '✅ SUBSYSTEM NOMINAL'}
                 </span>
               </div>
 
               {/* Estado Actual del Subsistema */}
               <div className="p-3.5 mb-4 bg-[#101b38] border-2 border-black">
                 <div className="flex items-center justify-between text-[12px] sm:text-[13px] text-cyan-200 mb-1.5">
-                  <span>SUBSISTEMA: {openConsole.subsystemLabel}</span>
+                  <span>SUBSYSTEM: {openConsole.subsystemLabel}</span>
                   <span className="font-bold text-white">
-                    OPERADOR: {ROLE_INFO[openConsole.role].icon} {ROLE_INFO[openConsole.role].code}
+                    OPERATOR: {ROLE_INFO[openConsole.role].icon} {ROLE_INFO[openConsole.role].code}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px] mt-2">
                   <div className="p-2 bg-[#080d1c] border border-slate-700">
-                    <div className="text-yellow-300 text-[10px]">⚡ ENERGÍA</div>
+                    <div className="text-yellow-300 text-[10px]">⚡ ENERGY</div>
                     <div className="text-[14px] font-bold text-white mt-0.5">{Math.round(battery)}%</div>
                   </div>
                   <div className="p-2 bg-[#080d1c] border border-slate-700">
-                    <div className="text-cyan-300 text-[10px]">🫧 OXÍGENO O2</div>
+                    <div className="text-cyan-300 text-[10px]">🫧 LIFE O2</div>
                     <div className="text-[14px] font-bold text-white mt-0.5">{Math.round(lifeSupport)}%</div>
                   </div>
                   <div className="p-2 bg-[#080d1c] border border-slate-700">
@@ -10270,7 +10275,7 @@ export default function StationOperationScreen({
                     <div className="text-[14px] font-bold text-white mt-0.5">{Math.round(dataBuffer)}%</div>
                   </div>
                   <div className="p-2 bg-[#080d1c] border border-slate-700">
-                    <div className="text-purple-300 text-[10px]">🧭 ÓRBITA</div>
+                    <div className="text-purple-300 text-[10px]">🧭 ORBIT</div>
                     <div className="text-[14px] font-bold text-white mt-0.5">{Math.round(orbitStability)}%</div>
                   </div>
                 </div>
@@ -10289,23 +10294,23 @@ export default function StationOperationScreen({
                   style={{ color: openConsoleTask ? '#fde047' : '#67e8f9' }}
                 >
                   {openConsoleTask
-                    ? `🎯 ${openConsoleTask.kind === 'problem' ? 'PROBLEMA ACTIVO' : 'MISIÓN ACTIVA'}: ${
+                    ? `🎯 ${openConsoleTask.kind === 'problem' ? 'ACTIVE ANOMALY' : 'ACTIVE MISSION'}: ${
                         openConsoleTask.title
                       }`
-                    : `📋 DIAGNÓSTICO DE CONSOLA: ${openConsole.shortLabel}`}
+                    : `📋 CONSOLE DIAGNOSTICS: ${openConsole.shortLabel}`}
                 </div>
                 <p className="text-[13px] sm:text-[14px] text-gray-100 leading-relaxed">
                   {openConsoleTask ? openConsoleTask.reason : openConsole.hint}
                 </p>
                 <div className="mt-3 pt-2.5 border-t border-slate-700 text-[12px] sm:text-[13px] text-emerald-300 leading-relaxed">
-                  <strong>EFECTO DE OPERACIÓN:</strong> {openConsole.hint}
+                  <strong>OPERATION EFFECT:</strong> {openConsole.hint}
                 </div>
               </div>
 
               {/* Último mensaje de la tripulación */}
               {lastLog && (
                 <div className="p-3 mb-5 bg-[#060913] border-l-4 border-yellow-400 text-[12px] sm:text-[13px] text-gray-300 leading-relaxed">
-                  <strong className="text-yellow-300">📻 BITÁCORA: </strong>
+                  <strong className="text-yellow-300">📻 COMMS LOG: </strong>
                   {lastLog.text}
                 </div>
               )}
@@ -10321,7 +10326,7 @@ export default function StationOperationScreen({
                   className="mc-btn px-4 py-3 text-[12px] sm:text-[13px]"
                   style={{ background: '#334155', color: '#e2e8f0' }}
                 >
-                  [ ESC / CERRAR ]
+                  [ ESC / CLOSE ]
                 </button>
                 <button
                   onMouseEnter={playHover}
@@ -10333,7 +10338,7 @@ export default function StationOperationScreen({
                     borderColor: '#4ade80',
                   }}
                 >
-                  [ ⚡ EJECUTAR / SOLUCIONAR (ESPACIO / ENTER) ]
+                  [ ⚡ EXECUTE / RESOLVE (SPACE / ENTER) ]
                 </button>
               </div>
             </motion.div>
@@ -10441,7 +10446,7 @@ export default function StationOperationScreen({
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[11px] sm:text-xs font-bold tracking-wider text-[#5ef0ff]">
-                      🛰️ SELECTOR DE ESPECIALISTA DEL ESCUADRÓN ANDINO
+                      🛰️ ANDEAN SQUADRON SPECIALIST SELECT
                     </span>
                     <span
                       className="text-[8px] sm:text-[9px] px-2 py-0.5 border font-bold"
@@ -10452,16 +10457,16 @@ export default function StationOperationScreen({
                       }}
                     >
                       {soloPracticeMode
-                        ? '🎮 MODO PRÁCTICA INDIVIDUAL (SIN BLOQUEOS)'
+                        ? '🎮 SOLO PRACTICE MODE (UNLOCKED)'
                         : syncConnected
-                          ? `🌐 SALA ${activeRoomCode ?? 'LAN'} EN TIEMPO REAL`
-                          : '⚠️ RECONECTANDO LAN (/api/roles-sync)'}
+                          ? `🌐 ROOM ${activeRoomCode ?? 'LAN'} REAL-TIME`
+                          : '⚠️ RECONNECTING LAN (/api/roles-sync)'}
                     </span>
                   </div>
                   <p className="text-[9px] sm:text-[10px] text-slate-300 mt-1">
                     {soloPracticeMode
-                      ? 'Controla libremente los 4 especialistas desde este PC (teclas 1–4). Tus cambios no bloquean la sala LAN.'
-                      : 'Cada PC de la red local elige un especialista único. Una vez tomado, queda bloqueado para los demás hasta liberarlo o desconectarse.'}
+                      ? 'Control all 4 specialists freely from this workstation (keys 1–4). Your changes do not lock the LAN room.'
+                      : 'Each workstation on the local network claims one unique specialist. Once claimed, it remains locked to others until released or disconnected.'}
                   </p>
                 </div>
 
@@ -10475,7 +10480,7 @@ export default function StationOperationScreen({
                     className="mc-btn px-3 py-1.5 text-[9px] sm:text-[10px]"
                     style={{ background: '#3b0712', color: '#fecdd3', borderColor: '#f87171' }}
                   >
-                    ← MENÚ
+                    ← MENU
                   </button>
                   {(soloPracticeMode || myClaimedRole !== null) && (
                     <button
@@ -10487,7 +10492,7 @@ export default function StationOperationScreen({
                       className="mc-btn px-3 py-1.5 text-[9px] sm:text-[10px]"
                       style={{ background: '#1e293b', color: '#f8fafc', borderColor: '#94a3b8' }}
                     >
-                      ✕ VOLVER A ESTACIÓN
+                      ✕ RETURN TO STATION
                     </button>
                   )}
                 </div>
@@ -10500,7 +10505,7 @@ export default function StationOperationScreen({
                     htmlFor="squadron-player-name"
                     className="text-[8px] sm:text-[9px] text-cyan-300 font-bold whitespace-nowrap"
                   >
-                    TU IDENTIFICADOR PC:
+                    WORKSTATION CALLSIGN:
                   </label>
                   <input
                     id="squadron-player-name"
@@ -10508,7 +10513,7 @@ export default function StationOperationScreen({
                     maxLength={18}
                     value={playerName}
                     onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
-                    placeholder="OPERADOR-PC"
+                    placeholder="OPERATOR-PC"
                     className="bg-[#131830] border-2 border-[#38bdf8] text-[#f8fafc] text-[9px] sm:text-[10px] px-2 py-1 w-44 outline-none focus:border-yellow-300"
                   />
                 </div>
@@ -10536,7 +10541,7 @@ export default function StationOperationScreen({
                         borderColor: soloPracticeMode ? '#facc15' : '#475569',
                       }}
                     >
-                      {soloPracticeMode ? '✅ MODO LOCAL ACTIVO' : '🛠️ MODO LOCAL'}
+                      {soloPracticeMode ? '✅ LOCAL MODE ACTIVE' : '🛠️ LOCAL MODE'}
                     </button>
                   )}
 
@@ -10549,7 +10554,7 @@ export default function StationOperationScreen({
                     }`}
                     style={{ background: '#1e293b', color: '#7dd3fc', borderColor: '#38bdf8' }}
                   >
-                    🔓 LIBERAR MI ROL
+                    🔓 RELEASE MY ROLE
                   </button>
 
                   <button
@@ -10558,7 +10563,7 @@ export default function StationOperationScreen({
                     className="mc-btn px-2.5 py-1.5 text-[8px] sm:text-[9px]"
                     style={{ background: '#450a0a', color: '#fca5a5', borderColor: '#ef4444' }}
                   >
-                    ↺ RESETEAR SALA (HOST)
+                    ↺ RESET ROOM (HOST)
                   </button>
                 </div>
               </div>
@@ -10650,20 +10655,20 @@ export default function StationOperationScreen({
                           }}
                         >
                           {busy
-                            ? 'CONECTANDO...'
+                            ? 'CONNECTING...'
                             : locked
                               ? remotePlayerRoles[r]
-                                ? `● EN MAPA: ${remotePlayerRoles[r]}`
-                                : `🔒 ${claim?.playerName ?? 'OCUPADO'}`
+                                ? `● ON DECK: ${remotePlayerRoles[r]}`
+                                : `🔒 ${claim?.playerName ?? 'CLAIMED'}`
                               : isMine
-                                ? '✅ TU ROL ACTIVO'
-                                : '🤖 BOT DE APOYO · ELEGIR'}
+                                ? '✅ YOUR ACTIVE ROLE'
+                                : '🤖 BOT SUPPORT · SELECT'}
                         </span>
                       </div>
 
                       <div className="mt-2.5 space-y-1">
                         <div className="text-[8px] text-slate-400 font-bold">
-                          2 MINIJUEGOS ÚNICOS ASIGNADOS:
+                          2 ASSIGNED MINIGAMES:
                         </div>
                         {roleGames.map((mg) => {
                           const done = completedMinigames.has(mg.game)
@@ -10686,15 +10691,15 @@ export default function StationOperationScreen({
                       <div className="mt-2.5 flex items-center justify-between text-[8px] font-bold">
                         {locked ? (
                           <span className="text-red-300">
-                            🔒 SELECCIONADO POR OTRO JUGADOR ({claim?.playerName ?? 'LAN'})
+                            🔒 LOCKED BY OTHER PILOT ({claim?.playerName ?? 'LAN'})
                           </span>
                         ) : isMine ? (
                           <span className="text-[#7bff9a]">
-                            ▶ CLIC PARA ENTRAR COMO {info.code}
+                            ▶ CLICK TO DEPLOY AS {info.code}
                           </span>
                         ) : (
                           <span className="text-cyan-300">
-                            ▶ CLIC PARA TOMAR ESTE ROL Y DESPLEGAR
+                            ▶ CLICK TO DEPLOY
                           </span>
                         )}
                         <span className="text-slate-400">{info.animalName}</span>
@@ -10712,9 +10717,9 @@ export default function StationOperationScreen({
         <GameOverExplosionModal
           reason={
             gameOverReason ||
-            'Integridad orbital colapsada al 0%: destrucción total de la estación.'
+            'Orbital integrity collapsed to 0%: catastrophic loss of the space station.'
           }
-          missionLabel={`ETAPA ${activeMissionDef.number}/3 · ${activeMissionDef.code}`}
+          missionLabel={`STAGE ${activeMissionDef.number}/3 · ${activeMissionDef.code}`}
           onRetryMission={() => {
             void handleRetryMissionStage()
           }}

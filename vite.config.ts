@@ -457,7 +457,7 @@ function squadronMultiplayerPlugin(): Plugin {
     missionId: MissionId,
     launcherId: LauncherId,
     now = Date.now(),
-    actorName = 'Misión'
+    actorName = 'Mission'
   ) => {
     const validLauncher = resolveCompatibleLauncher(missionId, launcherId)
     room.missionId = missionId
@@ -466,13 +466,13 @@ function squadronMultiplayerPlugin(): Plugin {
     room.satellites.sat1.launcherId = validLauncher
     room.satellites.sat1.updatedAt = now
     room.satellites.sat1.updatedByName = actorName
-    room.satellites.sat1.lastActionLabel = `Misión ${missionId.toUpperCase()} (${validLauncher})`
+    room.satellites.sat1.lastActionLabel = `Mission ${missionId.toUpperCase()} (${validLauncher})`
 
     room.satellites.sat2.contractId = missionId
     room.satellites.sat2.launcherId = validLauncher
     room.satellites.sat2.updatedAt = now
     room.satellites.sat2.updatedByName = actorName
-    room.satellites.sat2.lastActionLabel = `Misión ${missionId.toUpperCase()} (${validLauncher})`
+    room.satellites.sat2.lastActionLabel = `Mission ${missionId.toUpperCase()} (${validLauncher})`
   }
 
   const syncBriefingTimerAndAdvance = (room: RoomRecord, now = Date.now()): boolean => {
@@ -495,7 +495,7 @@ function squadronMultiplayerPlugin(): Plugin {
     room.phase = 'WORKSHOP'
     room.briefingDeadlineAt = null
     room.briefingReady = {}
-    applyMissionToRoomSatellites(room, room.missionId, room.launcherId, now, room.hostName || 'Sistema')
+    applyMissionToRoomSatellites(room, room.missionId, room.launcherId, now, room.hostName || 'System')
     room.sharedStation = createEmptySharedStation(room.currentMissionIndex > 1 ? room.sharedStation.points : 0)
     room.updatedAt = now
     return true
@@ -624,7 +624,7 @@ function squadronMultiplayerPlugin(): Plugin {
     }
 
     if (Object.keys(room.members).length >= MAX_ROOM_MEMBERS) {
-      return { ok: false, error: 'La sala está llena (4/4 jugadores)' }
+      return { ok: false, error: 'Room is full (4/4 players)' }
     }
 
     if (!room.hostClientId) {
@@ -788,7 +788,7 @@ function squadronMultiplayerPlugin(): Plugin {
     const cleanName =
       typeof parsed.playerName === 'string' && parsed.playerName.trim()
         ? parsed.playerName.trim().slice(0, 24)
-        : 'Especialista'
+        : 'Specialist'
 
     if (clientId) {
       const memberRes = upsertRoomMember(room, clientId, cleanName, now)
@@ -822,7 +822,7 @@ function squadronMultiplayerPlugin(): Plugin {
           currentRoom:
             typeof parsed.player.currentRoom === 'string' && parsed.player.currentRoom.trim()
               ? parsed.player.currentRoom.trim().slice(0, 48)
-              : 'ESTACIÓN',
+              : 'STATION',
           lastSeen: now,
         }
         if (owner) {
@@ -988,7 +988,7 @@ function squadronMultiplayerPlugin(): Plugin {
           room.sharedStation.isGameOver = true
           room.sharedStation.gameOverReason =
             (typeof parsed.gameOverReason === 'string' && parsed.gameOverReason.trim()) ||
-            'Integridad general de la estación reducida al 0% tras fallos críticos.'
+            'Overall station integrity dropped to 0% following critical failures.'
         }
         stationTouched = true
       }
@@ -998,7 +998,7 @@ function squadronMultiplayerPlugin(): Plugin {
       room.sharedStation.isGameOver = true
       room.sharedStation.gameOverReason =
         (typeof parsed.gameOverReason === 'string' && parsed.gameOverReason.trim()) ||
-        'Colapso catastrófico en los sistemas vitales de la estación.'
+        'Catastrophic collapse in vital station systems.'
       stationTouched = true
     }
 
@@ -1075,7 +1075,7 @@ function squadronMultiplayerPlugin(): Plugin {
     const playerName =
       typeof parsed.playerName === 'string' && parsed.playerName.trim()
         ? parsed.playerName.trim().slice(0, 24)
-        : 'Especialista'
+        : 'Specialist'
 
     if (action === 'close_room') {
       broadcastRoomDeleted(room.code)
@@ -1132,7 +1132,7 @@ function squadronMultiplayerPlugin(): Plugin {
       if (parsed.resetPhase) {
         room.phase = 'LOBBY'
         room.currentMissionIndex = 1
-        applyMissionToRoomSatellites(room, 'andes', 'rideshare', now, 'Sistema')
+        applyMissionToRoomSatellites(room, 'andes', 'rideshare', now, 'System')
       }
       if (parsed.resetStation) {
         room.sharedStation = createEmptySharedStation()
@@ -1246,7 +1246,7 @@ function squadronMultiplayerPlugin(): Plugin {
         sendJson(res, 403, {
           ok: false,
           code: 'MISSION_STAGE_LOCKED',
-          error: 'La campaña es secuencial: completa la etapa actual antes de avanzar.',
+          error: 'Campaign is sequential: complete the current stage before advancing.',
           room: serializeRoom(room),
         })
         return
@@ -1567,7 +1567,7 @@ function squadronMultiplayerPlugin(): Plugin {
             const playerName =
               typeof parsed.playerName === 'string' && parsed.playerName.trim()
                 ? parsed.playerName.trim().slice(0, 24)
-                : 'Comandante'
+                : 'Commander'
 
             // Sacar automáticamente al creador de cualquier sala anterior donde estuviera
             removeClientFromOtherRooms(clientId, null, 'switch', reqNow)

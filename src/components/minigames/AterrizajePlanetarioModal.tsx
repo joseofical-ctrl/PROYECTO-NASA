@@ -7,7 +7,7 @@ export default function AterrizajePlanetarioModal(props: MinigameModalProps) {
       {...props}
       game="lander"
       file="aterrizaje_planetario.html"
-      title="ATERRIZAJE PLANETARIO DE SONDA CIENTÍFICA · PUMA-3"
+      title="SCIENCE PROBE PLANETARY LANDING · PUMA-3"
       accent="#55efc4"
     />
   )

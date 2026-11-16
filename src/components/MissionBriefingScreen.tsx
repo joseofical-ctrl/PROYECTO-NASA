@@ -78,7 +78,7 @@ function MissionOrbitIllustration({ missionId }: { missionId: MissionId }) {
           <rect x="3" y="8" width="4" height="3" fill="#22d3ee" />
         </g>
         <text x="10" y="16" fill="#7dd3fc" fontSize="8" fontFamily="monospace" fontWeight="bold">
-          LEO · POLO ANDINO
+          LEO · ANDEAN POLE
         </text>
       </svg>
     )
@@ -115,7 +115,7 @@ function MissionOrbitIllustration({ missionId }: { missionId: MissionId }) {
           <circle cx="-8" cy="11" r="3" fill="none" stroke="#38bdf8" strokeWidth="1" />
         </g>
         <text x="10" y="86" fill="#d8b4fe" fontSize="8" fontFamily="monospace" fontWeight="bold">
-          LLO · POLO SUR LUNAR
+          LLO · LUNAR SOUTH POLE
         </text>
       </svg>
     )
@@ -142,7 +142,7 @@ function MissionOrbitIllustration({ missionId }: { missionId: MissionId }) {
       <path d="M206 42 Q216 38 220 49 Q214 57 204 52 Z" fill="#22c55e" opacity="0.85" />
       <path d="M188 26 Q178 48 188 70" fill="none" stroke="#38bdf8" strokeWidth="1.5" opacity="0.7" />
       <text x="122" y="86" fill="#fde047" fontSize="8" fontFamily="monospace" fontWeight="bold">
-        PUNTO LAGRANGE L1 · TORMENTA SOLAR
+        LAGRANGE POINT L1 · SOLAR STORM
       </text>
     </svg>
   )
@@ -245,7 +245,7 @@ export default function MissionBriefingScreen({
       const res = await toggleRoomBriefingReady(room.code, clientId, playerName, !amIReady)
       if (res.room) onRoomUpdated(res.room)
     } catch {
-      onNotify('No se pudo actualizar tu estado de lectura.')
+      onNotify('Unable to update briefing readiness status.')
     } finally {
       setBusy(false)
     }
@@ -254,7 +254,7 @@ export default function MissionBriefingScreen({
   const handleConfirmPhase = async (targetPhase: 'WORKSHOP' | 'STATION') => {
     if (!room || busy) return
     if (!canConfirmMission) {
-      onNotify('Esperando a que el Host o CÓNDOR-4 confirme el inicio de la etapa.')
+      onNotify('Waiting for Host or CONDOR-4 to confirm stage launch.')
       return
     }
     playClick()
@@ -270,7 +270,7 @@ export default function MissionBriefingScreen({
       })
       if (res.room) onRoomUpdated(res.room)
     } catch {
-      onNotify('No se pudo confirmar la etapa actual de campaña.')
+      onNotify('Unable to confirm current campaign stage.')
     } finally {
       setBusy(false)
     }
@@ -297,7 +297,7 @@ export default function MissionBriefingScreen({
               className="mc-btn px-2.5 py-1.5 text-[clamp(8px,0.65vw,10px)] flex items-center gap-1.5 shrink-0"
             >
               <ArrowLeft size={13} />
-              <span>VOLVER</span>
+              <span>BACK</span>
             </button>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -305,11 +305,11 @@ export default function MissionBriefingScreen({
                   className="text-[clamp(10px,1.08vw,15px)] font-bold text-cyan-300 tracking-wide truncate"
                   style={{ textShadow: '2px 2px 0 #000' }}
                 >
-                  CAMPAÑA CIENTÍFICA · MISIÓN ACTUAL: ETAPA {currentMissionIndex} DE 3
+                  SCIENTIFIC CAMPAIGN · ACTIVE MISSION: STAGE {currentMissionIndex} OF 3
                 </h1>
                 {room && (
                   <span className="px-2 py-0.5 text-[clamp(7.5px,0.6vw,9px)] bg-slate-900 border border-cyan-400/50 text-cyan-200 rounded whitespace-nowrap">
-                    SALA {room.code} · {connectedCount}/4
+                    ROOM {room.code} · {connectedCount}/4
                   </span>
                 )}
                 {myRoleInfo && (
@@ -322,8 +322,8 @@ export default function MissionBriefingScreen({
                 )}
               </div>
               <p className="font-sans text-[11px] text-slate-300 truncate mt-0.5">
-                Progresión secuencial obligatoria · Etapa {currentMissionIndex}:{' '}
-                <strong className="text-yellow-300">{activeMission.code}</strong> · Cohete:{' '}
+                Mandatory sequential progression · Stage {currentMissionIndex}:{' '}
+                <strong className="text-yellow-300">{activeMission.code}</strong> · Launch Vehicle:{' '}
                 <strong className="text-cyan-300">{activeLauncher.name}</strong>
               </p>
             </div>
@@ -338,7 +338,7 @@ export default function MissionBriefingScreen({
               }`}
             >
               <Clock size={14} />
-              <span>⏱ {String(remainingSec).padStart(2, '0')}s para lectura de briefing</span>
+              <span>⏱ {String(remainingSec).padStart(2, '0')}s briefing reading window</span>
             </div>
 
             <button
@@ -357,7 +357,7 @@ export default function MissionBriefingScreen({
               }}
             >
               <Check size={13} />
-              <span>✔ ESTOY LISTO ({readyCount}/{connectedCount})</span>
+              <span>✔ READY ({readyCount}/{connectedCount})</span>
             </button>
 
             {canConfirmMission ? (
@@ -375,7 +375,7 @@ export default function MissionBriefingScreen({
                   }}
                 >
                   <Rocket size={14} />
-                  <span>🚀 CONFIRMAR MISIÓN Y ABRIR TALLER</span>
+                  <span>🚀 CONFIRM MISSION & OPEN WORKSHOP</span>
                 </button>
                 {currentMissionIndex >= 2 && (
                   <button
@@ -389,14 +389,14 @@ export default function MissionBriefingScreen({
                       borderColor: '#7dd3fc',
                     }}
                   >
-                    <span>🛰️ IR DIRECTO A ESTACIÓN</span>
+                    <span>🛰️ PROCEED DIRECTLY TO STATION</span>
                   </button>
                 )}
               </>
             ) : (
               <div className="px-3 py-1.5 bg-slate-900 border border-slate-600 text-slate-300 text-[clamp(8px,0.62vw,9.5px)] rounded flex items-center gap-1.5 whitespace-nowrap">
                 <Lock size={12} className="text-amber-300" />
-                <span>Solo Host / CÓNDOR-4 confirma inicio</span>
+                <span>Only Host / CONDOR-4 can confirm mission start</span>
               </div>
             )}
           </div>
@@ -409,10 +409,10 @@ export default function MissionBriefingScreen({
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-400 text-cyan-200 text-[clamp(8px,0.65vw,10px)] font-bold rounded">
-                FASE 1 · PROGRESIÓN DE CAMPAÑA SECUENCIAL
+                PHASE 1 · SEQUENTIAL CAMPAIGN PROGRESSION
               </span>
               <span className="font-sans text-xs text-slate-300">
-                Las 3 misiones se desbloquean en orden estricto al completar todos los problemas de cada órbita.
+                All 3 missions unlock sequentially upon resolving all anomalies in each orbit.
               </span>
             </div>
           </div>
@@ -443,16 +443,16 @@ export default function MissionBriefingScreen({
                     <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
                       {isCurrent ? (
                         <span className="text-[9px] px-2 py-0.5 rounded font-bold bg-amber-400 text-black truncate max-w-full">
-                          {m.number === 3 ? '▶ MISIÓN FINAL EN CURSO' : '▶ MISIÓN ACTUAL EN CURSO'}
+                          {m.number === 3 ? '▶ FINAL ACTIVE MISSION' : '▶ CURRENT ACTIVE MISSION'}
                         </span>
                       ) : isCompleted ? (
                         <span className="text-[9px] px-2 py-0.5 rounded font-bold bg-emerald-500 text-black flex items-center gap-1 truncate max-w-full">
                           <CheckCircle2 size={11} className="shrink-0" />
-                          <span className="truncate">✅ MISIÓN {m.number} COMPLETADA</span>
+                          <span className="truncate">✅ MISSION {m.number} COMPLETED</span>
                         </span>
                       ) : (
                         <span className="text-[9px] px-2 py-0.5 rounded font-bold bg-slate-800 border border-slate-600 text-slate-300 flex items-center gap-1 truncate max-w-full">
-                          <Lock size={10} className="shrink-0" /> BLOQUEADA
+                          <Lock size={10} className="shrink-0" /> LOCKED
                         </span>
                       )}
 
@@ -483,7 +483,7 @@ export default function MissionBriefingScreen({
                         className="text-[clamp(9px,0.72vw,11px)] font-bold tracking-wide"
                         style={{ color: isLocked ? '#94a3b8' : isCompleted ? '#4ade80' : m.accentColor }}
                       >
-                        ETAPA {m.number} · {m.code}
+                        STAGE {m.number} · {m.code}
                       </div>
                       <h2 className="text-[clamp(10px,0.84vw,12.5px)] font-bold text-white leading-snug mt-1">
                         {m.title}
@@ -497,7 +497,7 @@ export default function MissionBriefingScreen({
                     <div className="grid grid-cols-3 gap-1.5 text-center">
                       <div className="p-1.5 bg-[#060a18] border border-slate-700 rounded">
                         <div className="text-[clamp(6.5px,0.52vw,7.5px)] text-slate-400">
-                          PRESUPUESTO
+                          BUDGET
                         </div>
                         <div className="text-[clamp(8.5px,0.68vw,10.5px)] font-bold text-emerald-300 mt-0.5">
                           {m.budgetDisplay}
@@ -505,7 +505,7 @@ export default function MissionBriefingScreen({
                       </div>
                       <div className="p-1.5 bg-[#060a18] border border-slate-700 rounded">
                         <div className="text-[clamp(6.5px,0.52vw,7.5px)] text-slate-400">
-                          META CIENCIA
+                          SCIENCE GOAL
                         </div>
                         <div className="text-[clamp(8.5px,0.68vw,10.5px)] font-bold text-yellow-300 mt-0.5">
                           {m.sciGoalDisplay}
@@ -513,7 +513,7 @@ export default function MissionBriefingScreen({
                       </div>
                       <div className="p-1.5 bg-[#060a18] border border-slate-700 rounded">
                         <div className="text-[clamp(6.5px,0.52vw,7.5px)] text-slate-400">
-                          RADIACIÓN
+                          RADIATION
                         </div>
                         <div className="text-[clamp(8.5px,0.68vw,10.5px)] font-bold text-orange-300 mt-0.5">
                           {m.radiationDisplay}
@@ -524,7 +524,7 @@ export default function MissionBriefingScreen({
                     {/* Requisitos obligatorios */}
                     <div className="p-2 bg-[#070b1a] border border-cyan-900/70 rounded">
                       <div className="text-[clamp(7px,0.55vw,8px)] text-cyan-300 font-bold mb-1">
-                        MÓDULOS OBLIGATORIOS EN TALLER
+                        MANDATORY WORKSHOP MODULES
                       </div>
                       <ul className="font-sans text-[11px] text-cyan-100 space-y-0.5">
                         {m.mandatoryLabels.map((lbl) => (
@@ -538,7 +538,7 @@ export default function MissionBriefingScreen({
                       <div className="flex items-center gap-1 text-[clamp(7px,0.55vw,8px)] text-amber-300 font-bold mb-1">
                         <ShieldAlert size={11} />
                         <span>
-                          PROBLEMAS DE ESTACIÓN (META: {m.targetResolutions} PROBLEMAS · {m.stationMinigames.length} SISTEMAS · NIVEL {m.difficulty})
+                          STATION ANOMALIES (TARGET: {m.targetResolutions} RESOLUTIONS · {m.stationMinigames.length} SYSTEMS · LEVEL {m.difficulty})
                         </span>
                       </div>
                       <div className="space-y-1 font-sans text-[11px]">
@@ -579,12 +579,12 @@ export default function MissionBriefingScreen({
                     }`}
                   >
                     {isCompleted
-                      ? `✅ MISIÓN ${m.number} COMPLETADA`
+                      ? `✅ MISSION ${m.number} COMPLETED`
                       : isCurrent
                         ? m.number === 3
-                          ? '▶ MISIÓN FINAL EN CURSO'
-                          : '▶ MISIÓN ACTUAL EN CURSO'
-                        : `🔒 BLOQUEADA (COMPLETA MISIÓN ${m.number - 1})`}
+                          ? '▶ FINAL ACTIVE MISSION'
+                          : '▶ CURRENT ACTIVE MISSION'
+                        : `🔒 LOCKED (COMPLETE MISSION ${m.number - 1})`}
                   </button>
                 </div>
               )
@@ -596,10 +596,10 @@ export default function MissionBriefingScreen({
         <section className="pb-4">
           <div className="flex flex-wrap items-center gap-2 mb-2.5">
             <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-400 text-amber-200 text-[clamp(8px,0.65vw,10px)] font-bold rounded">
-              FASE 2 · COHETE PORTADOR (ASIGNACIÓN POR ETAPA)
+              PHASE 2 · LAUNCH VEHICLE (STAGE ASSIGNMENT)
             </span>
             <span className="font-sans text-xs text-slate-300">
-              Asignado automáticamente según la etapa actual: {activeLauncher.name} ({activeMission.orbitBadge}).
+              Automatically assigned by active stage: {activeLauncher.name} ({activeMission.orbitBadge}).
             </span>
           </div>
 
@@ -636,15 +636,15 @@ export default function MissionBriefingScreen({
                       </span>
                       {isAssigned ? (
                         <span className="px-1.5 py-0.5 text-[clamp(6.5px,0.5vw,7.5px)] bg-emerald-400 text-black font-bold rounded whitespace-nowrap">
-                          ▶ ASIGNADO · ETAPA {currentMissionIndex}
+                          ▶ ASSIGNED · STAGE {currentMissionIndex}
                         </span>
                       ) : isPast ? (
                         <span className="px-1.5 py-0.5 text-[clamp(6.5px,0.5vw,7.5px)] bg-emerald-950 border border-emerald-500 text-emerald-300 rounded whitespace-nowrap">
-                          ✅ ETAPA {launcherStage}
+                          ✅ STAGE {launcherStage}
                         </span>
                       ) : (
                         <span className="px-1.5 py-0.5 text-[clamp(6.5px,0.5vw,7.5px)] bg-slate-900 border border-slate-600 text-slate-400 rounded whitespace-nowrap">
-                          🔒 ETAPA {launcherStage}
+                          🔒 STAGE {launcherStage}
                         </span>
                       )}
                     </div>

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ciberdefensa Satelital - Firewall de Red y Contramedidas</title>
+    <title>Satellite Cyberdefense - Network Firewall &amp; Countermeasures</title>
     <style>
         :root {
             --bg-hull: #0a0f18;
@@ -282,22 +282,22 @@
 
     <header>
         <div class="title-block">
-            <span class="badge-system">CIBERSEGURIDAD // FIREWALL</span>
-            <h1>DEFENSA DE RED Y FILTRADO DE PAQUETES MALICIOSOS</h1>
+            <span class="badge-system">CYBERSECURITY // FIREWALL</span>
+            <h1>NETWORK DEFENSE &amp; MALICIOUS PACKET FILTERING</h1>
         </div>
         <div class="top-controls">
             <button class="btn-header" onclick="location.href='index.html'">⌂ HUB</button>
-            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <label for="diffSelect" style="color: #94a3b8;">DIFFICULTY:</label>
             <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Básico (Tráfico Lento)</option>
-                <option value="2" selected>Nivel 2 - Intermedio (Ataque DDoS)</option>
-                <option value="3">Nivel 3 - Avanzado (Inyección de Malware)</option>
-                <option value="4">Nivel 4 - Experto (Spoofing de IP)</option>
-                <option value="5">Nivel 5 - Simulación Extrema (Zero-Day Inminente)</option>
+                <option value="1">Level 1 - Basic (Slow Traffic)</option>
+                <option value="2" selected>Level 2 - Intermediate (DDoS Attack)</option>
+                <option value="3">Level 3 - Advanced (Malware Injection)</option>
+                <option value="4">Level 4 - Expert (IP Spoofing)</option>
+                <option value="5">Level 5 - Extreme Simulation (Imminent Zero-Day)</option>
             </select>
             <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
-            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
-            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSE</button>
+            <button class="btn-header" onclick="resetMission()">↻ RESET</button>
         </div>
     </header>
 
@@ -310,8 +310,8 @@
             <div class="rivet rivet-bl"></div>
             <div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>MATRIZ DE FILTRADO DE PACKETS (PUERTO 8080)</span>
-                <span id="shieldStatus" style="color:var(--crt-green)">ESCUDO INTACTO: 100%</span>
+                <span>PACKET FILTERING MATRIX (PORT 8080)</span>
+                <span id="shieldStatus" style="color:var(--crt-green)">SHIELD INTACT: 100%</span>
             </div>
             <div class="panel-body" style="padding:0;">
                 <div class="canvas-container">
@@ -328,47 +328,46 @@
             <div class="rivet rivet-bl"></div>
             <div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>INSPECTOR DE PAQUETES</span>
+                <span>PACKET INSPECTOR</span>
                 <span id="clockDisplay">00:00</span>
             </div>
             <div class="panel-body" style="gap: 16px;">
 
-                <!-- 📖 GUÍA DE AMENAZAS (Más grande y legible) -->
+                <!-- THREAT GUIDE -->
                 <div
                     style="background:rgba(0,0,0,0.7); border:2px solid #38bdf8; padding: 14px; font-size: 13px; line-height: 1.6; border-radius: 6px;">
-                    <b style="color:var(--crt-cyan); font-size: 14px; letter-spacing: 1px;">📖 GUÍA DE AMENAZAS
+                    <b style="color:var(--crt-cyan); font-size: 14px; letter-spacing: 1px;">📖 THREAT GUIDE
                         (TERRA-NET):</b><br>
-                    <div style="color:#00ff88; margin-top: 8px;">✔ <b>BUENO:</b> /telemetry, SYNC, PING, status, nominal
+                    <div style="color:#00ff88; margin-top: 8px;">✔ <b>SAFE:</b> /telemetry, SYNC, PING, status, nominal
                     </div>
-                    <div style="color:#ef4444; margin-top: 6px;">✖ <b>MALO:</b> SQLi, OVERFLOW, DDOS, OVERRIDE, EXFIL
+                    <div style="color:#ef4444; margin-top: 6px;">✖ <b>THREAT:</b> SQLi, OVERFLOW, DDOS, OVERRIDE, EXFIL
                     </div>
                 </div>
 
-                <!-- 📡 PAQUETE EN EVALUACIÓN (Caja y letra más grandes) -->
+                <!-- PACKET UNDER INSPECTION -->
                 <div
                     style="background:rgba(0,0,0,0.7); border:2px solid #475569; padding: 14px; display:flex; flex-direction:column; gap: 10px; border-radius: 6px;">
-                    <div style="font-size: 13px; color:#94a3b8; font-weight: bold; letter-spacing: 1px;">PAQUETE EN
-                        EVALUACIÓN:</div>
+                    <div style="font-size: 13px; color:#94a3b8; font-weight: bold; letter-spacing: 1px;">PACKET UNDER
+                        INSPECTION:</div>
                     <div id="packetPayload"
                         style="font-size: 15px; color:var(--crt-cyan); font-weight:bold; min-height: 55px; line-height: 1.4; word-break: break-all;">
-                        Esperando transmisión entrante...</div>
+                        Awaiting incoming transmission...</div>
                 </div>
 
-                <!-- Botones de Acción (Ampliados para mayor comodidad) -->
+                <!-- Action Buttons -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <button class="packet-btn"
                         style="border-color:var(--crt-green); color:var(--crt-green); font-size: 14px; padding: 12px;"
-                        onclick="filterAction('allow')">✔ PERMITIR</button>
+                        onclick="filterAction('allow')">✔ ALLOW</button>
                     <button class="packet-btn"
                         style="border-color:var(--crt-red); color:var(--crt-red); font-size: 14px; padding: 12px;"
-                        onclick="filterAction('block')">✖ BLOQUEAR</button>
+                        onclick="filterAction('block')">✖ BLOCK</button>
                 </div>
 
-                <div style="font-size:11px; color:#94a3b8; margin-top:4px; letter-spacing: 1px;">REGISTRO DE CONSOLA
-                    (LOGS):</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:4px; letter-spacing: 1px;">CONSOLE LOGS:</div>
                 <div class="log-box" id="terminalLog" style="height: 130px; font-size: 12px;">
-                    <div>[SYS] Inicializando interceptor de tramas...</div>
-                    <div>[NET] Puerto seguro abierto en 192.168.10.1</div>
+                    <div>[SYS] Initializing frame interceptor...</div>
+                    <div>[NET] Secure port open on 192.168.10.1</div>
                 </div>
             </div>
         </div>
@@ -380,28 +379,28 @@
         <div class="modal-card">
             <div
                 style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--crt-cyan); padding-bottom:8px;">
-                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME DE CIBERDEFENSA</span>
-                <span class="badge-system" id="debBadge">ÉXITO</span>
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">CYBERDEFENSE REPORT</span>
+                <span class="badge-system" id="debBadge">SUCCESS</span>
             </div>
             <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-cyan)">1. ESTADO DE INTEGRIDAD DE RED:</b>
-                    <p id="debDesc">El perímetro de seguridad resistió el intento de exfiltración de telemetría.</p>
+                    <b style="color:var(--crt-cyan)">1. NETWORK INTEGRITY STATUS:</b>
+                    <p id="debDesc">Security perimeter repelled the telemetry exfiltration attempt.</p>
                 </div>
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE TRÁFICO:</b>
+                    <b style="color:var(--crt-amber)">2. TRAFFIC METRICS:</b>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
-                        <div>Paquetes Inspeccionados: <b id="debPackets">-</b></div>
-                        <div>Precisión de Filtrado: <b id="debAccuracy">-</b></div>
-                        <div>Integridad del Núcleo: <b id="debShield">-</b></div>
-                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
+                        <div>Packets Inspected: <b id="debPackets">-</b></div>
+                        <div>Filtering Accuracy: <b id="debAccuracy">-</b></div>
+                        <div>Core Integrity: <b id="debShield">-</b></div>
+                        <div>Elapsed Time: <b id="debTime">-</b></div>
                     </div>
                 </div>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
+                <button class="btn-header" onclick="closeModalAndRetry()">REPLAY</button>
                 <button class="btn-header" style="background:#0284c7; color:#fff;"
-                    onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+                    onclick="nextLevelOrFinish()">NEXT LEVEL</button>
             </div>
         </div>
     </div>
@@ -439,16 +438,16 @@
         let packetsQueue = [];
 
         const mockPayloads = [
-            { text: "[Tierra -> Estación] GET /telemetry/status HTTP/1.1", malicious: false },
-            { text: "[Tierra -> Estación] SYNC orbital_clock.bin OK", malicious: false },
-            { text: "[Tierra -> Estación] PING health_check_node_4", malicious: false },
-            { text: "[Alerta Orbital] POST /auth/root-override --payload=SQLi_INJECT", malicious: true },
-            { text: "[Alerta Orbital] OVERFLOW_BUFFER 0x90909090 MALWARE_EXEC", malicious: true },
-            { text: "[Alerta Orbital] DDOS_SYN_FLOOD_STREAM --target=core_bus", malicious: true },
-            { text: "[Tierra -> Estación] TRANSMISIÓN DE RUTINA: Carga solar nominal", malicious: false },
-            { text: "[Alerta Orbital] EXFILTRATION_PROTOCOL_ACTIVATE /passwords.db", malicious: true },
-            { text: "[Tierra -> Estación] UPDATE ephemeris_data_v2.par", malicious: false },
-            { text: "[Alerta Orbital] ROOT_SHELL_REMOTE_EXECUTION port 31337", malicious: true }
+            { text: "[Earth -> Station] GET /telemetry/status HTTP/1.1", malicious: false },
+            { text: "[Earth -> Station] SYNC orbital_clock.bin OK", malicious: false },
+            { text: "[Earth -> Station] PING health_check_node_4", malicious: false },
+            { text: "[Orbital Alert] POST /auth/root-override --payload=SQLi_INJECT", malicious: true },
+            { text: "[Orbital Alert] OVERFLOW_BUFFER 0x90909090 MALWARE_EXEC", malicious: true },
+            { text: "[Orbital Alert] DDOS_SYN_FLOOD_STREAM --target=core_bus", malicious: true },
+            { text: "[Earth -> Station] ROUTINE TRANSMISSION: Solar charge nominal", malicious: false },
+            { text: "[Orbital Alert] EXFILTRATION_PROTOCOL_ACTIVATE /passwords.db", malicious: true },
+            { text: "[Earth -> Station] UPDATE ephemeris_data_v2.par", malicious: false },
+            { text: "[Orbital Alert] ROOT_SHELL_REMOTE_EXECUTION port 31337", malicious: true }
         ];
 
         function setupScenario(lvl) {
@@ -463,15 +462,15 @@
         }
 
         function changeDifficulty(val) { setupScenario(val); }
-        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
         function resetMission() { setupScenario(difficulty); }
 
         function nextPacket() {
             const payloadEl = document.getElementById('packetPayload');
-            payloadEl.textContent = "📡 [Centro de Control Tierra]: Recibiendo paquete...";
+            payloadEl.textContent = "📡 [Earth Control Center]: Receiving packet...";
             payloadEl.style.color = "var(--crt-amber)";
 
-            // Simula un breve retardo de llegada de la señal espacial (1 segundo)
+            // Simulate brief space signal arrival delay (1 second)
             setTimeout(() => {
                 currentPacket = mockPayloads[Math.floor(Math.random() * mockPayloads.length)];
                 payloadEl.textContent = currentPacket.text;
@@ -487,13 +486,13 @@
 
             if ((action === 'block' && isMal) || (action === 'allow' && !isMal)) {
                 playTone(1050);
-                log.innerHTML += `<div style="color:var(--crt-green)">[OK] Tramas filtradas correctamente.</div>`;
+                log.innerHTML += `<div style="color:var(--crt-green)">[OK] Frames filtered properly.</div>`;
             } else {
                 playTone(300);
                 shieldIntegrity -= 20;
-                log.innerHTML += `<div style="color:var(--crt-red)">[ALERTA] Brecha en cortafuegos! Integridad -20%</div>`;
+                log.innerHTML += `<div style="color:var(--crt-red)">[ALERT] Firewall breach! Integrity -20%</div>`;
                 if (shieldIntegrity <= 0) {
-                    failMission("INTRUSIÓN EXITOSA: El código malicioso logró comprometer el núcleo de la estación.");
+                    failMission("INTRUSION SUCCESSFUL: Malicious code compromised the station core.");
                     return;
                 }
             }
@@ -518,7 +517,7 @@
         function failMission(reason) {
             isMissionEnded = true;
             document.getElementById('debriefModal').style.display = 'flex';
-            document.getElementById('debTitle').textContent = "BRECHA DE SEGURIDAD";
+            document.getElementById('debTitle').textContent = "SECURITY BREACH";
             document.getElementById('debDesc').textContent = reason;
         }
 
@@ -526,7 +525,7 @@
         function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(5, difficulty + 1)); }
 
         function updateUI() {
-            document.getElementById('shieldStatus').textContent = `ESCUDO INTACTO: ${shieldIntegrity}%`;
+            document.getElementById('shieldStatus').textContent = `SHIELD INTACT: ${shieldIntegrity}%`;
             const mins = String(Math.floor(missionTime / 60)).padStart(2, '0');
             const secs = String(Math.floor(missionTime % 60)).padStart(2, '0');
             document.getElementById('clockDisplay').textContent = `${mins}:${secs}`;
@@ -567,7 +566,7 @@
             ctx.fillStyle = '#38bdf8';
             ctx.font = '11px Courier New';
             ctx.textAlign = 'center';
-            ctx.fillText("CORE SEGURO", cx, cy - 5);
+            ctx.fillText("CORE SECURE", cx, cy - 5);
             ctx.fillStyle = shieldIntegrity > 50 ? '#00ff88' : '#ef4444';
             ctx.fillText(`${shieldIntegrity}% INT`, cx, cy + 15);
 

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Control Térmico del Reactor - ALPACA-1</title>
+<title>Reactor Thermal Control - ALPACA-1</title>
 <style>
 :root {
   --bg: #050811;
@@ -131,24 +131,24 @@ h1 { font-size: 14px; letter-spacing: 0.6px; color: #f8fafc; white-space: nowrap
 <div class="scanlines"></div>
 <header>
   <div class="title-block">
-    <span class="badge-system">INGENIERÍA // REFRIGERACIÓN REACTOR (ALPACA-1)</span>
-    <h1>REFRIGERACIÓN CRIOGÉNICA DEL REACTOR DE FISIÓN · ALPACA-1</h1>
+    <span class="badge-system">ENGINEERING // REACTOR COOLING (ALPACA-1)</span>
+    <h1>FISSION REACTOR CRYOGENIC COOLING · ALPACA-1</h1>
   </div>
   <div class="top-controls">
-    <label for="diffSelect" style="font-size:11px;color:var(--dim);">NIVEL:</label>
+    <label for="diffSelect" style="font-size:11px;color:var(--dim);">LEVEL:</label>
     <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-      <option value="1">Nivel 1 - Carga Térmica Media</option><option value="2" selected>Nivel 2 - Sobrecalentamiento Crítico</option><option value="3">Nivel 3 - Picos Térmicos Solares</option>
+      <option value="1">Level 1 - Medium Thermal Load</option><option value="2" selected>Level 2 - Critical Overheat</option><option value="3">Level 3 - Solar Thermal Spikes</option>
     </select>
     <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
-    <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
-    <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+    <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSE</button>
+    <button class="btn-header" onclick="resetMission()">↻ RESET</button>
   </div>
 </header>
 <div class="workspace">
   <div class="panel">
     <div class="panel-head">
-      <span>CIRCUITO PRIMARIO DE AMONÍACO LÍQUIDO (NH3)</span>
-      <span id="rxStatus" style="color:var(--crt-amber)">NÚCLEOS SOBRECALENTADOS</span>
+      <span>PRIMARY LIQUID AMMONIA LOOP (NH3)</span>
+      <span id="rxStatus" style="color:var(--crt-amber)">CORES OVERHEATING</span>
     </div>
     <div class="canvas-wrap">
       <canvas id="mainCanvas"></canvas>
@@ -158,33 +158,33 @@ h1 { font-size: 14px; letter-spacing: 0.6px; color: #f8fafc; white-space: nowrap
   </div>
   <div class="panel">
     <div class="panel-head">
-      <span>CONSOLA DE CONTROL</span>
+      <span>CONTROL CONSOLE</span>
       <span id="clockDisplay">00:00</span>
     </div>
     <div class="side-body">
-      <div class="guide-box" id="directGuideBox">Sigue la guía en pantalla o pulsa AUTO-CALIBRAR.</div>
-      <button type="button" class="btn-assist" id="btnQuickAssist" onclick="triggerQuickAssist()">⚡ AUTO-CALIBRAR / ASISTENCIA IA</button>
+      <div class="guide-box" id="directGuideBox">Follow on-screen guidance or press AUTO-CALIBRATE.</div>
+      <button type="button" class="btn-assist" id="btnQuickAssist" onclick="triggerQuickAssist()">⚡ AUTO-CALIBRATE / AI ASSIST</button>
       
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">TEMP. PROMEDIO (META &lt;480°C):</span><span class="tele-val" id="valAvgT">610°C</span></div>
-        <div class="tele-row"><span class="tele-lbl">PRESIÓN DE CIRCUITO (&lt;100 PSI):</span><span class="tele-val" id="valPress">50 PSI</span></div>
+        <div class="tele-row"><span class="tele-lbl">AVG. CORE TEMP (TARGET &lt;480°C):</span><span class="tele-val" id="valAvgT">610°C</span></div>
+        <div class="tele-row"><span class="tele-lbl">LOOP PRESSURE (&lt;100 PSI):</span><span class="tele-val" id="valPress">50 PSI</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barPress" style="width:55%"></div></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO A (<span id="ta">810°C</span>):</span><span class="tele-val" id="pa">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE A PUMP (<span id="ta">810°C</span>):</span><span class="tele-val" id="pa">40%</span></div>
         <input type="range" class="slider" id="sl0" min="0" max="100" value="40" oninput="setPump(0,this.value)">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO B (<span id="tb">830°C</span>):</span><span class="tele-val" id="pb">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE B PUMP (<span id="tb">830°C</span>):</span><span class="tele-val" id="pb">40%</span></div>
         <input type="range" class="slider" id="sl1" min="0" max="100" value="40" oninput="setPump(1,this.value)">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO C (<span id="tc">820°C</span>):</span><span class="tele-val" id="pc">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE C PUMP (<span id="tc">820°C</span>):</span><span class="tele-val" id="pc">40%</span></div>
         <input type="range" class="slider" id="sl2" min="0" max="100" value="40" oninput="setPump(2,this.value)">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO D (<span id="td">840°C</span>):</span><span class="tele-val" id="pd">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE D PUMP (<span id="td">840°C</span>):</span><span class="tele-val" id="pd">40%</span></div>
         <input type="range" class="slider" id="sl3" min="0" max="100" value="40" oninput="setPump(3,this.value)">
       </div>
       <div class="btn-grid">
-        <button class="btn-ctrl" id="btnRad" onclick="toggleRadiators()">❄ RADIADORES: OFF</button>
-        <button class="btn-ctrl warn" id="btnPurge" onclick="purgeSteam()">💨 PURGAR VAPOR</button>
+        <button class="btn-ctrl" id="btnRad" onclick="toggleRadiators()">❄ RADIATORS: OFF</button>
+        <button class="btn-ctrl warn" id="btnPurge" onclick="purgeSteam()">💨 PURGE STEAM</button>
       </div>
-      <div class="note-box">Despliega los <b>Radiadores</b> y sube las bombas A-D para enfriar los 4 núcleos por debajo de <b>480°C</b> (o pulsa AUTO-CALIBRAR).</div>
+      <div class="note-box">Deploy <b>Radiators</b> and raise pumps A–D to cool all 4 cores below <b>480°C</b> (or press AUTO-CALIBRATE).</div>
     
     </div>
   </div>
@@ -192,14 +192,14 @@ h1 { font-size: 14px; letter-spacing: 0.6px; color: #f8fafc; white-space: nowrap
 <div class="modal-overlay" id="debriefModal">
   <div class="modal-card">
     <div class="modal-head">
-      <span style="font-size:15px;font-weight:bold;color:var(--crt-green)" id="debTitle">REACTOR ENFRIAMIENTO NOMINAL</span>
-      <span class="badge-system" id="debBadge">ÉXITO</span>
+      <span style="font-size:15px;font-weight:bold;color:var(--crt-green)" id="debTitle">REACTOR COOLING NOMINAL</span>
+      <span class="badge-system" id="debBadge">SUCCESS</span>
     </div>
-    <p id="debDesc" style="font-size:12px;color:#cbd5e1;line-height:1.5;">Sistema estabilizado nominalmente.</p>
-    <div class="modal-metrics"><div>Temp. Final: <b id="debTemp">-</b></div><div>Presión Máx: <b id="debPress">-</b></div><div>Tiempo: <b id="debTime">-</b></div><div>Rango: <b id="debGrade">-</b></div></div>
+    <p id="debDesc" style="font-size:12px;color:#cbd5e1;line-height:1.5;">System stabilized nominally.</p>
+    <div class="modal-metrics"><div>Final Temp: <b id="debTemp">-</b></div><div>Peak Pressure: <b id="debPress">-</b></div><div>Elapsed Time: <b id="debTime">-</b></div><div>Rating: <b id="debGrade">-</b></div></div>
     <div class="modal-actions">
-      <button class="btn-header" onclick="closeModalAndRetry()">REINTENTAR</button>
-      <button class="btn-header" style="background:#0284c7;color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+      <button class="btn-header" onclick="closeModalAndRetry()">RETRY</button>
+      <button class="btn-header" style="background:#0284c7;color:#fff;" onclick="nextLevelOrFinish()">NEXT LEVEL</button>
     </div>
   </div>
 </div>
@@ -283,7 +283,7 @@ function resizeCanvasEl(c) {
         updateRadBtn(); updateUI();
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -293,7 +293,7 @@ function resizeCanvasEl(c) {
         [0, 1, 2, 3].forEach((i) => { document.getElementById('sl' + i).value = 85; });
         pressure = 42;
         cores = cores.map((c) => Math.min(c, 455));
-        showHud('✔ RADIADORES ON Y BOMBAS AL 85% (<480°C)', 'ok');
+        showHud('✔ RADIATORS ON & PUMPS AT 85% (<480°C)', 'ok');
         updateUI();
       }
       function setPump(i, v) { noteUserAdjust(); pumps[i] = parseInt(v); playTone(260 + pumps[i] * 2, 0.03); updateUI(); }
@@ -304,7 +304,7 @@ function resizeCanvasEl(c) {
       }
       function updateRadBtn() {
         const b = document.getElementById('btnRad');
-        b.textContent = radOpen ? '❄ RADIADORES: ON' : '❄ RADIADORES: OFF';
+        b.textContent = radOpen ? '❄ RADIATORS: ON' : '❄ RADIATORS: OFF';
         b.classList.toggle('active', radOpen);
       }
       function purgeSteam() {
@@ -312,34 +312,34 @@ function resizeCanvasEl(c) {
         noteUserAdjust();
         pressure = Math.max(25, pressure - 26); purgeCd = 3.0;
         playTone(900, 0.14, 'sawtooth');
-        showHud('💨 VAPOR PURGADO (-26 PSI)', 'ok');
+        showHud('💨 STEAM PURGED (-26 PSI)', 'ok');
         updateUI();
       }
       function completeMission() {
         isEnded = true; playTone(900, 0.18);
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡REACTOR ESTABILIZADO < 480°C!';
+        document.getElementById('debTitle').textContent = 'REACTOR STABILIZED < 480°C!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = 'TÉRMICO OK';
-        document.getElementById('debDesc').textContent = 'Todos los canales del reactor bajaron de 400°C con presión nominal en circuito NH3.';
+        document.getElementById('debBadge').textContent = 'THERMAL OK';
+        document.getElementById('debDesc').textContent = 'All reactor channels cooled below 480°C with nominal NH3 loop pressure.';
         const avg = cores.reduce((a, b) => a + b, 0) / 4;
         document.getElementById('debTemp').textContent = Math.round(avg) + ' °C';
         document.getElementById('debPress').textContent = Math.round(maxPress) + ' PSI';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = maxPress < 92 ? 'A+ SEGURO' : 'A NOMINAL';
+        document.getElementById('debGrade').textContent = maxPress < 92 ? 'A+ SAFE' : 'A NOMINAL';
       }
       function failMission(reason) {
         isEnded = true; playTone(150, 0.35, 'sawtooth');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = 'COLAPSO DEL CIRCUITO TÉRMICO';
+        document.getElementById('debTitle').textContent = 'THERMAL LOOP COLLAPSE';
         document.getElementById('debTitle').style.color = 'var(--crt-red)';
-        document.getElementById('debBadge').textContent = 'SOBREPRESIÓN';
+        document.getElementById('debBadge').textContent = 'OVERPRESSURE';
         document.getElementById('debDesc').textContent = reason;
         const avg = cores.reduce((a, b) => a + b, 0) / 4;
         document.getElementById('debTemp').textContent = Math.round(avg) + ' °C';
         document.getElementById('debPress').textContent = Math.round(pressure) + ' PSI';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = 'F FALLIDO';
+        document.getElementById('debGrade').textContent = 'F FAILED';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -359,11 +359,11 @@ function resizeCanvasEl(c) {
         document.getElementById('barPress').style.background = pressure > 88 ? 'var(--crt-red)' : 'var(--crt-cyan)';
         const pb = document.getElementById('btnPurge');
         pb.disabled = purgeCd > 0;
-        pb.textContent = purgeCd > 0 ? '⏳ PURGA (' + Math.ceil(purgeCd) + 's)' : '💨 PURGAR VAPOR';
+        pb.textContent = purgeCd > 0 ? '⏳ PURGE (' + Math.ceil(purgeCd) + 's)' : '💨 PURGE STEAM';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
-        if (avg < 480) setGuideText('✔ Núcleos refrigerados (<480°C) — Listo para CONFIRMAR arriba');
-        else if (!radOpen) setGuideText('👉 Paso 1: Enciende [❄ RADIADORES: ON] o pulsa AUTO-CALIBRAR');
-        else setGuideText('👉 Paso 2: Sube bombas A-D > 75% (Meta <480°C)');
+        if (avg < 480) setGuideText('✔ Cores cooled (<480°C) — Ready to CONFIRM above');
+        else if (!radOpen) setGuideText('👉 Step 1: Turn on [❄ RADIATORS: ON] or press AUTO-CALIBRATE');
+        else setGuideText('👉 Step 2: Raise pumps A–D > 75% (Target <480°C)');
       }
 
       let last = performance.now();
@@ -381,9 +381,9 @@ function resizeCanvasEl(c) {
           for (let i = 0; i < 4; i++) {
             const cool = (pumps[i] / 100) * (radOpen ? 85 : 52);
             cores[i] = Math.max(290, cores[i] + (heatGen - cool) * dt);
-            if (cores[i] >= 980) { failMission('Fusión térmica en Núcleo ' + String.fromCharCode(65 + i) + ' (>980°C).'); break; }
+            if (cores[i] >= 980) { failMission('Thermal meltdown in Core ' + String.fromCharCode(65 + i) + ' (>980°C).'); break; }
           }
-          if (!isEnded && pressure >= 105) failMission('Ruptura por sobrepresión del circuito NH3 (>=105 PSI).');
+          if (!isEnded && pressure >= 105) failMission('NH3 loop overpressure rupture (>=105 PSI).');
           if (!isEnded && cores.every((c) => c < 480)) completeMission();
           updateUI();
         }
@@ -407,7 +407,7 @@ function resizeCanvasEl(c) {
           ctx.strokeStyle = '#00ff88'; ctx.setLineDash([4, 3]);
           ctx.beginPath(); ctx.moveTo(x - 4, goalY); ctx.lineTo(x + bw + 4, goalY); ctx.stroke(); ctx.setLineDash([]);
           ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center';
-          ctx.fillText('NÚCLEO ' + String.fromCharCode(65 + i), x + bw / 2, baseY + 18);
+          ctx.fillText('CORE ' + String.fromCharCode(65 + i), x + bw / 2, baseY + 18);
           ctx.fillText(Math.round(t) + '°C', x + bw / 2, baseY - bh - 6);
           // Burbuja flujo amoníaco
           const py = baseY - ((flowPhase * 40 + i * 25) % maxH);
@@ -682,49 +682,49 @@ function resizeCanvasEl(c) {
           }
 
           var NEW_OK_LABELS = {
-            gyro: '✔ CARDANES CMG ESTABILIZADOS',
-            debris: '✔ CORREDOR KESSLER DESPEJADO',
-            reactor: '✔ NÚCLEOS DEL REACTOR REFRIGERADOS',
-            pcb: '✔ CIRCUITOS PCB RUTADOS CORRECTAMENTE',
-            spectro: '✔ ESPECTROMETRÍA COMPLETADA',
-            thermal: '✔ BARRIDO MULTIESPECTRAL VALIDADO',
-            hga: '✔ ENLACE PARABÓLICO HGA / DSN CONFIRMADO',
-            decrypt: '✔ CANAL CUÁNTICO DESCIFRADO'
+            gyro: '✔ CMG GIMBALS STABILIZED',
+            debris: '✔ KESSLER CORRIDOR CLEARED',
+            reactor: '✔ REACTOR CORES COOLED',
+            pcb: '✔ PCB CIRCUITS ROUTED PROPERLY',
+            spectro: '✔ SPECTROMETRY COMPLETED',
+            thermal: '✔ MULTISPECTRAL SCAN VALIDATED',
+            hga: '✔ PARABOLIC HGA / DSN LINK CONFIRMED',
+            decrypt: '✔ QUANTUM CHANNEL DECRYPTED'
           };
 
           function evalVerifyStatus(gid) {
             switch (gid) {
               case 'dock': {
-                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ ACOPLAMIENTO APAS VERIFICADO' };
+                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ APAS DOCKING VERIFIED' };
                 var lat = Math.hypot(state.pos.x, state.pos.y);
                 return {
                   ready: lat <= 1.50,
-                  needMsg: 'Centra desvío lateral a <= 1.50m (actual ' + lat.toFixed(2) + 'm) con WASD/Flechas',
-                  okMsg: '✔ Listo: desvío ' + lat.toFixed(2) + 'm — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Center lateral offset <= 1.50m (current ' + lat.toFixed(2) + 'm) using WASD/Arrows',
+                  okMsg: '✔ Ready: offset ' + lat.toFixed(2) + 'm — Press [ CONFIRM ] above',
                   onApprove: function () { state.pos.z = 0; state.isEnded = true; }
                 };
               }
               case 'comet': {
                 if (typeof hull === 'number' && hull <= 0) {
-                  return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
                 }
                 var sc = typeof score === 'number' ? score : 0;
                 return {
                   ready: sc >= 3,
-                  needMsg: 'Destruye ' + (3 - sc) + ' meteorito(s) más con clic para confirmar (' + sc + '/3)',
-                  okMsg: '✔ Listo: ' + sc + ' meteoritos destruidos — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Destroy ' + (3 - sc) + ' more meteorite(s) by clicking to confirm (' + sc + '/3)',
+                  okMsg: '✔ Ready: ' + sc + ' meteorites destroyed — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'eps': {
-                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ MATRIZ EPS OK' };
+                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ EPS MATRIX NOMINAL' };
                 var sv = state.loads[0] && state.loads[0].active ? state.loads[0].power : 0;
                 var bat = Math.round(state.battery || 0);
                 var okEps = sv >= 50 && state.battery > 15;
                 return {
                   ready: okEps,
-                  needMsg: sv < 50 ? 'Sube Sop. Vital >= 50 MW o pulsa AUTO-BALANCEAR' : 'Batería <= 15% (' + bat + '%): pulsa AUTO-BALANCEAR CARGAS',
-                  okMsg: '✔ Listo: Sop. Vital ' + sv + ' MW y Batería ' + bat + '% — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: sv < 50 ? 'Raise Life Support >= 50 MW or press AUTO-BALANCE' : 'Battery <= 15% (' + bat + '%): press AUTO-BALANCE LOADS',
+                  okMsg: '✔ Ready: Life Support ' + sv + ' MW & Battery ' + bat + '% — Press [ CONFIRM ] above',
                   onApprove: function () { state.isEnded = true; }
                 };
               }
@@ -733,22 +733,22 @@ function resizeCanvasEl(c) {
                 var co2Ok = typeof co2Val !== 'number' || co2Val < 1.2;
                 var actOk = (typeof activeScrub === 'number' && activeScrub === 1) || (typeof isSealed === 'boolean' && isSealed);
                 var msgNeed = !o2Ok
-                  ? 'Ajusta O2 entre 18% y 26% o pulsa ESTABILIZAR AUTOMÁTICO'
+                  ? 'Adjust O2 between 18% and 26% or press AUTO-STABILIZE'
                   : !co2Ok
-                    ? 'Reduce CO2 < 1.2% con Canister B o ESTABILIZAR AUTOMÁTICO'
-                    : 'Cambia a Canister B o sella la esclusa para confirmar';
+                    ? 'Reduce CO2 < 1.2% with Canister B or AUTO-STABILIZE'
+                    : 'Switch to Canister B or seal airlock to confirm';
                 return {
                   ready: o2Ok && co2Ok && actOk,
                   needMsg: msgNeed,
-                  okMsg: '✔ Listo: gases seguros y esclusa/filtro OK — Pulsa [ CONFIRMAR ] arriba',
+                  okMsg: '✔ Ready: gases nominal and airlock/scrubber OK — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
               case 'nav': {
                 if (typeof isBurning !== 'undefined' && isBurning) {
-                  return { ready: false, needMsg: 'Espera 1s a que termine el encendido orbital' };
+                  return { ready: false, needMsg: 'Wait 1s for orbital burn to complete' };
                 }
-                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ ÓRBITA HOHMANN OK' };
+                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ HOHMANN ORBIT NOMINAL' };
                 var navErr = Math.abs(orbitState.altitude - orbitState.targetAlt);
                 var recSigned = Math.round((orbitState.targetAlt - orbitState.altitude) / 0.95);
                 var curSigned = orbitState.vector === 'prograde' ? orbitState.deltaV : -orbitState.deltaV;
@@ -756,8 +756,8 @@ function resizeCanvasEl(c) {
                 var okNav = Boolean(orbitState.done || navErr <= 45 || dvDiff <= 35);
                 return {
                   ready: okNav,
-                  needMsg: 'Pon Δv cerca de ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) y confirma',
-                  okMsg: '✔ Listo: impulso Δv alineado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Δv near ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) and confirm',
+                  okMsg: '✔ Ready: Δv impulse aligned — Press [ CONFIRM ] above',
                   onApprove: function () { orbitState.altitude = orbitState.targetAlt; orbitState.done = true; orbitState.isEnded = true; }
                 };
               }
@@ -765,8 +765,8 @@ function resizeCanvasEl(c) {
                 var vel = typeof velocity === 'number' ? velocity : 0;
                 return {
                   ready: vel < 10.0,
-                  needMsg: 'Frena con [ESPACIO] por debajo de 10.0 m/s (actual ' + vel.toFixed(1) + ' m/s)',
-                  okMsg: '✔ Listo: velocidad ' + vel.toFixed(1) + ' m/s — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Brake with [SPACE] below 10.0 m/s (current ' + vel.toFixed(1) + ' m/s)',
+                  okMsg: '✔ Ready: velocity ' + vel.toFixed(1) + ' m/s — Press [ CONFIRM ] above',
                   onApprove: function () {
                     if (typeof altitude !== 'undefined') altitude = 0;
                     if (typeof updateUI === 'function') updateUI();
@@ -779,20 +779,20 @@ function resizeCanvasEl(c) {
                 var gDiff = Math.abs(userGain - targetGain);
                 return {
                   ready: fDiff <= 25 && gDiff <= 20,
-                  needMsg: 'Pon Freq ~' + targetFreq + ' Hz (±25) y Ampl ~' + targetGain + '% (±20)',
-                  okMsg: '✔ Listo: señal DSN sincronizada — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Freq ~' + targetFreq + ' Hz (±25) and Gain ~' + targetGain + '% (±20)',
+                  okMsg: '✔ Ready: DSN signal synchronized — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'cyber': {
                 if (typeof shieldIntegrity === 'number' && shieldIntegrity <= 0) {
-                  return { ready: false, needMsg: 'Escudo en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Shield at 0%: press RESET above' };
                 }
                 var pc = typeof packetsChecked === 'number' ? packetsChecked : 0;
                 return {
                   ready: pc >= 3,
-                  needMsg: 'Filtra ' + (3 - pc) + ' paquete(s) más (verde PERMITIR / rojo BLOQUEAR)',
-                  okMsg: '✔ Listo: ' + pc + ' paquetes filtrados — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Filter ' + (3 - pc) + ' more packet(s) (green ALLOW / red BLOCK)',
+                  okMsg: '✔ Ready: ' + pc + ' packets filtered — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
@@ -804,21 +804,21 @@ function resizeCanvasEl(c) {
               case 'thermal':
               case 'hga':
               case 'decrypt': {
-                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
-                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Batería agotada: pulsa REINICIAR arriba' };
-                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Sobrepresión: pulsa REINICIAR arriba' };
+                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
+                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Battery depleted: press RESET above' };
+                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Overpressure: press RESET above' };
                 var interacted = (window.__mgAdjustCount || 0) >= 1;
                 var mTime = typeof missionTime === 'number' ? missionTime : 0;
                 var okNew = interacted || mTime >= 4.0;
                 return {
                   ready: okNew,
-                  needMsg: 'Haz 1 ajuste (o pulsa AUTO-CALIBRAR / opera ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
-                  okMsg: '✔ Listo: sistema calibrado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Make 1 adjustment (or press AUTO-CALIBRATE / operate ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
+                  okMsg: '✔ Ready: system calibrated — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
             }
-            return { ready: true, okMsg: '✔ SISTEMA VERIFICADO' };
+            return { ready: true, okMsg: '✔ SYSTEM VERIFIED' };
           }
 
           function refreshLiveVerifyBanner() {
@@ -833,9 +833,9 @@ function resizeCanvasEl(c) {
             var gid = 'reactor';
             try {
               var st = evalVerifyStatus(gid);
-              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Completa el paso indicado'));
+              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Complete the indicated step'));
               if (typeof st.onApprove === 'function') st.onApprove();
-              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SISTEMA ESTABILIZADO');
+              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SYSTEM STABILIZED');
             } catch (err) {}
             return false;
           }
@@ -851,7 +851,7 @@ function resizeCanvasEl(c) {
 </script>
 
 <script>
-/* === Puente con la Estación Espacial (iframe -> React) === */
+/* === Space Station Bridge (iframe -> React) === */
 (function () {
   var wonPending = false;
   var victorySent = false;
@@ -912,7 +912,7 @@ function resizeCanvasEl(c) {
     if (!btn) return;
     btn.setAttribute('data-solved-btn', '1');
     if (!btn.hasAttribute('data-orig-label')) {
-      btn.setAttribute('data-orig-label', btn.textContent || 'SIGUIENTE NIVEL');
+      btn.setAttribute('data-orig-label', btn.textContent || 'NEXT LEVEL');
     }
     if (!btn.hasAttribute('data-bridge-click')) {
       btn.setAttribute('data-bridge-click', '1');
@@ -925,14 +925,14 @@ function resizeCanvasEl(c) {
       });
     }
     if (isVictory) {
-      btn.textContent = "[ ✔ ESTABILIZAR FLUJO CRIOGÉNICO ]";
+      btn.textContent = "[ ✔ STABILIZE CRYOGENIC FLOW ]";
       btn.style.background = 'linear-gradient(180deg, #059669 0%, #047857 100%)';
       btn.style.borderColor = '#00ff88';
       btn.style.color = '#ffffff';
       btn.style.fontWeight = 'bold';
       btn.style.boxShadow = '0 0 14px rgba(0, 255, 136, 0.45)';
     } else {
-      btn.textContent = btn.getAttribute('data-orig-label') || 'REINTENTAR';
+      btn.textContent = btn.getAttribute('data-orig-label') || 'RETRY';
       btn.style.background = '#1e293b';
       btn.style.borderColor = '#475569';
       btn.style.color = '#e2e8f0';

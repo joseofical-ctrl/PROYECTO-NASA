@@ -26,10 +26,10 @@ export interface GameState extends Design {
 const DEFAULT_DESIGN: Design = { contractId: 'andes', launcherId: 'rideshare', chassisId: '6U', parts: {} }
 
 const DEFAULT_NAMES: Record<RoleId, string> = {
-  engineer: 'Jugador 1',
-  comms: 'Jugador 2',
-  science: 'Jugador 3',
-  director: 'Jugador 4',
+  engineer: 'Player 1',
+  comms: 'Player 2',
+  science: 'Player 3',
+  director: 'Player 4',
 }
 
 let msgId = 0
@@ -69,14 +69,14 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
     return !x.ok && y.ok
   }
 
-  // ALPACA-1 (Ingeniero) reclama cuando se rompe potencia/eclipse/escudo/dv
+  // ALPACA-1 (Engineer) flags power/eclipse/shielding/dv issues
   if (newlyBad('power')) {
     out.push(
       msg(
         'engineer',
         actor,
         'warn',
-        `"¡Oye ${whoTag}, al ${what} dejaste la nave en déficit eléctrico (${f(a.genW)}W gen vs ${f(a.loadW)}W consumo)! ¡Necesito instalar paneles solares más grandes!"`
+        `"Hey ${whoTag}, after ${what}, power dropped into deficit (${f(a.genW)}W gen vs ${f(a.loadW)}W load)! We need larger solar arrays!"`
       )
     )
   }
@@ -86,7 +86,7 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'engineer',
         actor,
         'warn',
-        `"¡Cuidado ${whoTag}! Con ${what} las baterías Li-Ion no aguantan el eclipse: nos faltan ${f(a.eclipseNeedWh - a.batteryWh)} Wh."`
+        `"Heads up ${whoTag}! After ${what}, our Li-Ion batteries can't survive eclipse: short by ${f(a.eclipseNeedWh - a.batteryWh)} Wh."`
       )
     )
   }
@@ -96,7 +96,7 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'engineer',
         actor,
         'warn',
-        `"¡Alerta de radiación! El blindaje actual (${a.krad} krad) no soporta los ${a.kradReq} krad de esta órbita. ¡A reforzar con MLI o Tántalo!"`
+        `"Radiation alert! Current shielding (${a.krad} krad) cannot handle ${a.kradReq} krad in this orbit. Reinforce with MLI or Ta/W!"`
       )
     )
   }
@@ -106,19 +106,19 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'engineer',
         actor,
         'warn',
-        `"¡${whoTag}, tras ${what} el Delta-V cayó a ${Math.round(a.dvMs)} m/s (mínimo ${a.dvReq} m/s)! Tsiolkovsky no perdona el peso extra."`
+        `"${whoTag}, after ${what}, Delta-V fell to ${Math.round(a.dvMs)} m/s (minimum ${a.dvReq} m/s)! Tsiolkovsky is unforgiving with extra mass."`
       )
     )
   }
 
-  // CÓNDOR-4 (Director) reclama cuando se rompe presupuesto, masa, slots u órbita
+  // CONDOR-4 (Director) flags budget, mass, slots, or orbit compatibility
   if (newlyBad('budget')) {
     out.push(
       msg(
         'director',
         actor,
         'warn',
-        `"¡Equipo (${whoTag}), nos pasamos del presupuesto de $${a.budget}k! Llevamos $${a.cost}k tras ${what}."`
+        `"Team (${whoTag}), we exceeded the $${a.budget}k budget! Total cost hit $${a.cost}k after ${what}."`
       )
     )
   }
@@ -128,7 +128,7 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'director',
         actor,
         'warn',
-        `"¡Alto ahí ${whoTag}! Al ${what} la masa subió a ${f(a.mass)} kg y supera los ${a.massCap} kg del cohete."`
+        `"Hold on ${whoTag}! After ${what}, wet mass climbed to ${f(a.mass)} kg and exceeds the rocket's ${a.massCap} kg limit."`
       )
     )
   }
@@ -138,7 +138,7 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'director',
         actor,
         'warn',
-        `"¡${whoTag}, sobrecarga de bahías! Ocupamos ${a.slotsUsed}U de ${a.slotsCap}U disponibles en el chasis."`
+        `"${whoTag}, bay overload! We are using ${a.slotsUsed}U out of ${a.slotsCap}U available in this chassis."`
       )
     )
   }
@@ -148,31 +148,31 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'director',
         'todos',
         'warn',
-        `"¡Atención Centro de Control! El vehículo de lanzamiento o chasis actual no es compatible con la órbita del contrato."`
+        `"Flight Control alert! The current launch vehicle or chassis is incompatible with this contract orbit."`
       )
     )
   }
 
-  // SERPIENTE-2 (Comms) reclama cuando el link budget no da abasto
+  // SERPIENTE-2 (Comms) flags link budget deficits
   if (newlyBad('link')) {
     out.push(
       msg(
         'comms',
         actor,
         'warn',
-        `"¡Sss-alerta ${whoTag}! Tras ${what} generamos ${a.dataGenMbps.toFixed(2)} Mbps pero mi antena solo descarga ${a.downEffMbps.toFixed(2)} Mbps. ¡Necesito una antena de mayor ganancia!"`
+        `"Sss-alert ${whoTag}! After ${what}, payloads produce ${a.dataGenMbps.toFixed(2)} Mbps but downlink only handles ${a.downEffMbps.toFixed(2)} Mbps. Need a higher-gain antenna!"`
       )
     )
   }
 
-  // PUMA-3 (Científico) reclama cuando faltan instrumentos o ciencia
+  // PUMA-3 (Science) flags missing payloads or science goals
   if (newlyBad('mand')) {
     out.push(
       msg(
         'science',
         actor,
         'warn',
-        `"¡Oigan (${whoTag})! Nos faltan instrumentos obligatorios de la NASA para cumplir los objetivos científicos."`
+        `"Team (${whoTag})! We are missing mandatory NASA instruments required to meet science objectives."`
       )
     )
   }
@@ -182,7 +182,7 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'science',
         actor,
         'warn',
-        `"¡${whoTag}, la ciencia cayó a ${f(a.sciPts)} pts (meta ${a.sciGoal} pts)! Mejoremos el apuntado ADCS o instalemos más sensores."`
+        `"${whoTag}, science output dropped to ${f(a.sciPts)} pts (goal ${a.sciGoal} pts)! Upgrade ADCS pointing or add more instruments."`
       )
     )
   }
@@ -195,7 +195,7 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
           check.role,
           'todos',
           'ok',
-          `"✔ ¡Excelente trabajo equipo! ${check.label} en verde (${check.detail})."`
+          `"✔ Great work team! ${check.label} is GO (${check.detail})."`
         )
       )
     }
@@ -207,7 +207,7 @@ function conflicts(actor: RoleId, what: string, b: Telemetry, a: Telemetry, afte
         'director',
         'todos',
         'ok',
-        '"¡Escuadrón Andino, todos los subsistemas están en verde! Listos para autorizar el despegue desde el Centro de Control."'
+        '"Andean Squadron, all subsystems are GO! Ready to authorize launch from Flight Control."'
       )
     )
   }
@@ -243,23 +243,23 @@ export const actions = {
   setRole(r: RoleId) { set({ ...state, activeRole: r }) },
   setContract(id: string) {
     const c = CONTRACTS.find((x) => x.id === id)!
-    apply({ contractId: id }, `firmar el contrato ${c.name}`)
+    apply({ contractId: id }, `signing ${c.name} contract`)
     const extra: ChatMsg[] = [
       msg(
         'director',
         'todos',
         'info',
-        `"Nuevo contrato firmado: ${c.name}. Instrumentos obligatorios para 🐆 PUMA-3 → ${c.mandatory.map((m) => PART_BY_ID[m].name).join(' + ')}. Meta: ${c.sciGoal} pts, ${c.kradReq} krad, ${c.dvReq} m/s."`
+        `"New contract signed: ${c.name}. Mandatory payloads for 🐆 PUMA-3 -> ${c.mandatory.map((m) => PART_BY_ID[m].name).join(' + ')}. Target: ${c.sciGoal} pts, ${c.kradReq} krad, ${c.dvReq} m/s."`
       ),
     ]
     set({ ...state, chat: [...state.chat, ...extra].slice(-40) })
   },
-  setLauncher(id: string) { apply({ launcherId: id }, `contratar el cohete ${LAUNCHERS.find((l) => l.id === id)!.name}`) },
+  setLauncher(id: string) { apply({ launcherId: id }, `selecting ${LAUNCHERS.find((l) => l.id === id)!.name} launcher`) },
   setChassis(id: string) {
     const ch = CHASSIS.find((c) => c.id === id)!
     const nextParts: Record<string, number> = { ...state.parts }
     let used = Object.entries(nextParts).reduce((acc, [pid, q]) => acc + (PART_BY_ID[pid]?.slots ?? 0) * q, 0)
-    // Si el nuevo chasis es más pequeño, recorta piezas con slots para no dejar más U ocupadas que la capacidad del chasis
+    // If downsizing chassis, trim slotted modules to fit U capacity
     if (used > ch.units) {
       for (const [pid] of Object.entries(nextParts).reverse()) {
         const s = PART_BY_ID[pid]?.slots ?? 0
@@ -270,7 +270,7 @@ export const actions = {
         }
       }
     }
-    apply({ chassisId: id, parts: nextParts }, `cambiar el chasis a ${ch.name}`)
+    apply({ chassisId: id, parts: nextParts }, `resizing chassis to ${ch.name}`)
   },
   changePart(id: string, delta: number) {
     const p = PART_BY_ID[id]
@@ -292,20 +292,20 @@ export const actions = {
               'director',
               state.activeRole,
               'warn',
-              `"¡No caben más módulos en el chasis ${ch.name} (${used}/${ch.units}U)! Retira una pieza o pide a 🦅 CÓNDOR-4 un chasis más grande."`
+              `"No more modules fit inside the ${ch.name} chassis (${used}/${ch.units}U)! Remove a part or ask 🦅 CONDOR-4 for a larger bus."`
             ),
           ].slice(-40),
         })
         return
       }
     }
-    apply({ parts: { ...state.parts, [id]: q } }, `${delta > 0 ? 'instalar' : 'retirar'} ${p.name}${p.power && delta > 0 ? ` (${p.power} W)` : ''}`, delta > 0 ? id : undefined)
+    apply({ parts: { ...state.parts, [id]: q } }, `${delta > 0 ? 'installing' : 'removing'} ${p.name}${p.power && delta > 0 ? ` (${p.power} W)` : ''}`, delta > 0 ? id : undefined)
   },
   autoFill() {
     const pr = PRESETS[state.contractId]
     apply(
       { launcherId: pr.launcherId, chassisId: pr.chassisId, parts: { ...pr.parts } },
-      `cargar el Preset Óptimo de ${CONTRACTS.find((c) => c.id === state.contractId)!.name}`,
+      `loading Optimal Preset for ${CONTRACTS.find((c) => c.id === state.contractId)!.name}`,
       'preset'
     )
     set({
@@ -316,13 +316,13 @@ export const actions = {
           'director',
           'todos',
           'ok',
-          `"¡Preset óptimo cargado para ${CONTRACTS.find((c) => c.id === state.contractId)!.name}! Todos los sistemas en verde; listos para autorizar el despegue."`
+          `"Optimal preset loaded for ${CONTRACTS.find((c) => c.id === state.contractId)!.name}! All systems GO; ready for launch authorization."`
         ),
       ].slice(-40),
     })
   },
   clear() {
-    apply({ parts: {} }, 'vaciar los módulos del hangar')
+    apply({ parts: {} }, 'clearing hangar modules')
   },
   loadDesign(next: Design, note?: { role?: RoleId | 'sistema'; text?: string; kind?: MsgKind; installedId?: string }) {
     const cleanText = note?.text?.trim()
@@ -359,8 +359,8 @@ export const actions = {
       lastInstall: null,
       lastCostEvent: null,
       chat: [
-        msg('director', 'todos', 'info', `"¡Escuadrón Andino reportándose en el Hangar! Contrato inicial: Andes LEO. Usen las teclas 1-4 para alternar entre CÓNDOR-4, ALPACA-1, PUMA-3 y SERPIENTE-2."`),
-        msg('engineer', 'science', 'info', `"¡Oye 🐆 PUMA-3, avísame qué cámaras e instrumentos vas a montar para dimensionar los paneles solares y las baterías Li-Ion!"`),
+        msg('director', 'todos', 'info', `"Andean Squadron reporting to the Hangar! Initial contract: Andes LEO. Use keys 1-4 to switch between CONDOR-4, ALPACA-1, PUMA-3, and SERPIENTE-2."`),
+        msg('engineer', 'science', 'info', `"Hey 🐆 PUMA-3, let me know which cameras and payloads we're mounting so I can size the solar arrays and Li-Ion batteries!"`),
       ],
     })
   },

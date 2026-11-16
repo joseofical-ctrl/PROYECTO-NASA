@@ -187,9 +187,9 @@ function resizeCanvasEl(c) {
 }
 `
 
-function wrapGame({ id, title, h1, badge, diffOptions, leftTitle, leftTagId, leftTagText, extraCanvasHtml = '', guideText = 'Sigue la guía en pantalla o pulsa AUTO-CALIBRAR.', rightHtml, modalTitle, modalStatsHtml, scriptBody }) {
+function wrapGame({ id, title, h1, badge, diffOptions, leftTitle, leftTagId, leftTagText, extraCanvasHtml = '', guideText = 'Follow on-screen guidance or press AUTO-CALIBRATE.', rightHtml, modalTitle, modalStatsHtml, scriptBody }) {
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -204,13 +204,13 @@ function wrapGame({ id, title, h1, badge, diffOptions, leftTitle, leftTagId, lef
     <h1>${h1}</h1>
   </div>
   <div class="top-controls">
-    <label for="diffSelect" style="font-size:11px;color:var(--dim);">NIVEL:</label>
+    <label for="diffSelect" style="font-size:11px;color:var(--dim);">LEVEL:</label>
     <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
       ${diffOptions}
     </select>
     <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
-    <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
-    <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+    <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSE</button>
+    <button class="btn-header" onclick="resetMission()">↻ RESET</button>
   </div>
 </header>
 <div class="workspace">
@@ -227,12 +227,12 @@ function wrapGame({ id, title, h1, badge, diffOptions, leftTitle, leftTagId, lef
   </div>
   <div class="panel">
     <div class="panel-head">
-      <span>CONSOLA DE CONTROL</span>
+      <span>CONTROL CONSOLE</span>
       <span id="clockDisplay">00:00</span>
     </div>
     <div class="side-body">
       <div class="guide-box" id="directGuideBox">${guideText}</div>
-      <button type="button" class="btn-assist" id="btnQuickAssist" onclick="triggerQuickAssist()">⚡ AUTO-CALIBRAR / ASISTENCIA IA</button>
+      <button type="button" class="btn-assist" id="btnQuickAssist" onclick="triggerQuickAssist()">⚡ AUTO-CALIBRATE / AI ASSIST</button>
       ${rightHtml}
     </div>
   </div>
@@ -241,13 +241,13 @@ function wrapGame({ id, title, h1, badge, diffOptions, leftTitle, leftTagId, lef
   <div class="modal-card">
     <div class="modal-head">
       <span style="font-size:15px;font-weight:bold;color:var(--crt-green)" id="debTitle">${modalTitle}</span>
-      <span class="badge-system" id="debBadge">ÉXITO</span>
+      <span class="badge-system" id="debBadge">SUCCESS</span>
     </div>
-    <p id="debDesc" style="font-size:12px;color:#cbd5e1;line-height:1.5;">Sistema estabilizado nominalmente.</p>
+    <p id="debDesc" style="font-size:12px;color:#cbd5e1;line-height:1.5;">System stabilized nominally.</p>
     <div class="modal-metrics">${modalStatsHtml}</div>
     <div class="modal-actions">
-      <button class="btn-header" onclick="closeModalAndRetry()">REINTENTAR</button>
-      <button class="btn-header" style="background:#0284c7;color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+      <button class="btn-header" onclick="closeModalAndRetry()">RETRY</button>
+      <button class="btn-header" style="background:#0284c7;color:#fff;" onclick="nextLevelOrFinish()">NEXT LEVEL</button>
     </div>
   </div>
 </div>
@@ -260,27 +260,27 @@ ${scriptBody}
 }
 
 function getNewMinigames() {
-  // 1) CÓNDOR-4: calibracion_giroscopio.html ('gyro')
+  // 1) CONDOR-4: calibracion_giroscopio.html ('gyro')
   const gyroHtml = wrapGame({
     id: 'gyro',
-    title: 'Calibración Giroscopio 3D - CÓNDOR-4',
-    h1: 'CALIBRACIÓN DE GIROSCOPIO 3D Y CONTROL ADCS · CÓNDOR-4',
-    badge: 'DIRECTOR // ADCS GIROSCOPIO (CÓNDOR-4)',
-    diffOptions: '<option value="1">Nivel 1 - Perturbación Leve</option><option value="2" selected>Nivel 2 - Par Multieje</option><option value="3">Nivel 3 - Ráfaga Solar Severa</option>',
-    leftTitle: 'HORIZONTE ARTIFICIAL Y GIMBAL 3 EJES',
+    title: '3D Gyroscope Calibration - CONDOR-4',
+    h1: '3D GYROSCOPE CALIBRATION & ADCS CONTROL · CONDOR-4',
+    badge: 'FLIGHT DIRECTOR // ADCS GYROSCOPE (CONDOR-4)',
+    diffOptions: '<option value="1">Level 1 - Minor Disturbance</option><option value="2" selected>Level 2 - Multi-Axis Torque</option><option value="3">Level 3 - Severe Solar Gust</option>',
+    leftTitle: 'ARTIFICIAL HORIZON & 3-AXIS GIMBAL',
     leftTagId: 'gyroStatus',
-    leftTagText: 'DERIVA ACTIVA',
+    leftTagText: 'DRIFT ACTIVE',
     rightHtml: `
       <div class="tele-card">
         <div class="tele-row"><span class="tele-lbl">PITCH (θ):</span><span class="tele-val" id="valPitch">0.00 rad/s</span></div>
         <div class="tele-row"><span class="tele-lbl">ROLL (φ):</span><span class="tele-val" id="valRoll">0.00 rad/s</span></div>
         <div class="tele-row"><span class="tele-lbl">YAW (ψ):</span><span class="tele-val" id="valYaw">0.00 rad/s</span></div>
-        <div class="tele-row"><span class="tele-lbl">VELOCIDAD TOTAL |ω|:</span><span class="tele-val" id="valMag" style="color:var(--crt-amber)">0.00 rad/s</span></div>
-        <div class="tele-row"><span class="tele-lbl">ESTABILIDAD (&lt;0.05 rad/s × 2.5s):</span><span class="tele-val" id="valHold">0.0 / 2.5 s</span></div>
+        <div class="tele-row"><span class="tele-lbl">TOTAL ANGULAR RATE |ω|:</span><span class="tele-val" id="valMag" style="color:var(--crt-amber)">0.00 rad/s</span></div>
+        <div class="tele-row"><span class="tele-lbl">STABILITY HOLD (&lt;0.05 rad/s × 2.5s):</span><span class="tele-val" id="valHold">0.0 / 2.5 s</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barHold" style="width:0%"></div></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">POTENCIA DE PULSO RCS:</span><span class="tele-val" id="valPower">0.06 rad/s</span></div>
+        <div class="tele-row"><span class="tele-lbl">RCS PULSE POWER:</span><span class="tele-val" id="valPower">0.06 rad/s</span></div>
         <input type="range" class="slider" id="slPulse" min="1" max="12" value="6" oninput="noteUserAdjust();pulseStep=this.value*0.01;document.getElementById('valPower').textContent=pulseStep.toFixed(2)+' rad/s'">
         <div class="btn-grid">
           <button class="btn-ctrl" onclick="applyTorque('pitch', -1)">▲ PITCH - [W]</button>
@@ -291,10 +291,10 @@ function getNewMinigames() {
           <button class="btn-ctrl" onclick="applyTorque('yaw', 1)">► YAW + [E]</button>
         </div>
       </div>
-      <div class="note-box">Aplica impulsos opuestos para frenar la rotación del CubeSat. Mantén <b>|ω| &lt; 0.05 rad/s</b> durante <b>2.5 segundos</b> (o usa AUTO-CALIBRAR).</div>
+      <div class="note-box">Apply opposing impulses to arrest CubeSat rotation. Hold <b>|ω| &lt; 0.05 rad/s</b> for <b>2.5 seconds</b> (or use AUTO-CALIBRATE).</div>
     `,
-    modalTitle: 'GIROSCOPIO CALIBRADO',
-    modalStatsHtml: '<div>Derivación Final: <b id="debMag">-</b></div><div>Tiempo: <b id="debTime">-</b></div><div>Pulsos RCS: <b id="debPulses">-</b></div><div>Rango: <b id="debGrade">-</b></div>',
+    modalTitle: 'GYROSCOPE CALIBRATED',
+    modalStatsHtml: '<div>Final Drift: <b id="debMag">-</b></div><div>Elapsed Time: <b id="debTime">-</b></div><div>RCS Pulses: <b id="debPulses">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
       let difficulty = 2, isPaused = false, isEnded = false, missionTime = 0, holdTime = 0, pulses = 0, pulseStep = 0.06;
@@ -314,14 +314,14 @@ function getNewMinigames() {
         updateUI();
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
         omega = { pitch: 0.01, roll: -0.01, yaw: 0.005 };
         angle = { pitch: 0.02, roll: -0.02, yaw: 0.01 };
         holdTime = Math.max(holdTime, 2.0);
-        showHud('✔ ADCS AUTO-CALIBRADO (<0.05 rad/s)', 'ok');
+        showHud('✔ ADCS AUTO-CALIBRATED (<0.05 rad/s)', 'ok');
         updateUI();
       }
       function applyTorque(axis, sign) {
@@ -345,15 +345,15 @@ function getNewMinigames() {
         isEnded = true;
         playTone(880, 0.16, 'sine');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡ADCS SINCRONIZADO!';
+        document.getElementById('debTitle').textContent = 'ADCS SYNCHRONIZED!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = 'ESTABLE';
-        document.getElementById('debDesc').textContent = 'Los tres ejes del giroscopio quedaron estabilizados debajo de 0.05 rad/s.';
+        document.getElementById('debBadge').textContent = 'STABILIZED';
+        document.getElementById('debDesc').textContent = 'All three gyroscope axes stabilized below 0.05 rad/s.';
         const mag = Math.hypot(omega.pitch, omega.roll, omega.yaw);
         document.getElementById('debMag').textContent = mag.toFixed(3) + ' rad/s';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
         document.getElementById('debPulses').textContent = pulses;
-        document.getElementById('debGrade').textContent = pulses < 35 ? 'A+ ÓPTIMO' : 'A NOMINAL';
+        document.getElementById('debGrade').textContent = pulses < 35 ? 'A+ OPTIMAL' : 'A NOMINAL';
       }
       function failMission(msg) { isEnded = true; showHud(msg, 'err'); }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
@@ -369,18 +369,18 @@ function getNewMinigames() {
         mEl.style.color = mag < 0.05 ? 'var(--crt-green)' : 'var(--crt-amber)';
         document.getElementById('valHold').textContent = holdTime.toFixed(1) + ' / 2.5 s';
         document.getElementById('barHold').style.width = Math.min(100, (holdTime / 2.5) * 100) + '%';
-        document.getElementById('gyroStatus').textContent = mag < 0.05 ? 'LOCK EN PROGRESO (' + holdTime.toFixed(1) + 's)' : 'CORRECCIÓN REQUERIDA';
+        document.getElementById('gyroStatus').textContent = mag < 0.05 ? 'LOCK IN PROGRESS (' + holdTime.toFixed(1) + 's)' : 'CORRECTION REQUIRED';
         document.getElementById('gyroStatus').style.color = mag < 0.05 ? 'var(--crt-green)' : 'var(--crt-amber)';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
         if (mag < 0.05) {
-          setGuideText('✔ |ω| estable (' + holdTime.toFixed(1) + '/2.5s) — Ya puedes CONFIRMAR arriba');
+          setGuideText('✔ |ω| stable (' + holdTime.toFixed(1) + '/2.5s) — Ready to CONFIRM above');
         } else {
           const axes = [
             { k: 'pitch', neg: '▲ PITCH - [W]', pos: '▼ PITCH + [S]', v: omega.pitch },
             { k: 'roll', neg: '↺ ROLL - [A]', pos: '↻ ROLL + [D]', v: omega.roll },
             { k: 'yaw', neg: '◄ YAW - [Q]', pos: '► YAW + [E]', v: omega.yaw }
           ].sort((a, b) => Math.abs(b.v) - Math.abs(a.v))[0];
-          setGuideText('👉 Pulsa ' + (axes.v > 0 ? axes.neg : axes.pos) + ' (o AUTO-CALIBRAR)');
+          setGuideText('👉 Press ' + (axes.v > 0 ? axes.neg : axes.pos) + ' (or AUTO-CALIBRATE)');
         }
       }
 
@@ -441,45 +441,45 @@ function getNewMinigames() {
         ctx.moveTo(cx, cy - 18); ctx.lineTo(cx, cy - 6); ctx.stroke();
         ctx.fillStyle = mag < 0.05 ? '#00ff88' : '#ffb703';
         ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center';
-        ctx.fillText(mag < 0.05 ? 'BLOQUEO INERCIAL: ' + holdTime.toFixed(1) + 's / 2.5s' : 'ESTABILIZAR < 0.05 rad/s (o AUTO-CALIBRAR)', cx, cy + R * 1.28);
+        ctx.fillText(mag < 0.05 ? 'INERTIAL LOCK: ' + holdTime.toFixed(1) + 's / 2.5s' : 'STABILIZE < 0.05 rad/s (or AUTO-CALIBRATE)', cx, cy + R * 1.28);
         requestAnimationFrame(loop);
       }
       window.addEventListener('load', () => { setupScenario(2); requestAnimationFrame(loop); });
     `
   })
 
-  // 2) CÓNDOR-4: eyeccion_escombros.html ('debris')
+  // 2) CONDOR-4: eyeccion_escombros.html ('debris')
   const debrisHtml = wrapGame({
     id: 'debris',
-    title: 'Eyección de Escombros Kessler - CÓNDOR-4',
-    h1: 'RADAR ORBITAL KESSLER Y EYECCIÓN DE ESCOMBROS · CÓNDOR-4',
-    badge: 'DIRECTOR // EVASIÓN KESSLER (CÓNDOR-4)',
-    diffOptions: '<option value="1">Nivel 1 - Tránsito Moderado</option><option value="2" selected>Nivel 2 - Nube de Fragmentos</option><option value="3">Nivel 3 - Síndrome Kessler</option>',
-    leftTitle: 'RADAR POLAR DE ESCOMBROS ORBITALES',
+    title: 'Kessler Debris Ejection - CONDOR-4',
+    h1: 'KESSLER ORBITAL RADAR & DEBRIS AVOIDANCE · CONDOR-4',
+    badge: 'FLIGHT DIRECTOR // KESSLER AVOIDANCE (CONDOR-4)',
+    diffOptions: '<option value="1">Level 1 - Moderate Traffic</option><option value="2" selected>Level 2 - Debris Cloud</option><option value="3">Level 3 - Kessler Syndrome</option>',
+    leftTitle: 'POLAR ORBITAL DEBRIS RADAR',
     leftTagId: 'debrisStatus',
-    leftTagText: 'ESQUIVE ACTIVO',
+    leftTagText: 'EVASIVE MANEUVERING',
     rightHtml: `
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">INTEGRIDAD CASCO:</span><span class="tele-val" id="valHull">100%</span></div>
+        <div class="tele-row"><span class="tele-lbl">HULL INTEGRITY:</span><span class="tele-val" id="valHull">100%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barHull" style="width:100%"></div></div>
-        <div class="tele-row"><span class="tele-lbl">SUPERVIVENCIA:</span><span class="tele-val" id="valSurv" style="color:var(--crt-green)">0.0 / 9.0 s</span></div>
+        <div class="tele-row"><span class="tele-lbl">SURVIVAL TIME:</span><span class="tele-val" id="valSurv" style="color:var(--crt-green)">0.0 / 9.0 s</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barSurv" style="width:0%;background:var(--crt-cyan)"></div></div>
-        <div class="tele-row"><span class="tele-lbl">ESCOMBROS EVADIDOS:</span><span class="tele-val" id="valDodged">0</span></div>
+        <div class="tele-row"><span class="tele-lbl">DEBRIS EVADED:</span><span class="tele-val" id="valDodged">0</span></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">PROPULSORES EVASIVOS X/Y:</span><span class="tele-val">WASD / FLECHAS</span></div>
+        <div class="tele-row"><span class="tele-lbl">X/Y EVASIVE THRUSTERS:</span><span class="tele-val">WASD / ARROWS</span></div>
         <div class="btn-grid-3">
-          <div></div><button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=-1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=-1" ontouchend="thrust.y=0">▲ NORTE</button><div></div>
-          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=-1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=-1" ontouchend="thrust.x=0">◄ OESTE</button>
-          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=1" ontouchend="thrust.y=0">▼ SUR</button>
-          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=1" ontouchend="thrust.x=0">► ESTE</button>
+          <div></div><button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=-1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=-1" ontouchend="thrust.y=0">▲ NORTH</button><div></div>
+          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=-1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=-1" ontouchend="thrust.x=0">◄ WEST</button>
+          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=1" ontouchend="thrust.y=0">▼ SOUTH</button>
+          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=1" ontouchend="thrust.x=0">► EAST</button>
         </div>
-        <button class="btn-primary" id="btnEmp" onclick="fireEmp()">🛡 DEFLECTOR EMP DE CHOQUE [ESPACIO]</button>
+        <button class="btn-primary" id="btnEmp" onclick="fireEmp()">🛡 SHOCKWAVE EMP DEFLECTOR [SPACE]</button>
       </div>
-      <div class="note-box">Esquiva con <b>WASD / Flechas</b> o pulsa <b>EMP</b> durante 8–10 segundos.</div>
+      <div class="note-box">Evade debris with <b>WASD / Arrow Keys</b> or trigger <b>EMP</b> for 8–10 seconds.</div>
     `,
-    modalTitle: 'CORREDOR ORBITAL DESPEJADO',
-    modalStatsHtml: '<div>Casco Restante: <b id="debHull">-</b></div><div>Fragmentos Evadidos: <b id="debCount">-</b></div><div>Pulsos EMP: <b id="debEmp">-</b></div><div>Rango: <b id="debGrade">-</b></div>',
+    modalTitle: 'ORBITAL CORRIDOR CLEARED',
+    modalStatsHtml: '<div>Hull Remaining: <b id="debHull">-</b></div><div>Fragments Evaded: <b id="debCount">-</b></div><div>EMP Pulses: <b id="debEmp">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
       let difficulty = 2, isPaused = false, isEnded = false, missionTime = 0, targetTime = 9, hull = 100;
@@ -496,7 +496,7 @@ function getNewMinigames() {
         updateUI();
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -505,7 +505,7 @@ function getNewMinigames() {
         empWave = 1.0;
         empCd = 0;
         missionTime = Math.max(missionTime, targetTime - 1.5);
-        showHud('✔ RADAR DESPEJADO POR ASISTENCIA IA', 'ok');
+        showHud('✔ RADAR CLEARED BY AI ASSIST', 'ok');
         updateUI();
       }
       function fireEmp() {
@@ -521,7 +521,7 @@ function getNewMinigames() {
             debris.splice(i, 1); dodged++;
           }
         }
-        showHud('🛡 DEFLECTOR EMP ACTIVADO', 'ok');
+        showHud('🛡 EMP DEFLECTOR ACTIVATED', 'ok');
       }
       window.addEventListener('keydown', (e) => {
         const k = e.key.toLowerCase();
@@ -534,26 +534,26 @@ function getNewMinigames() {
       function completeMission() {
         isEnded = true; playTone(920, 0.2, 'sine');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡TRÁNSITO DE ESCOMBROS COMPLETADO!';
+        document.getElementById('debTitle').textContent = 'DEBRIS TRANSIT COMPLETED!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = 'ÓRBITA SEGURA';
-        document.getElementById('debDesc').textContent = 'La estación atravesó el cinturón de fragmentos Kessler protegiendo la integridad estructural.';
+        document.getElementById('debBadge').textContent = 'ORBIT CLEAR';
+        document.getElementById('debDesc').textContent = 'Station cleared the Kessler debris belt while preserving structural integrity.';
         document.getElementById('debHull').textContent = Math.round(hull) + '%';
         document.getElementById('debCount').textContent = dodged;
         document.getElementById('debEmp').textContent = empUses;
-        document.getElementById('debGrade').textContent = hull >= 80 ? 'A+ EXCELENTE' : 'A ESTABLE';
+        document.getElementById('debGrade').textContent = hull >= 80 ? 'A+ EXCELLENT' : 'A NOMINAL';
       }
       function failMission() {
         isEnded = true; playTone(140, 0.35, 'sawtooth');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = 'IMPACTO CRÍTICO DE ESCOMBROS';
+        document.getElementById('debTitle').textContent = 'CRITICAL DEBRIS IMPACT';
         document.getElementById('debTitle').style.color = 'var(--crt-red)';
-        document.getElementById('debBadge').textContent = 'BRECHA';
-        document.getElementById('debDesc').textContent = 'Múltiples impactos fragmentaron el blindaje orbital. Usa los propulsores y el deflector EMP.';
+        document.getElementById('debBadge').textContent = 'HULL BREACH';
+        document.getElementById('debDesc').textContent = 'Multiple impacts breached orbital shielding. Use RCS thrusters and the EMP deflector.';
         document.getElementById('debHull').textContent = '0%';
         document.getElementById('debCount').textContent = dodged;
         document.getElementById('debEmp').textContent = empUses;
-        document.getElementById('debGrade').textContent = 'F REPROBADO';
+        document.getElementById('debGrade').textContent = 'F FAILED';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -568,12 +568,12 @@ function getNewMinigames() {
         document.getElementById('valDodged').textContent = dodged;
         const b = document.getElementById('btnEmp');
         b.disabled = empCd > 0;
-        b.textContent = empCd > 0 ? '⏳ RECARGA EMP (' + Math.ceil(empCd) + 's)' : '🛡 DEFLECTOR EMP DE CHOQUE [ESPACIO]';
+        b.textContent = empCd > 0 ? '⏳ EMP RECHARGE (' + Math.ceil(empCd) + 's)' : '🛡 SHOCKWAVE EMP DEFLECTOR [SPACE]';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
         const rem = Math.max(0, targetTime - missionTime);
         setGuideText(rem <= 0.1 || missionTime >= 4.0
-          ? '✔ Corredor seguro — Listo para CONFIRMAR arriba'
-          : '👉 Esquiva o pulsa [ESPACIO] EMP (' + rem.toFixed(1) + 's restantes)');
+          ? '✔ Corridor clear — Ready to CONFIRM above'
+          : '👉 Evade or press [SPACE] EMP (' + rem.toFixed(1) + 's remaining)');
       }
 
       let last = performance.now();
@@ -615,7 +615,7 @@ function getNewMinigames() {
             if (Math.hypot(d.x - px, d.y - py) < d.r + 12) {
               debris.splice(i, 1); hull = Math.max(0, hull - 10);
               playTone(190, 0.16, 'square');
-              showHud('⚠ ROZADURA EN CASCO (-10%)', 'warn');
+              showHud('⚠ HULL GRAZE (-10%)', 'warn');
               for (let k = 0; k < 10; k++) sparks.push({ x: px, y: py, vx: (Math.random()-0.5)*190, vy: (Math.random()-0.5)*190, l: 0.45, c: '#ff3b5c' });
               if (hull <= 0) { failMission(); break; }
             } else if (d.x < -40 || d.x > w + 40 || d.y < -40 || d.y > h + 40) {
@@ -656,37 +656,37 @@ function getNewMinigames() {
   // 3) ALPACA-1: refrigeracion_reactor.html ('reactor')
   const reactorHtml = wrapGame({
     id: 'reactor',
-    title: 'Control Térmico del Reactor - ALPACA-1',
-    h1: 'REFRIGERACIÓN CRIOGÉNICA DEL REACTOR DE FISIÓN · ALPACA-1',
-    badge: 'INGENIERÍA // REFRIGERACIÓN REACTOR (ALPACA-1)',
-    diffOptions: '<option value="1">Nivel 1 - Carga Térmica Media</option><option value="2" selected>Nivel 2 - Sobrecalentamiento Crítico</option><option value="3">Nivel 3 - Picos Térmicos Solares</option>',
-    leftTitle: 'CIRCUITO PRIMARIO DE AMONÍACO LÍQUIDO (NH3)',
+    title: 'Reactor Thermal Control - ALPACA-1',
+    h1: 'FISSION REACTOR CRYOGENIC COOLING · ALPACA-1',
+    badge: 'ENGINEERING // REACTOR COOLING (ALPACA-1)',
+    diffOptions: '<option value="1">Level 1 - Medium Thermal Load</option><option value="2" selected>Level 2 - Critical Overheat</option><option value="3">Level 3 - Solar Thermal Spikes</option>',
+    leftTitle: 'PRIMARY LIQUID AMMONIA LOOP (NH3)',
     leftTagId: 'rxStatus',
-    leftTagText: 'NÚCLEOS SOBRECALENTADOS',
+    leftTagText: 'CORES OVERHEATING',
     rightHtml: `
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">TEMP. PROMEDIO (META &lt;480°C):</span><span class="tele-val" id="valAvgT">610°C</span></div>
-        <div class="tele-row"><span class="tele-lbl">PRESIÓN DE CIRCUITO (&lt;100 PSI):</span><span class="tele-val" id="valPress">50 PSI</span></div>
+        <div class="tele-row"><span class="tele-lbl">AVG. CORE TEMP (TARGET &lt;480°C):</span><span class="tele-val" id="valAvgT">610°C</span></div>
+        <div class="tele-row"><span class="tele-lbl">LOOP PRESSURE (&lt;100 PSI):</span><span class="tele-val" id="valPress">50 PSI</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barPress" style="width:55%"></div></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO A (<span id="ta">810°C</span>):</span><span class="tele-val" id="pa">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE A PUMP (<span id="ta">810°C</span>):</span><span class="tele-val" id="pa">40%</span></div>
         <input type="range" class="slider" id="sl0" min="0" max="100" value="40" oninput="setPump(0,this.value)">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO B (<span id="tb">830°C</span>):</span><span class="tele-val" id="pb">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE B PUMP (<span id="tb">830°C</span>):</span><span class="tele-val" id="pb">40%</span></div>
         <input type="range" class="slider" id="sl1" min="0" max="100" value="40" oninput="setPump(1,this.value)">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO C (<span id="tc">820°C</span>):</span><span class="tele-val" id="pc">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE C PUMP (<span id="tc">820°C</span>):</span><span class="tele-val" id="pc">40%</span></div>
         <input type="range" class="slider" id="sl2" min="0" max="100" value="40" oninput="setPump(2,this.value)">
-        <div class="tele-row"><span class="tele-lbl">BOMBA NÚCLEO D (<span id="td">840°C</span>):</span><span class="tele-val" id="pd">40%</span></div>
+        <div class="tele-row"><span class="tele-lbl">CORE D PUMP (<span id="td">840°C</span>):</span><span class="tele-val" id="pd">40%</span></div>
         <input type="range" class="slider" id="sl3" min="0" max="100" value="40" oninput="setPump(3,this.value)">
       </div>
       <div class="btn-grid">
-        <button class="btn-ctrl" id="btnRad" onclick="toggleRadiators()">❄ RADIADORES: OFF</button>
-        <button class="btn-ctrl warn" id="btnPurge" onclick="purgeSteam()">💨 PURGAR VAPOR</button>
+        <button class="btn-ctrl" id="btnRad" onclick="toggleRadiators()">❄ RADIATORS: OFF</button>
+        <button class="btn-ctrl warn" id="btnPurge" onclick="purgeSteam()">💨 PURGE STEAM</button>
       </div>
-      <div class="note-box">Despliega los <b>Radiadores</b> y sube las bombas A-D para enfriar los 4 núcleos por debajo de <b>480°C</b> (o pulsa AUTO-CALIBRAR).</div>
+      <div class="note-box">Deploy <b>Radiators</b> and raise pumps A–D to cool all 4 cores below <b>480°C</b> (or press AUTO-CALIBRATE).</div>
     `,
-    modalTitle: 'REACTOR ENFRIAMIENTO NOMINAL',
-    modalStatsHtml: '<div>Temp. Final: <b id="debTemp">-</b></div><div>Presión Máx: <b id="debPress">-</b></div><div>Tiempo: <b id="debTime">-</b></div><div>Rango: <b id="debGrade">-</b></div>',
+    modalTitle: 'REACTOR COOLING NOMINAL',
+    modalStatsHtml: '<div>Final Temp: <b id="debTemp">-</b></div><div>Peak Pressure: <b id="debPress">-</b></div><div>Elapsed Time: <b id="debTime">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
       let difficulty = 2, isPaused = false, isEnded = false, missionTime = 0, pressure = 50, maxPress = 50;
@@ -703,7 +703,7 @@ function getNewMinigames() {
         updateRadBtn(); updateUI();
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -713,7 +713,7 @@ function getNewMinigames() {
         [0, 1, 2, 3].forEach((i) => { document.getElementById('sl' + i).value = 85; });
         pressure = 42;
         cores = cores.map((c) => Math.min(c, 455));
-        showHud('✔ RADIADORES ON Y BOMBAS AL 85% (<480°C)', 'ok');
+        showHud('✔ RADIATORS ON & PUMPS AT 85% (<480°C)', 'ok');
         updateUI();
       }
       function setPump(i, v) { noteUserAdjust(); pumps[i] = parseInt(v); playTone(260 + pumps[i] * 2, 0.03); updateUI(); }
@@ -724,7 +724,7 @@ function getNewMinigames() {
       }
       function updateRadBtn() {
         const b = document.getElementById('btnRad');
-        b.textContent = radOpen ? '❄ RADIADORES: ON' : '❄ RADIADORES: OFF';
+        b.textContent = radOpen ? '❄ RADIATORS: ON' : '❄ RADIATORS: OFF';
         b.classList.toggle('active', radOpen);
       }
       function purgeSteam() {
@@ -732,34 +732,34 @@ function getNewMinigames() {
         noteUserAdjust();
         pressure = Math.max(25, pressure - 26); purgeCd = 3.0;
         playTone(900, 0.14, 'sawtooth');
-        showHud('💨 VAPOR PURGADO (-26 PSI)', 'ok');
+        showHud('💨 STEAM PURGED (-26 PSI)', 'ok');
         updateUI();
       }
       function completeMission() {
         isEnded = true; playTone(900, 0.18);
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡REACTOR ESTABILIZADO < 480°C!';
+        document.getElementById('debTitle').textContent = 'REACTOR STABILIZED < 480°C!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = 'TÉRMICO OK';
-        document.getElementById('debDesc').textContent = 'Todos los canales del reactor bajaron de 400°C con presión nominal en circuito NH3.';
+        document.getElementById('debBadge').textContent = 'THERMAL OK';
+        document.getElementById('debDesc').textContent = 'All reactor channels cooled below 480°C with nominal NH3 loop pressure.';
         const avg = cores.reduce((a, b) => a + b, 0) / 4;
         document.getElementById('debTemp').textContent = Math.round(avg) + ' °C';
         document.getElementById('debPress').textContent = Math.round(maxPress) + ' PSI';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = maxPress < 92 ? 'A+ SEGURO' : 'A NOMINAL';
+        document.getElementById('debGrade').textContent = maxPress < 92 ? 'A+ SAFE' : 'A NOMINAL';
       }
       function failMission(reason) {
         isEnded = true; playTone(150, 0.35, 'sawtooth');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = 'COLAPSO DEL CIRCUITO TÉRMICO';
+        document.getElementById('debTitle').textContent = 'THERMAL LOOP COLLAPSE';
         document.getElementById('debTitle').style.color = 'var(--crt-red)';
-        document.getElementById('debBadge').textContent = 'SOBREPRESIÓN';
+        document.getElementById('debBadge').textContent = 'OVERPRESSURE';
         document.getElementById('debDesc').textContent = reason;
         const avg = cores.reduce((a, b) => a + b, 0) / 4;
         document.getElementById('debTemp').textContent = Math.round(avg) + ' °C';
         document.getElementById('debPress').textContent = Math.round(pressure) + ' PSI';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = 'F FALLIDO';
+        document.getElementById('debGrade').textContent = 'F FAILED';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -779,11 +779,11 @@ function getNewMinigames() {
         document.getElementById('barPress').style.background = pressure > 88 ? 'var(--crt-red)' : 'var(--crt-cyan)';
         const pb = document.getElementById('btnPurge');
         pb.disabled = purgeCd > 0;
-        pb.textContent = purgeCd > 0 ? '⏳ PURGA (' + Math.ceil(purgeCd) + 's)' : '💨 PURGAR VAPOR';
+        pb.textContent = purgeCd > 0 ? '⏳ PURGE (' + Math.ceil(purgeCd) + 's)' : '💨 PURGE STEAM';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
-        if (avg < 480) setGuideText('✔ Núcleos refrigerados (<480°C) — Listo para CONFIRMAR arriba');
-        else if (!radOpen) setGuideText('👉 Paso 1: Enciende [❄ RADIADORES: ON] o pulsa AUTO-CALIBRAR');
-        else setGuideText('👉 Paso 2: Sube bombas A-D > 75% (Meta <480°C)');
+        if (avg < 480) setGuideText('✔ Cores cooled (<480°C) — Ready to CONFIRM above');
+        else if (!radOpen) setGuideText('👉 Step 1: Turn on [❄ RADIATORS: ON] or press AUTO-CALIBRATE');
+        else setGuideText('👉 Step 2: Raise pumps A–D > 75% (Target <480°C)');
       }
 
       let last = performance.now();
@@ -801,9 +801,9 @@ function getNewMinigames() {
           for (let i = 0; i < 4; i++) {
             const cool = (pumps[i] / 100) * (radOpen ? 85 : 52);
             cores[i] = Math.max(290, cores[i] + (heatGen - cool) * dt);
-            if (cores[i] >= 980) { failMission('Fusión térmica en Núcleo ' + String.fromCharCode(65 + i) + ' (>980°C).'); break; }
+            if (cores[i] >= 980) { failMission('Thermal meltdown in Core ' + String.fromCharCode(65 + i) + ' (>980°C).'); break; }
           }
-          if (!isEnded && pressure >= 105) failMission('Ruptura por sobrepresión del circuito NH3 (>=105 PSI).');
+          if (!isEnded && pressure >= 105) failMission('NH3 loop overpressure rupture (>=105 PSI).');
           if (!isEnded && cores.every((c) => c < 480)) completeMission();
           updateUI();
         }
@@ -827,7 +827,7 @@ function getNewMinigames() {
           ctx.strokeStyle = '#00ff88'; ctx.setLineDash([4, 3]);
           ctx.beginPath(); ctx.moveTo(x - 4, goalY); ctx.lineTo(x + bw + 4, goalY); ctx.stroke(); ctx.setLineDash([]);
           ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center';
-          ctx.fillText('NÚCLEO ' + String.fromCharCode(65 + i), x + bw / 2, baseY + 18);
+          ctx.fillText('CORE ' + String.fromCharCode(65 + i), x + bw / 2, baseY + 18);
           ctx.fillText(Math.round(t) + '°C', x + bw / 2, baseY - bh - 6);
           // Burbuja flujo amoníaco
           const py = baseY - ((flowPhase * 40 + i * 25) % maxH);
@@ -842,31 +842,31 @@ function getNewMinigames() {
   // 4) ALPACA-1: reparacion_circuitos.html ('pcb')
   const pcbHtml = wrapGame({
     id: 'pcb',
-    title: 'Reparación de Circuitos PCB - ALPACA-1',
-    h1: 'ENRUTAMIENTO DE BUSES PCB Y BYPASS DE CAPACITORES · ALPACA-1',
-    badge: 'INGENIERÍA // PLACA PCB (ALPACA-1)',
-    diffOptions: '<option value="1">Nivel 1 - 1 Capacitor Quemado</option><option value="2" selected>Nivel 2 - Bus Complejo</option><option value="3">Nivel 3 - Placa Crítica</option>',
-    leftTitle: 'MATRIZ PCB 5x5 (CLIC PARA ROTAR PISTA 90°)',
+    title: 'PCB Circuit Repair - ALPACA-1',
+    h1: 'PCB BUS ROUTING & CAPACITOR BYPASS · ALPACA-1',
+    badge: 'ENGINEERING // PCB BOARD (ALPACA-1)',
+    diffOptions: '<option value="1">Level 1 - 1 Blown Capacitor</option><option value="2" selected>Level 2 - Complex Bus</option><option value="3">Level 3 - Critical Board</option>',
+    leftTitle: '5x5 PCB MATRIX (CLICK TO ROTATE TRACE 90°)',
     leftTagId: 'pcbStatus',
-    leftTagText: '0 / 3 SALIDAS CONECTADAS',
+    leftTagText: '0 / 3 OUTPUTS CONNECTED',
     rightHtml: `
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">RESERVA BATERÍA EMERG.:</span><span class="tele-val" id="valBat">100%</span></div>
+        <div class="tele-row"><span class="tele-lbl">EMERG. BATTERY RESERVE:</span><span class="tele-val" id="valBat">100%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barBat" style="width:100%"></div></div>
-        <div class="tele-row"><span class="tele-lbl">BUSES ENERGIZADOS:</span><span class="tele-val" id="valOut">0 / 3</span></div>
-        <div class="tele-row"><span class="tele-lbl">ROTACIONES / BYPASS:</span><span class="tele-val" id="valMoves">0</span></div>
+        <div class="tele-row"><span class="tele-lbl">ENERGIZED BUSES:</span><span class="tele-val" id="valOut">0 / 3</span></div>
+        <div class="tele-row"><span class="tele-lbl">ROTATIONS / BYPASSES:</span><span class="tele-val" id="valMoves">0</span></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">HERRAMIENTA DE CLIC:</span><span class="tele-val" id="toolModeTxt">ROTAR PISTA ↻</span></div>
+        <div class="tele-row"><span class="tele-lbl">CLICK TOOL:</span><span class="tele-val" id="toolModeTxt">ROTATE TRACE ↻</span></div>
         <div class="btn-grid">
-          <button class="btn-ctrl active" id="btnToolRot" onclick="setTool('rot')">↻ ROTAR [1]</button>
-          <button class="btn-ctrl warn" id="btnToolByp" onclick="setTool('bypass')">⚡ SOLDAR BYPASS [2]</button>
+          <button class="btn-ctrl active" id="btnToolRot" onclick="setTool('rot')">↻ ROTATE [1]</button>
+          <button class="btn-ctrl warn" id="btnToolByp" onclick="setTool('bypass')">⚡ SOLDER BYPASS [2]</button>
         </div>
       </div>
-      <div class="note-box">Haz clic en los nodos de cobre para rotar las pistas y conectar las <b>3 entradas (IN)</b> con las <b>3 salidas (OUT)</b>. Si encuentras un capacitor quemado en rojo (<b>CAP</b>), usa <b>Soldar Bypass</b>.</div>
+      <div class="note-box">Click copper nodes to rotate traces and connect all <b>3 inputs (IN)</b> to the <b>3 outputs (OUT)</b>. If you find a blown red capacitor (<b>CAP</b>), use <b>Solder Bypass</b>.</div>
     `,
-    modalTitle: 'PLACA PCB ENERGIZADA AL 100%',
-    modalStatsHtml: '<div>Buses Activos: <b id="debOut">3 / 3</b></div><div>Reserva Final: <b id="debBat">-</b></div><div>Operaciones: <b id="debMoves">-</b></div><div>Calificación: <b id="debGrade">-</b></div>',
+    modalTitle: 'PCB BOARD 100% ENERGIZED',
+    modalStatsHtml: '<div>Active Buses: <b id="debOut">3 / 3</b></div><div>Final Reserve: <b id="debBat">-</b></div><div>Operations: <b id="debMoves">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
       // Bits: 1=N, 2=E, 4=S, 8=W
@@ -911,7 +911,7 @@ function getNewMinigames() {
         tool = t;
         document.getElementById('btnToolRot').classList.toggle('active', t === 'rot');
         document.getElementById('btnToolByp').classList.toggle('active', t === 'bypass');
-        document.getElementById('toolModeTxt').textContent = t === 'rot' ? 'ROTAR PISTA ↻' : 'SOLDAR BYPASS ⚡';
+        document.getElementById('toolModeTxt').textContent = t === 'rot' ? 'ROTATE TRACE ↻' : 'SOLDER BYPASS ⚡';
       }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -923,7 +923,7 @@ function getNewMinigames() {
           }
         });
         computePower(); updateUI();
-        showHud('✔ CIRCUITOS PCB RUTADOS AUTOMÁTICAMENTE', 'ok');
+        showHud('✔ PCB CIRCUITS AUTO-ROUTED', 'ok');
       }
       function cellMask(r, c) {
         const g = grid[r][c];
@@ -951,7 +951,7 @@ function getNewMinigames() {
         if (!isEnded && outLit.every(Boolean)) completeMission();
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
 
       canvas.addEventListener('click', (e) => {
@@ -965,7 +965,7 @@ function getNewMinigames() {
         noteUserAdjust();
         if (cell.blown && !cell.fixed) {
           cell.fixed = true; cell.rot = 1; moves++; playTone(760, 0.1);
-          showHud('✔ BYPASS SOLDADO', 'ok');
+          showHud('✔ BYPASS SOLDERED', 'ok');
         } else {
           cell.rot = (cell.rot + 1) % 4; moves++; playTone(480, 0.05);
         }
@@ -976,26 +976,26 @@ function getNewMinigames() {
       function completeMission() {
         isEnded = true; playTone(940, 0.2);
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡CIRCUITO PCB RESTAURADO!';
+        document.getElementById('debTitle').textContent = 'PCB CIRCUIT RESTORED!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
         document.getElementById('debBadge').textContent = '3/3 BUSES OK';
-        document.getElementById('debDesc').textContent = 'Las tres líneas de potencia fluyen sin cortos ni caída hacia los módulos críticos.';
+        document.getElementById('debDesc').textContent = 'All three power buses flow without shorts or voltage drop to critical modules.';
         document.getElementById('debOut').textContent = '3 / 3';
         document.getElementById('debBat').textContent = Math.round(battery) + '%';
         document.getElementById('debMoves').textContent = moves;
-        document.getElementById('debGrade').textContent = battery > 60 ? 'A+ ÓPTIMO' : 'A NOMINAL';
+        document.getElementById('debGrade').textContent = battery > 60 ? 'A+ OPTIMAL' : 'A NOMINAL';
       }
       function failMission() {
         isEnded = true; playTone(150, 0.35, 'sawtooth');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = 'BATERÍA DE RESPALDO AGOTADA';
+        document.getElementById('debTitle').textContent = 'BACKUP BATTERY DEPLETED';
         document.getElementById('debTitle').style.color = 'var(--crt-red)';
-        document.getElementById('debBadge').textContent = 'APAGÓN';
-        document.getElementById('debDesc').textContent = 'El circuito no se completó antes de que la reserva de emergencia cayera a 0%.';
+        document.getElementById('debBadge').textContent = 'BLACKOUT';
+        document.getElementById('debDesc').textContent = 'Circuit routing was not completed before emergency battery reserve fell to 0%.';
         document.getElementById('debOut').textContent = outLit.filter(Boolean).length + ' / 3';
         document.getElementById('debBat').textContent = '0%';
         document.getElementById('debMoves').textContent = moves;
-        document.getElementById('debGrade').textContent = 'F FALLIDO';
+        document.getElementById('debGrade').textContent = 'F FAILED';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -1003,20 +1003,20 @@ function getNewMinigames() {
       function updateUI() {
         const cnt = outLit.filter(Boolean).length;
         document.getElementById('valOut').textContent = cnt + ' / 3';
-        document.getElementById('pcbStatus').textContent = cnt + ' / 3 SALIDAS CONECTADAS';
+        document.getElementById('pcbStatus').textContent = cnt + ' / 3 OUTPUTS CONNECTED';
         document.getElementById('pcbStatus').style.color = cnt === 3 ? 'var(--crt-green)' : 'var(--crt-amber)';
         document.getElementById('valBat').textContent = Math.round(battery) + '%';
         document.getElementById('barBat').style.width = battery + '%';
         document.getElementById('barBat').style.background = battery > 35 ? 'var(--crt-green)' : 'var(--crt-red)';
         document.getElementById('valMoves').textContent = moves;
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
-        let hint = '✔ 3/3 salidas energizadas — Listo para CONFIRMAR';
+        let hint = '✔ 3/3 outputs energized — Ready to CONFIRM';
         for (const r of inRows) {
           let broken = false;
           for (let c = 0; c < 5; c++) {
             const cell = grid[r] && grid[r][c];
             if (cell && ((cell.blown && !cell.fixed) || (cell.type === 'I' && cell.rot % 2 !== 1))) {
-              hint = '👉 Haz clic en Fila ' + (r + 1) + ', Col ' + (c + 1) + ' (' + (cell.blown ? 'CAP✖' : 'rotar') + ') o pulsa AUTO-CALIBRAR';
+              hint = '👉 Click Row ' + (r + 1) + ', Col ' + (c + 1) + ' (' + (cell.blown ? 'CAP✖' : 'rotate') + ') or press AUTO-CALIBRATE';
               broken = true; break;
             }
           }
@@ -1083,37 +1083,37 @@ function getNewMinigames() {
   // 5) PUMA-3: espectrometria_masas.html ('spectro')
   const spectroHtml = wrapGame({
     id: 'spectro',
-    title: 'Espectrometría de Masas Glaciar - PUMA-3',
-    h1: 'PERFORACIÓN LÁSER Y ESPECTROMETRÍA DE MASAS · PUMA-3',
-    badge: 'CIENCIA // ESPECTROMETRÍA DE MASAS (PUMA-3)',
-    diffOptions: '<option value="1">Nivel 1 - Hielo Superficial</option><option value="2" selected>Nivel 2 - Núcleo Glaciar Mixto</option><option value="3">Nivel 3 - Isótopos Raros Lunar</option>',
-    leftTitle: 'TALADRO TÉRMICO + GRÁFICO DE MASAS (m/z)',
+    title: 'Glacial Mass Spectrometry - PUMA-3',
+    h1: 'LASER DRILLING & MASS SPECTROMETRY · PUMA-3',
+    badge: 'SCIENCE // MASS SPECTROMETRY (PUMA-3)',
+    diffOptions: '<option value="1">Level 1 - Surface Ice</option><option value="2" selected>Level 2 - Mixed Glacial Core</option><option value="3">Level 3 - Rare Lunar Isotopes</option>',
+    leftTitle: 'THERMAL DRILL + MASS SPECTRUM PLOT (m/z)',
     leftTagId: 'specStatus',
-    leftTagText: 'MUESTRA 1 / 3',
+    leftTagText: 'SAMPLE 1 / 3',
     rightHtml: `
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">ISÓTOPO OBJETIVO:</span><span class="tele-val" id="valTargetIso">H2O (18.0 u)</span></div>
-        <div class="tele-row"><span class="tele-lbl">MUESTRAS AISLADAS:</span><span class="tele-val" id="valCaught">0 / 3</span></div>
-        <div class="tele-row"><span class="tele-lbl">COINCIDENCIA ESPECTRAL:</span><span class="tele-val" id="valMatch">0%</span></div>
+        <div class="tele-row"><span class="tele-lbl">TARGET ISOTOPE:</span><span class="tele-val" id="valTargetIso">H2O (18.0 u)</span></div>
+        <div class="tele-row"><span class="tele-lbl">ISOLATED SAMPLES:</span><span class="tele-val" id="valCaught">0 / 3</span></div>
+        <div class="tele-row"><span class="tele-lbl">SPECTRAL MATCH:</span><span class="tele-val" id="valMatch">0%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barMatch" style="width:0%"></div></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">FRECUENCIA LÁSER (Hz):</span><span><span class="tele-val" id="valLaser">450 Hz</span> <small id="tgtLaserHint" style="color:var(--crt-green)">(Obj: 340)</small></span></div>
+        <div class="tele-row"><span class="tele-lbl">LASER FREQUENCY (Hz):</span><span><span class="tele-val" id="valLaser">450 Hz</span> <small id="tgtLaserHint" style="color:var(--crt-green)">(Tgt: 340)</small></span></div>
         <input type="range" class="slider" id="slLaser" min="100" max="900" value="450" oninput="noteUserAdjust();updateTune()">
-        <div class="tele-row"><span class="tele-lbl">ENERGÍA TÉRMICA (kW):</span><span><span class="tele-val" id="valPower">50 kW</span> <small id="tgtHeatHint" style="color:var(--crt-green)">(Obj: 62)</small></span></div>
+        <div class="tele-row"><span class="tele-lbl">THERMAL POWER (kW):</span><span><span class="tele-val" id="valPower">50 kW</span> <small id="tgtHeatHint" style="color:var(--crt-green)">(Tgt: 62)</small></span></div>
         <input type="range" class="slider" id="slHeat" min="10" max="100" value="50" oninput="noteUserAdjust();updateTune()">
       </div>
-      <button class="btn-primary" onclick="capturePeak()">🔬 CAPTURAR PICO QUÍMICO</button>
-      <div class="note-box">Alinea Frecuencia y Energía con los valores <b>Obj</b> (&ge; 70%) y pulsa <b>Capturar</b> (3 muestras) o usa AUTO-CALIBRAR.</div>
+      <button class="btn-primary" onclick="capturePeak()">🔬 CAPTURE CHEMICAL PEAK</button>
+      <div class="note-box">Align Frequency and Power to <b>Tgt</b> values (&ge; 70%) and press <b>Capture</b> (3 samples) or use AUTO-CALIBRATE.</div>
     `,
-    modalTitle: 'COMPOSICIÓN QUÍMICA VERIFICADA',
-    modalStatsHtml: '<div>Isótopos Analizados: <b id="debIso">3 / 3</b></div><div>Precisión Media: <b id="debAcc">-</b></div><div>Tiempo: <b id="debTime">-</b></div><div>Rango: <b id="debGrade">-</b></div>',
+    modalTitle: 'CHEMICAL COMPOSITION VERIFIED',
+    modalStatsHtml: '<div>Isotopes Analyzed: <b id="debIso">3 / 3</b></div><div>Mean Accuracy: <b id="debAcc">-</b></div><div>Elapsed Time: <b id="debTime">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
       const SAMPLES = [
-        { name: 'H2O CRISTALINO (18 u)', freq: 340, heat: 62 },
-        { name: 'ISÓTOPO O-18 (20 u)', freq: 615, heat: 78 },
-        { name: 'HELIO-3 REGOLITO (3 u)', freq: 790, heat: 44 }
+        { name: 'CRYSTALLINE H2O (18 u)', freq: 340, heat: 62 },
+        { name: 'O-18 ISOTOPE (20 u)', freq: 615, heat: 78 },
+        { name: 'REGOLITH HELIUM-3 (3 u)', freq: 790, heat: 44 }
       ];
       let difficulty = 2, isPaused = false, isEnded = false, missionTime = 0, stage = 0, userFreq = 450, userHeat = 50, phase = 0, accSum = 0;
 
@@ -1127,7 +1127,7 @@ function getNewMinigames() {
         window.__mgAdjustCount = 0;
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -1135,7 +1135,7 @@ function getNewMinigames() {
         document.getElementById('slLaser').value = tgt.freq;
         document.getElementById('slHeat').value = tgt.heat;
         updateTune();
-        showHud('✔ LÁSER SINTONIZADO AL 100% — PULSA CAPTURAR O CONFIRMAR', 'ok');
+        showHud('✔ LASER TUNED 100% — PRESS CAPTURE OR CONFIRM', 'ok');
       }
       function updateTune() {
         userFreq = parseInt(document.getElementById('slLaser').value);
@@ -1159,23 +1159,23 @@ function getNewMinigames() {
           accSum += m; stage++;
           playTone(860, 0.14);
           if (stage >= SAMPLES.length) completeMission();
-          else { showHud('✔ PICO QUÍMICO AISLADO (' + stage + '/3)', 'ok'); updateUI(); }
+          else { showHud('✔ CHEMICAL PEAK ISOLATED (' + stage + '/3)', 'ok'); updateUI(); }
         } else {
           playTone(210, 0.16, 'sawtooth');
-          showHud('⚠ Acerca a ' + SAMPLES[stage].freq + ' Hz / ' + SAMPLES[stage].heat + ' kW (>=70%)', 'warn');
+          showHud('⚠ Adjust closer to ' + SAMPLES[stage].freq + ' Hz / ' + SAMPLES[stage].heat + ' kW (>=70%)', 'warn');
         }
       }
       function completeMission() {
         isEnded = true; playTone(980, 0.22);
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡ESPECTROMETRÍA COMPLETADA!';
+        document.getElementById('debTitle').textContent = 'SPECTROMETRY COMPLETE!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = 'MUESTRAS OK';
-        document.getElementById('debDesc').textContent = 'El espectrómetro aisló H2O, Isótopo O-18 y Helio-3 del testigo glaciar.';
+        document.getElementById('debBadge').textContent = 'SAMPLES OK';
+        document.getElementById('debDesc').textContent = 'Spectrometer isolated H2O, O-18 Isotope, and Helium-3 from the glacial core.';
         document.getElementById('debIso').textContent = '3 / 3';
         document.getElementById('debAcc').textContent = Math.round(accSum / 3) + '%';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = accSum / 3 >= 94 ? 'A+ PURO' : 'A CIENTÍFICO';
+        document.getElementById('debGrade').textContent = accSum / 3 >= 94 ? 'A+ PURE' : 'A SCIENTIFIC';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -1185,17 +1185,17 @@ function getNewMinigames() {
         const m = calcMatch();
         document.getElementById('valTargetIso').textContent = tgt.name;
         document.getElementById('valCaught').textContent = stage + ' / 3';
-        document.getElementById('specStatus').textContent = 'MUESTRA ' + Math.min(3, stage + 1) + ' / 3';
+        document.getElementById('specStatus').textContent = 'SAMPLE ' + Math.min(3, stage + 1) + ' / 3';
         document.getElementById('valMatch').textContent = m + '%';
         document.getElementById('valMatch').style.color = m >= 70 ? 'var(--crt-green)' : 'var(--crt-amber)';
         document.getElementById('barMatch').style.width = m + '%';
         document.getElementById('barMatch').style.background = m >= 70 ? 'var(--crt-green)' : 'var(--crt-amber)';
-        document.getElementById('tgtLaserHint').textContent = '(Obj: ' + tgt.freq + ' Hz)';
-        document.getElementById('tgtHeatHint').textContent = '(Obj: ' + tgt.heat + ' kW)';
+        document.getElementById('tgtLaserHint').textContent = '(Tgt: ' + tgt.freq + ' Hz)';
+        document.getElementById('tgtHeatHint').textContent = '(Tgt: ' + tgt.heat + ' kW)';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
         setGuideText(m >= 70
-          ? '✔ Coincidencia ' + m + '% — Pulsa [🔬 CAPTURAR PICO] o CONFIRMAR'
-          : '👉 Pon Láser ~' + tgt.freq + ' Hz y Calor ~' + tgt.heat + ' kW (>=70%)');
+          ? '✔ Spectral match ' + m + '% — Press [🔬 CAPTURE PEAK] or CONFIRM'
+          : '👉 Set Laser ~' + tgt.freq + ' Hz and Power ~' + tgt.heat + ' kW (>=70%)');
       }
 
       let last = performance.now();
@@ -1238,39 +1238,39 @@ function getNewMinigames() {
   // 6) PUMA-3: telemetria_multiespectral.html ('thermal')
   const thermalHtml = wrapGame({
     id: 'thermal',
-    title: 'Telemetría Multiespectral IR/UV - PUMA-3',
-    h1: 'CORONÓGRAFO SOLAR Y TELEMETRÍA MULTIESPECTRAL · PUMA-3',
-    badge: 'CIENCIA // TELEMETRÍA IR/UV (PUMA-3)',
-    diffOptions: '<option value="1">Nivel 1 - Fulguración Clara</option><option value="2" selected>Nivel 2 - Anomalía Multibanda</option><option value="3">Nivel 3 - Tormenta Coronal</option>',
-    leftTitle: 'VISOR ÓPTICO / CORONÓGRAFO (CALIBRAR Y CLICAR ANOMALÍA)',
+    title: 'IR/UV Multispectral Telemetry - PUMA-3',
+    h1: 'SOLAR CORONAGRAPH & MULTISPECTRAL TELEMETRY · PUMA-3',
+    badge: 'SCIENCE // IR/UV TELEMETRY (PUMA-3)',
+    diffOptions: '<option value="1">Level 1 - Clear Solar Flare</option><option value="2" selected>Level 2 - Multi-Band Anomaly</option><option value="3">Level 3 - Coronal Storm</option>',
+    leftTitle: 'OPTICAL VIEWER / CORONAGRAPH (CALIBRATE & CLICK ANOMALY)',
     leftTagId: 'thmStatus',
-    leftTagText: '0 / 3 ANOMALÍAS REGISTRADAS',
+    leftTagText: '0 / 3 ANOMALIES LOGGED',
     rightHtml: `
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">BANDA REQUERIDA:</span><span class="tele-val" id="valReqBand">INFRARROJO (IR)</span></div>
-        <div class="tele-row"><span class="tele-lbl">NITIDEZ ÓPTICA:</span><span class="tele-val" id="valClarity">35%</span></div>
+        <div class="tele-row"><span class="tele-lbl">REQUIRED BAND:</span><span class="tele-val" id="valReqBand">INFRARED (IR)</span></div>
+        <div class="tele-row"><span class="tele-lbl">OPTICAL CLARITY:</span><span class="tele-val" id="valClarity">35%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barClarity" style="width:35%"></div></div>
-        <div class="tele-row"><span class="tele-lbl">ANOMALÍAS ESCANEADAS:</span><span class="tele-val" id="valCount">0 / 3</span></div>
+        <div class="tele-row"><span class="tele-lbl">ANOMALIES SCANNED:</span><span class="tele-val" id="valCount">0 / 3</span></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-lbl" style="font-size:11px;">FILTRO DE BANDA ESPECTRAL:</div>
+        <div class="tele-lbl" style="font-size:11px;">SPECTRAL BAND FILTER:</div>
         <div class="btn-grid-3">
           <button class="btn-ctrl active" id="bandIR" onclick="setBand('IR')">IR</button>
           <button class="btn-ctrl" id="bandUV" onclick="setBand('UV')">UV</button>
-          <button class="btn-ctrl" id="bandXR" onclick="setBand('XR')">RAYOS-X</button>
+          <button class="btn-ctrl" id="bandXR" onclick="setBand('XR')">X-RAY</button>
         </div>
-        <div class="tele-row"><span class="tele-lbl">ENFOQUE ÓPTICO (mm):</span><span><span class="tele-val" id="valFocus">50 mm</span> <small id="tgtFocusHint" style="color:var(--crt-green)">(Obj: 72)</small></span></div>
+        <div class="tele-row"><span class="tele-lbl">OPTICAL FOCUS (mm):</span><span><span class="tele-val" id="valFocus">50 mm</span> <small id="tgtFocusHint" style="color:var(--crt-green)">(Tgt: 72)</small></span></div>
         <input type="range" class="slider" id="slFocus" min="10" max="100" value="50" oninput="noteUserAdjust();updateOptics()">
-        <div class="tele-row"><span class="tele-lbl">GANANCIA SENSOR (dB):</span><span><span class="tele-val" id="valGain">50 dB</span> <small id="tgtGainHint" style="color:var(--crt-green)">(Obj: 64)</small></span></div>
+        <div class="tele-row"><span class="tele-lbl">SENSOR GAIN (dB):</span><span><span class="tele-val" id="valGain">50 dB</span> <small id="tgtGainHint" style="color:var(--crt-green)">(Tgt: 64)</small></span></div>
         <input type="range" class="slider" id="slGain" min="10" max="100" value="50" oninput="noteUserAdjust();updateOptics()">
       </div>
-      <div class="note-box">Selecciona la banda, pon Enfoque y Ganancia cerca de los valores <b>Obj</b> (&ge; 70%) y haz clic en la anomalía (o usa AUTO-CALIBRAR).</div>
+      <div class="note-box">Select band, set Focus and Gain near <b>Tgt</b> values (&ge; 70%), then click the anomaly (or use AUTO-CALIBRATE).</div>
     `,
-    modalTitle: 'ANOMALÍAS MULTIESPECTRALES CATALOGADAS',
-    modalStatsHtml: '<div>Anomalías: <b id="debCount">3 / 3</b></div><div>Nitidez Media: <b id="debClarity">-</b></div><div>Tiempo: <b id="debTime">-</b></div><div>Rango: <b id="debGrade">-</b></div>',
+    modalTitle: 'MULTISPECTRAL ANOMALIES CATALOGED',
+    modalStatsHtml: '<div>Anomalies: <b id="debCount">3 / 3</b></div><div>Mean Clarity: <b id="debClarity">-</b></div><div>Elapsed Time: <b id="debTime">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
-      const BANDS = { IR: 'INFRARROJO (IR)', UV: 'ULTRAVIOLETA (UV)', XR: 'RAYOS-X CORONAL' };
+      const BANDS = { IR: 'INFRARED (IR)', UV: 'ULTRAVIOLET (UV)', XR: 'CORONAL X-RAY' };
       let difficulty = 2, isPaused = false, isEnded = false, missionTime = 0, band = 'IR', focus = 50, gain = 50, scanned = 0, claritySum = 0;
       let target = { band: 'IR', focus: 72, gain: 64, x: 0.35, y: 0.45, vx: 0.02, vy: 0.015 };
 
@@ -1295,7 +1295,7 @@ function getNewMinigames() {
         window.__mgAdjustCount = 0;
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -1303,7 +1303,7 @@ function getNewMinigames() {
         document.getElementById('slFocus').value = target.focus;
         document.getElementById('slGain').value = target.gain;
         updateOptics();
-        showHud('✔ ÓPTICA AL 100% — HAZ CLIC EN EL DESTELLO O CONFIRMA', 'ok');
+        showHud('✔ OPTICS AT 100% — CLICK FLARE OR CONFIRM', 'ok');
       }
       function setBand(b) {
         noteUserAdjust();
@@ -1331,27 +1331,27 @@ function getNewMinigames() {
         const mx = e.clientX - rect.left, my = e.clientY - rect.top;
         const tx = target.x * canvas.width, ty = target.y * canvas.height;
         const cl = calcClarity(), req = 70;
-        if (cl < req) { playTone(200, 0.14); showHud('⚠ Sube nitidez >= 70% (' + target.band + ' / ' + target.focus + 'mm / ' + target.gain + 'dB)', 'warn'); return; }
+        if (cl < req) { playTone(200, 0.14); showHud('⚠ Increase clarity >= 70% (' + target.band + ' / ' + target.focus + 'mm / ' + target.gain + 'dB)', 'warn'); return; }
         if (Math.hypot(mx - tx, my - ty) < 48) {
           claritySum += cl; scanned++;
           playTone(880, 0.16);
           if (scanned >= 3) completeMission();
-          else { showHud('✔ ANOMALÍA ' + scanned + '/3 CAPTURADA', 'ok'); spawnTarget(scanned); updateUI(); }
+          else { showHud('✔ ANOMALY ' + scanned + '/3 CAPTURED', 'ok'); spawnTarget(scanned); updateUI(); }
         } else {
-          showHud('🎯 HAZ CLIC DIRECTO SOBRE EL DESTELLO ANÓMALO');
+          showHud('🎯 CLICK DIRECTLY ON THE ANOMALY FLARE');
         }
       });
       function completeMission() {
         isEnded = true; playTone(980, 0.22);
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡BARRIDO MULTIESPECTRAL COMPLETO!';
+        document.getElementById('debTitle').textContent = 'MULTISPECTRAL SWEEP COMPLETE!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = '3/3 ESPECTROS';
-        document.getElementById('debDesc').textContent = 'Telemetría IR, UV y Rayos-X enfocada y almacenada con nitidez científica.';
+        document.getElementById('debBadge').textContent = '3/3 SPECTRA';
+        document.getElementById('debDesc').textContent = 'IR, UV, and X-Ray telemetry focused and archived at science-grade clarity.';
         document.getElementById('debCount').textContent = '3 / 3';
         document.getElementById('debClarity').textContent = Math.round(claritySum / 3) + '%';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = claritySum / 3 >= 93 ? 'A+ NÍTIDO' : 'A ÓPTIMO';
+        document.getElementById('debGrade').textContent = claritySum / 3 >= 93 ? 'A+ SHARP' : 'A OPTIMAL';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -1363,14 +1363,14 @@ function getNewMinigames() {
         document.getElementById('valClarity').style.color = cl >= 70 ? 'var(--crt-green)' : 'var(--crt-amber)';
         document.getElementById('barClarity').style.width = cl + '%';
         document.getElementById('barClarity').style.background = cl >= 70 ? 'var(--crt-green)' : 'var(--crt-amber)';
-        document.getElementById('tgtFocusHint').textContent = '(Obj: ' + target.focus + ' mm)';
-        document.getElementById('tgtGainHint').textContent = '(Obj: ' + target.gain + ' dB)';
+        document.getElementById('tgtFocusHint').textContent = '(Tgt: ' + target.focus + ' mm)';
+        document.getElementById('tgtGainHint').textContent = '(Tgt: ' + target.gain + ' dB)';
         document.getElementById('valCount').textContent = scanned + ' / 3';
-        document.getElementById('thmStatus').textContent = scanned + ' / 3 ANOMALÍAS REGISTRADAS';
+        document.getElementById('thmStatus').textContent = scanned + ' / 3 ANOMALIES LOGGED';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
         setGuideText(cl >= 70
-          ? '✔ Nitidez ' + cl + '% — Haz clic sobre el destello o CONFIRMAR arriba'
-          : '👉 Banda ' + target.band + ', Enfoque ~' + target.focus + ' mm, Ganancia ~' + target.gain + ' dB');
+          ? '✔ Clarity ' + cl + '% — Click the flare or CONFIRM above'
+          : '👉 Band ' + target.band + ', Focus ~' + target.focus + ' mm, Gain ~' + target.gain + ' dB');
       }
 
       let last = performance.now();
@@ -1410,33 +1410,33 @@ function getNewMinigames() {
   // 7) SERPIENTE-2: alineacion_antena_dsn.html ('hga')
   const hgaHtml = wrapGame({
     id: 'hga',
-    title: 'Alineación de Antena DSN - SERPIENTE-2',
-    h1: 'RASTREO DE ANTENA DE ALTA GANANCIA HGA / DSN · SERPIENTE-2',
-    badge: 'COMUNICACIONES // ANTENA DSN (SERPIENTE-2)',
-    diffOptions: '<option value="1">Nivel 1 - Órbita Lenta</option><option value="2" selected>Nivel 2 - Seguimiento Dinámico</option><option value="3">Nivel 3 - Perturbación Atmosférica</option>',
-    leftTitle: 'RADAR POLAR DE SEGUIMIENTO SATELITAL',
+    title: 'DSN Antenna Alignment - SERPIENTE-2',
+    h1: 'HGA / DSN HIGH-GAIN ANTENNA TRACKING · SERPIENTE-2',
+    badge: 'COMMS // DSN ANTENNA (SERPIENTE-2)',
+    diffOptions: '<option value="1">Level 1 - Slow Orbit</option><option value="2" selected>Level 2 - Dynamic Tracking</option><option value="3">Level 3 - Atmospheric Interference</option>',
+    leftTitle: 'POLAR SATELLITE TRACKING RADAR',
     leftTagId: 'hgaStatus',
-    leftTagText: 'SNR INSUFICIENTE',
+    leftTagText: 'INSUFFICIENT SNR',
     rightHtml: `
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">CALIDAD DE ENLACE (SNR):</span><span class="tele-val" id="valSnr">0%</span></div>
+        <div class="tele-row"><span class="tele-lbl">LINK QUALITY (SNR):</span><span class="tele-val" id="valSnr">0%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barSnr" style="width:0%"></div></div>
-        <div class="tele-row"><span class="tele-lbl">DESCARGA TELEMETRÍA (SNR &ge; 75%):</span><span class="tele-val" id="valDl">0%</span></div>
+        <div class="tele-row"><span class="tele-lbl">TELEMETRY DOWNLINK (SNR &ge; 75%):</span><span class="tele-val" id="valDl">0%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barDl" style="width:0%;background:var(--crt-cyan)"></div></div>
-        <div class="tele-row"><span class="tele-lbl">OBJETIVO POLARIZACIÓN:</span><span class="tele-val" id="valPolTarget">+25°</span></div>
+        <div class="tele-row"><span class="tele-lbl">TARGET POLARIZATION:</span><span class="tele-val" id="valPolTarget">+25°</span></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">ACIMUT (AZ):</span><span class="tele-val" id="valAz">180°</span></div>
+        <div class="tele-row"><span class="tele-lbl">AZIMUTH (AZ):</span><span class="tele-val" id="valAz">180°</span></div>
         <input type="range" class="slider" id="slAz" min="0" max="360" value="180" oninput="noteUserAdjust();updateDish()">
-        <div class="tele-row"><span class="tele-lbl">ELEVACIÓN (EL):</span><span class="tele-val" id="valEl">45°</span></div>
+        <div class="tele-row"><span class="tele-lbl">ELEVATION (EL):</span><span class="tele-val" id="valEl">45°</span></div>
         <input type="range" class="slider" id="slEl" min="10" max="90" value="45" oninput="noteUserAdjust();updateDish()">
-        <div class="tele-row"><span class="tele-lbl">POLARIZACIÓN (POL):</span><span class="tele-val" id="valPol">0°</span></div>
+        <div class="tele-row"><span class="tele-lbl">POLARIZATION (POL):</span><span class="tele-val" id="valPol">0°</span></div>
         <input type="range" class="slider" id="slPol" min="-90" max="90" value="0" oninput="noteUserAdjust();updateDish()">
       </div>
-      <div class="note-box">Arrastra sobre el radar hacia el satélite verde o ajusta <b>AZ / EL / POL</b> hasta <b>SNR &ge; 75%</b> (descarga rápida en ~5s).</div>
+      <div class="note-box">Drag across the radar toward the green satellite or adjust <b>AZ / EL / POL</b> until <b>SNR &ge; 75%</b> (fast ~5s downlink).</div>
     `,
-    modalTitle: 'DESCARGA DE ALTA GANANCIA COMPLETA',
-    modalStatsHtml: '<div>Bloque Recibido: <b id="debDl">100%</b></div><div>SNR Promedio: <b id="debSnr">-</b></div><div>Tiempo: <b id="debTime">-</b></div><div>Rango: <b id="debGrade">-</b></div>',
+    modalTitle: 'HIGH-GAIN DOWNLINK COMPLETE',
+    modalStatsHtml: '<div>Packet Received: <b id="debDl">100%</b></div><div>Mean SNR: <b id="debSnr">-</b></div><div>Elapsed Time: <b id="debTime">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
       let difficulty = 2, isPaused = false, isEnded = false, missionTime = 0, dl = 0, snrSamples = 0, snrSum = 0;
@@ -1452,7 +1452,7 @@ function getNewMinigames() {
         window.__mgAdjustCount = 0;
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -1462,7 +1462,7 @@ function getNewMinigames() {
         document.getElementById('slPol').value = pol;
         dl = Math.max(dl, 65);
         updateDish();
-        showHud('✔ ANTENA HGA ALINEADA AL 100% — LISTO PARA CONFIRMAR', 'ok');
+        showHud('✔ HGA ANTENNA 100% ALIGNED — READY TO CONFIRM', 'ok');
       }
       function updateDish() {
         az = parseInt(document.getElementById('slAz').value);
@@ -1495,15 +1495,15 @@ function getNewMinigames() {
       function completeMission() {
         isEnded = true; playTone(920, 0.22);
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡ENLACE HGA / DSN SELLADO!';
+        document.getElementById('debTitle').textContent = 'HGA / DSN LINK LOCKED!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
         document.getElementById('debBadge').textContent = 'LOCK 100%';
-        document.getElementById('debDesc').textContent = 'La antena parabólica mantuvo el enganche sobre el CubeSat hasta recibir el bloque completo.';
+        document.getElementById('debDesc').textContent = 'Parabolic dish maintained CubeSat lock until the full telemetry block was received.';
         const avg = snrSamples ? Math.round(snrSum / snrSamples) : 95;
         document.getElementById('debDl').textContent = '100%';
         document.getElementById('debSnr').textContent = avg + '%';
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = avg >= 92 ? 'A+ LÁSER LOCK' : 'A NOMINAL';
+        document.getElementById('debGrade').textContent = avg >= 92 ? 'A+ LASER LOCK' : 'A NOMINAL';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -1516,12 +1516,12 @@ function getNewMinigames() {
         document.getElementById('valDl').textContent = Math.round(dl) + '%';
         document.getElementById('barDl').style.width = Math.min(100, dl) + '%';
         document.getElementById('valPolTarget').textContent = (satPol > 0 ? '+' : '') + Math.round(satPol) + '°';
-        document.getElementById('hgaStatus').textContent = snr >= 75 ? 'DESCARGA EN CURSO (' + Math.round(dl) + '%)' : 'RASTREANDO SATÉLITE...';
+        document.getElementById('hgaStatus').textContent = snr >= 75 ? 'DOWNLINK IN PROGRESS (' + Math.round(dl) + '%)' : 'TRACKING SATELLITE...';
         document.getElementById('hgaStatus').style.color = snr >= 75 ? 'var(--crt-green)' : 'var(--crt-amber)';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
         setGuideText(snr >= 75
-          ? '✔ SNR enganchado (' + Math.round(dl) + '%) — Ya puedes CONFIRMAR arriba'
-          : '👉 Pon AZ=' + Math.round(satAz) + '°, EL=' + Math.round(satEl) + '°, POL=' + (satPol > 0 ? '+' : '') + Math.round(satPol) + '°');
+          ? '✔ SNR locked (' + Math.round(dl) + '%) — Ready to CONFIRM above'
+          : '👉 Set AZ=' + Math.round(satAz) + '°, EL=' + Math.round(satEl) + '°, POL=' + (satPol > 0 ? '+' : '') + Math.round(satPol) + '°');
       }
 
       let last = performance.now();
@@ -1564,29 +1564,29 @@ function getNewMinigames() {
   // 8) SERPIENTE-2: desencriptacion_cuantica.html ('decrypt')
   const decryptHtml = wrapGame({
     id: 'decrypt',
-    title: 'Desencriptación Cuántica CRC - SERPIENTE-2',
-    h1: 'MATRIZ DE PARIDAD CUÁNTICA Y DESENCRIPTACIÓN CRC · SERPIENTE-2',
-    badge: 'COMUNICACIONES // DESENCRIPTACIÓN CUÁNTICA (SERPIENTE-2)',
-    diffOptions: '<option value="1">Nivel 1 - 1 Bit Corrupto/Trama</option><option value="2" selected>Nivel 2 - Ruido Solar CRC</option><option value="3">Nivel 3 - Doble Error Cósmico</option>',
-    leftTitle: 'MATRIZ HEXADECIMAL DE TELEMETRÍA Y CHECKSUM XOR',
+    title: 'Quantum CRC Decryption - SERPIENTE-2',
+    h1: 'QUANTUM PARITY MATRIX & CRC DECRYPTION · SERPIENTE-2',
+    badge: 'COMMS // QUANTUM DECRYPTION (SERPIENTE-2)',
+    diffOptions: '<option value="1">Level 1 - 1 Corrupt Bit/Frame</option><option value="2" selected>Level 2 - Solar CRC Noise</option><option value="3">Level 3 - Double Cosmic Error</option>',
+    leftTitle: 'HEXADECIMAL TELEMETRY MATRIX & XOR CHECKSUM',
     leftTagId: 'decStatus',
-    leftTagText: 'TRAMA 1 / 3',
+    leftTagText: 'FRAME 1 / 3',
     rightHtml: `
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">TRAMAS DESENCRIPTADAS:</span><span class="tele-val" id="valFrames">0 / 3</span></div>
+        <div class="tele-row"><span class="tele-lbl">FRAMES DECRYPTED:</span><span class="tele-val" id="valFrames">0 / 3</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barFrames" style="width:0%"></div></div>
-        <div class="tele-row"><span class="tele-lbl">INTEGRIDAD CRC ACTUAL:</span><span class="tele-val" id="valCrc" style="color:var(--crt-amber)">CORRUPTO</span></div>
-        <div class="tele-row"><span class="tele-lbl">ERRORES DETECTADOS:</span><span class="tele-val" id="valErrs">0</span></div>
+        <div class="tele-row"><span class="tele-lbl">CURRENT CRC INTEGRITY:</span><span class="tele-val" id="valCrc" style="color:var(--crt-amber)">CORRUPT</span></div>
+        <div class="tele-row"><span class="tele-lbl">ERRORS DETECTED:</span><span class="tele-val" id="valErrs">0</span></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-lbl" style="font-size:11px;">CORRECCIÓN DEL NODO SELECCIONADO:</div>
-        <button class="btn-primary" onclick="fixSelectedByte()">🔧 INVERTIR BIT DE PARIDAD (AUTO-CRC)</button>
-        <button class="btn-ctrl" onclick="submitFrame()" id="btnVerify">✔ VERIFICAR Y FIRMAR TRAMA</button>
+        <div class="tele-lbl" style="font-size:11px;">SELECTED NODE CORRECTION:</div>
+        <button class="btn-primary" onclick="fixSelectedByte()">🔧 FLIP PARITY BIT (AUTO-CRC)</button>
+        <button class="btn-ctrl" onclick="submitFrame()" id="btnVerify">✔ VERIFY & SIGN FRAME</button>
       </div>
-      <div class="note-box">Haz clic en la celda roja donde cruzan fila y columna en error, pulsa <b>Invertir Bit</b> y firma <b>3 tramas</b> (o usa AUTO-CALIBRAR).</div>
+      <div class="note-box">Click the red cell where the failing row and column intersect, press <b>Flip Parity Bit</b>, and sign <b>3 frames</b> (or use AUTO-CALIBRATE).</div>
     `,
-    modalTitle: 'TELEMETRÍA CUÁNTICA DESENCRIPTADA',
-    modalStatsHtml: '<div>Tramas Validadas: <b id="debFrames">3 / 3</b></div><div>Fallos de Firma: <b id="debErrs">-</b></div><div>Tiempo: <b id="debTime">-</b></div><div>Rango: <b id="debGrade">-</b></div>',
+    modalTitle: 'QUANTUM TELEMETRY DECRYPTED',
+    modalStatsHtml: '<div>Validated Frames: <b id="debFrames">3 / 3</b></div><div>Signature Errors: <b id="debErrs">-</b></div><div>Elapsed Time: <b id="debTime">-</b></div><div>Rating: <b id="debGrade">-</b></div>',
     scriptBody: `
       const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
       let difficulty = 2, isPaused = false, isEnded = false, missionTime = 0, frame = 0, wrongSubmits = 0;
@@ -1622,7 +1622,7 @@ function getNewMinigames() {
         genMatrix(); updateUI();
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -1632,7 +1632,7 @@ function getNewMinigames() {
             if (!rOk[r] && !cOk[c]) { mat[r][c] ^= 0x0f; sel = { r, c }; }
           }
         }
-        showHud('✔ PARIDAD CRC CORREGIDA — PULSA FIRMAR TRAMA O CONFIRMAR', 'ok');
+        showHud('✔ CRC PARITY RESTORED — PRESS SIGN FRAME OR CONFIRM', 'ok');
         updateUI();
       }
 
@@ -1661,7 +1661,7 @@ function getNewMinigames() {
               if (!rOk[r] && !cOk[c]) { sel = { r, c }; break; }
             }
           }
-          if (sel.r < 0) { showHud('TRAMA YA VÁLIDA — PULSA FIRMAR', 'ok'); return; }
+          if (sel.r < 0) { showHud('FRAME ALREADY VALID — PRESS SIGN', 'ok'); return; }
         }
         mat[sel.r][sel.c] ^= 0x0f;
         playTone(720, 0.07);
@@ -1673,24 +1673,24 @@ function getNewMinigames() {
         const { allOk } = checkParity();
         if (!allOk) {
           wrongSubmits++; playTone(200, 0.16, 'sawtooth');
-          showHud('⚠ Corrige la celda roja con INVERTIR BIT antes de firmar', 'warn');
+          showHud('⚠ Repair the red cell with FLIP PARITY BIT before signing', 'warn');
           updateUI(); return;
         }
         frame++; playTone(880, 0.12);
         if (frame >= 3) completeMission();
-        else { showHud('✔ TRAMA ' + frame + '/3 VERIFICADA', 'ok'); genMatrix(); updateUI(); }
+        else { showHud('✔ FRAME ' + frame + '/3 VERIFIED', 'ok'); genMatrix(); updateUI(); }
       }
       function completeMission() {
         isEnded = true; playTone(980, 0.22);
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡CANAL CUÁNTICO DESCIFRADO!';
+        document.getElementById('debTitle').textContent = 'QUANTUM CHANNEL DECRYPTED!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = 'CRC VÁLIDO';
-        document.getElementById('debDesc').textContent = 'Las tramas de telemetría quedaron limpias de corrupción por radiación cósmica.';
+        document.getElementById('debBadge').textContent = 'CRC VALID';
+        document.getElementById('debDesc').textContent = 'Telemetry frames cleared of cosmic radiation bit corruption.';
         document.getElementById('debFrames').textContent = '3 / 3';
         document.getElementById('debErrs').textContent = wrongSubmits;
         document.getElementById('debTime').textContent = Math.round(missionTime) + ' s';
-        document.getElementById('debGrade').textContent = wrongSubmits === 0 ? 'A+ PERFECTO' : 'A SEGURO';
+        document.getElementById('debGrade').textContent = wrongSubmits === 0 ? 'A+ PERFECT' : 'A SECURE';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -1699,17 +1699,17 @@ function getNewMinigames() {
         const { rOk, cOk, allOk } = checkParity();
         document.getElementById('valFrames').textContent = frame + ' / 3';
         document.getElementById('barFrames').style.width = (frame / 3) * 100 + '%';
-        document.getElementById('decStatus').textContent = 'TRAMA ' + Math.min(3, frame + 1) + ' / 3';
-        document.getElementById('valCrc').textContent = allOk ? 'PARIDAD OK ✔' : 'BIT CORRUPTO ✖';
+        document.getElementById('decStatus').textContent = 'FRAME ' + Math.min(3, frame + 1) + ' / 3';
+        document.getElementById('valCrc').textContent = allOk ? 'PARITY OK ✔' : 'CORRUPT BIT ✖';
         document.getElementById('valCrc').style.color = allOk ? 'var(--crt-green)' : 'var(--crt-red)';
         document.getElementById('valErrs').textContent = wrongSubmits;
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
         if (allOk) {
-          setGuideText('✔ Paridad OK — Pulsa [✔ VERIFICAR Y FIRMAR] o CONFIRMAR (' + frame + '/3)');
+          setGuideText('✔ Parity OK — Press [✔ VERIFY & SIGN FRAME] or CONFIRM (' + frame + '/3)');
         } else {
           let br = 0, bc = 0;
           for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (!rOk[r] && !cOk[c]) { br = r; bc = c; }
-          setGuideText('👉 Clic celda roja [F' + (br + 1) + ', C' + (bc + 1) + '] -> Pulsa INVERTIR BIT');
+          setGuideText('👉 Click red cell [R' + (br + 1) + ', C' + (bc + 1) + '] -> Press FLIP PARITY BIT');
         }
       }
 
@@ -1755,14 +1755,14 @@ function getNewMinigames() {
   })
 
   return [
-    { filename: 'calibracion_giroscopio.html', id: 'gyro', h1: 'CALIBRACIÓN DE GIROSCOPIO 3D Y CONTROL ADCS · CÓNDOR-4', badge: 'DIRECTOR // ADCS GIROSCOPIO (CÓNDOR-4)', html: gyroHtml },
-    { filename: 'eyeccion_escombros.html', id: 'debris', h1: 'RADAR ORBITAL KESSLER Y EYECCIÓN DE ESCOMBROS · CÓNDOR-4', badge: 'DIRECTOR // EVASIÓN KESSLER (CÓNDOR-4)', html: debrisHtml },
-    { filename: 'refrigeracion_reactor.html', id: 'reactor', h1: 'REFRIGERACIÓN CRIOGÉNICA DEL REACTOR DE FISIÓN · ALPACA-1', badge: 'INGENIERÍA // REFRIGERACIÓN REACTOR (ALPACA-1)', html: reactorHtml },
-    { filename: 'reparacion_circuitos.html', id: 'pcb', h1: 'ENRUTAMIENTO DE BUSES PCB Y BYPASS DE CAPACITORES · ALPACA-1', badge: 'INGENIERÍA // PLACA PCB (ALPACA-1)', html: pcbHtml },
-    { filename: 'espectrometria_masas.html', id: 'spectro', h1: 'PERFORACIÓN LÁSER Y ESPECTROMETRÍA DE MASAS · PUMA-3', badge: 'CIENCIA // ESPECTROMETRÍA DE MASAS (PUMA-3)', html: spectroHtml },
-    { filename: 'telemetria_multiespectral.html', id: 'thermal', h1: 'CORONÓGRAFO SOLAR Y TELEMETRÍA MULTIESPECTRAL · PUMA-3', badge: 'CIENCIA // TELEMETRÍA IR/UV (PUMA-3)', html: thermalHtml },
-    { filename: 'alineacion_antena_dsn.html', id: 'hga', h1: 'RASTREO DE ANTENA DE ALTA GANANCIA HGA / DSN · SERPIENTE-2', badge: 'COMUNICACIONES // ANTENA DSN (SERPIENTE-2)', html: hgaHtml },
-    { filename: 'desencriptacion_cuantica.html', id: 'decrypt', h1: 'MATRIZ DE PARIDAD CUÁNTICA Y DESENCRIPTACIÓN CRC · SERPIENTE-2', badge: 'COMUNICACIONES // DESENCRIPTACIÓN CUÁNTICA (SERPIENTE-2)', html: decryptHtml },
+    { filename: 'calibracion_giroscopio.html', id: 'gyro', h1: '3D GYROSCOPE CALIBRATION & ADCS CONTROL · CONDOR-4', badge: 'FLIGHT DIRECTOR // ADCS GYROSCOPE (CONDOR-4)', html: gyroHtml },
+    { filename: 'eyeccion_escombros.html', id: 'debris', h1: 'KESSLER ORBITAL RADAR & DEBRIS AVOIDANCE · CONDOR-4', badge: 'FLIGHT DIRECTOR // KESSLER AVOIDANCE (CONDOR-4)', html: debrisHtml },
+    { filename: 'refrigeracion_reactor.html', id: 'reactor', h1: 'FISSION REACTOR CRYOGENIC COOLING · ALPACA-1', badge: 'ENGINEERING // REACTOR COOLING (ALPACA-1)', html: reactorHtml },
+    { filename: 'reparacion_circuitos.html', id: 'pcb', h1: 'PCB BUS ROUTING & CAPACITOR BYPASS · ALPACA-1', badge: 'ENGINEERING // PCB BOARD (ALPACA-1)', html: pcbHtml },
+    { filename: 'espectrometria_masas.html', id: 'spectro', h1: 'LASER DRILLING & MASS SPECTROMETRY · PUMA-3', badge: 'SCIENCE // MASS SPECTROMETRY (PUMA-3)', html: spectroHtml },
+    { filename: 'telemetria_multiespectral.html', id: 'thermal', h1: 'SOLAR CORONAGRAPH & MULTISPECTRAL TELEMETRY · PUMA-3', badge: 'SCIENCE // IR/UV TELEMETRY (PUMA-3)', html: thermalHtml },
+    { filename: 'alineacion_antena_dsn.html', id: 'hga', h1: 'HGA / DSN HIGH-GAIN ANTENNA TRACKING · SERPIENTE-2', badge: 'COMMS // DSN ANTENNA (SERPIENTE-2)', html: hgaHtml },
+    { filename: 'desencriptacion_cuantica.html', id: 'decrypt', h1: 'QUANTUM PARITY MATRIX & CRC DECRYPTION · SERPIENTE-2', badge: 'COMMS // QUANTUM DECRYPTION (SERPIENTE-2)', html: decryptHtml },
   ]
 }
 

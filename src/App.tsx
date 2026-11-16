@@ -59,10 +59,10 @@ export default function App() {
     assignments: ['director', null, null, null],
     startRole: 'director',
     playerNames: {
-      engineer: 'Jugador 1',
-      comms: 'Jugador 2',
-      science: 'Jugador 3',
-      director: 'Jugador 4',
+      engineer: 'Player 1',
+      comms: 'Player 2',
+      science: 'Player 3',
+      director: 'Player 4',
     },
   })
 
@@ -122,10 +122,10 @@ export default function App() {
       if (!myRole) return
 
       const names: Record<RoleId, string> = {
-        engineer: nextRoom.roles?.engineer?.playerName ?? 'Jugador 1',
-        comms: nextRoom.roles?.comms?.playerName ?? 'Jugador 2',
-        science: nextRoom.roles?.science?.playerName ?? 'Jugador 3',
-        director: nextRoom.roles?.director?.playerName ?? 'Jugador 4',
+        engineer: nextRoom.roles?.engineer?.playerName ?? 'Player 1',
+        comms: nextRoom.roles?.comms?.playerName ?? 'Player 2',
+        science: nextRoom.roles?.science?.playerName ?? 'Player 3',
+        director: nextRoom.roles?.director?.playerName ?? 'Player 4',
       }
       const assign: (RoleId | null)[] = CHARACTER_ORDER.map((r) =>
         nextRoom.roles?.[r] ? r : null
@@ -146,20 +146,20 @@ export default function App() {
       ) {
         setStage('briefing')
         const stDef = MISSION_CATALOG[sanitizeMissionId(nextRoom.missionId)]
-        notify(`🧭 Sala ${nextRoom.code}: Etapa ${nextRoom.currentMissionIndex ?? stDef.number}/3 · ${stDef.code}`)
+        notify(`🧭 Room ${nextRoom.code}: Stage ${nextRoom.currentMissionIndex ?? stDef.number}/3 · ${stDef.code}`)
       } else if (
         nextRoom.phase === 'WORKSHOP' &&
         (stageRef.current === 'menu' || stageRef.current === 'briefing')
       ) {
         setStage('workshop')
         const mCode = MISSION_CATALOG[sanitizeMissionId(nextRoom.missionId)].code
-        notify(`🚀 Sala ${nextRoom.code}: Entrando al Taller · ${mCode}`)
+        notify(`🚀 Room ${nextRoom.code}: Entering Assembly Workshop · ${mCode}`)
       } else if (
         nextRoom.phase === 'LAUNCH' &&
         (stageRef.current === 'workshop' || stageRef.current === 'briefing')
       ) {
         setStage('cutscene')
-        notify(`🔥 Sala ${nextRoom.code}: ¡Despegue sincronizado!`)
+        notify(`🔥 Room ${nextRoom.code}: Synchronized Liftoff!`)
       } else if (
         nextRoom.phase === 'STATION' &&
         (stageRef.current === 'cutscene' || stageRef.current === 'briefing')
@@ -178,15 +178,15 @@ export default function App() {
       roomCodeRef.current = created.code
       setRoom(created)
       setMenuSubView('room')
-      notify(`Sala creada: ${created.code} — Elige tu personaje`)
+      notify(`Room created: ${created.code} — Select your astronaut specialist`)
     } catch {
-      notify('No se pudo crear la sala multijugador')
+      notify('Could not create multiplayer room')
     } finally {
       setCreatingRoom(false)
     }
   }
 
-  // Envía leave inmediato con navigator.sendBeacon si cierra pestaña o recarga página desde cualquier pantalla
+  // Send immediate leave beacon via navigator.sendBeacon if tab closes or reloads
   useEffect(() => {
     if (!roomCode) return
     const handleUnload = () => {
@@ -201,7 +201,7 @@ export default function App() {
   }, [roomCode, clientId])
 
   const handleRemoteRoomClosed = useCallback(
-    (msg = 'La sala fue cerrada') => {
+    (msg = 'Room has been closed') => {
       roomCodeRef.current = null
       setRoom(null)
       setMenuSubView('join')
@@ -214,7 +214,7 @@ export default function App() {
     [notify]
   )
 
-  // Sondeo de sala (500 ms) + Latido estricto (1.5 s) en Sala, Taller, Cinemática y Órbita
+  // Room polling (500 ms) + strict heartbeat (1.5 s) across Lobby, Workshop, Cutscene & Orbit
   useEffect(() => {
     if (!roomCode || stage === 'station') return
     let cancelled = false
@@ -226,11 +226,11 @@ export default function App() {
           if (fresh) {
             applyRoomSnapshot(fresh)
           } else {
-            handleRemoteRoomClosed('La sala fue cerrada')
+            handleRemoteRoomClosed('Room has been closed')
           }
         }
       } catch {
-        // reintento automático en el siguiente ciclo
+        // retry automatically on next tick
       }
     }
 
@@ -247,7 +247,7 @@ export default function App() {
         .then((res) => {
           if (cancelled || roomCodeRef.current !== roomCode) return
           if (res.status === 404 || res.deleted || (res.status === 400 && res.code === 'ROOM_FULL')) {
-            handleRemoteRoomClosed(res.error || 'La sala fue cerrada')
+            handleRemoteRoomClosed(res.error || 'Room has been closed')
             return
           }
           if (res.room) applyRoomSnapshot(res.room)
@@ -325,7 +325,7 @@ export default function App() {
           // continuar localmente
         }
       }
-      notify(`🚀 Desbloqueada Etapa ${mDef.number}/3: ${mDef.code} (Nivel ${mDef.difficulty})`)
+      notify(`🚀 Unlocked Stage ${mDef.number}/3: ${mDef.code} (Level ${mDef.difficulty})`)
     },
     [roomCode, clientId, applyRoomSnapshot, notify]
   )
@@ -381,7 +381,7 @@ export default function App() {
           onReplayCutscene={() => setStage('cutscene')}
           onOpenTelemetryReport={() => setStage('orbit')}
           onExitToMenu={() => void exitRoomToMenu()}
-          onRoomClosed={() => handleRemoteRoomClosed('La sala fue cerrada')}
+          onRoomClosed={() => handleRemoteRoomClosed('Room has been closed')}
         />
       )}
 
@@ -408,10 +408,10 @@ export default function App() {
             onClick={toggleMusic}
             onMouseEnter={playHover}
             className="mc-btn fixed top-3 right-3 z-40 p-2.5 flex items-center gap-2 text-[9px]"
-            aria-label="Música"
+            aria-label="Music toggle"
           >
             {music ? <Volume2 size={15} /> : <VolumeX size={15} />}
-            <span className="hidden sm:inline">{music ? 'MÚSICA ON' : 'MÚSICA OFF'}</span>
+            <span className="hidden sm:inline">{music ? 'MUSIC ON' : 'MUSIC OFF'}</span>
           </button>
 
           {menuSubView === 'home' ? (
@@ -428,29 +428,29 @@ export default function App() {
                       setMenuSubView('join')
                     }}
                   >
-                    🌐 MULTIJUGADOR (UNIRSE A SALA)
+                    🌐 MULTIPLAYER (JOIN ROOM)
                   </McButton>
                   <McButton
                     delay={0.12}
                     className="w-full py-3.5 text-[10px] sm:text-[11px]"
                     onClick={() => void handleCreateRoomFromMenu()}
                   >
-                    {creatingRoom ? '⏳ CREANDO SALA...' : '+ CREAR SALA'}
+                    {creatingRoom ? '⏳ CREATING ROOM...' : '+ CREATE ROOM'}
                   </McButton>
                   <div className="grid grid-cols-2 gap-3.5">
                     <McButton
                       delay={0.24}
                       className="py-3.5 px-2 text-[9px] sm:text-[10px]"
-                      onClick={() => notify('Sandbox libre: próximamente')}
+                      onClick={() => notify('Free Sandbox mode: coming soon')}
                     >
-                      🛠️ SANDBOX LIBRE
+                      🛠️ FREE SANDBOX
                     </McButton>
                     <McButton
                       delay={0.36}
                       className="py-3.5 px-2 text-[9px] sm:text-[10px]"
-                      onClick={() => notify('Datos NASA & Créditos: próximamente')}
+                      onClick={() => notify('NASA Open Data & Credits: coming soon')}
                     >
-                      📡 DATOS NASA & CRÉDITOS
+                      📡 NASA DATA &amp; CREDITS
                     </McButton>
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export default function App() {
                   animate={{ opacity: [1, 0.2, 1] }}
                   transition={{ duration: 1.2, repeat: Infinity }}
                 >
-                  HAZ CLIC PARA ACTIVAR EL AUDIO
+                  CLICK ANYWHERE TO ENABLE AUDIO
                 </motion.p>
               )}
             </main>

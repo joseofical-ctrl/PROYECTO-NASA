@@ -29,10 +29,10 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
   })
   const [startRole, setStartRole] = useState<RoleId>('director')
   const [playerNames, setPlayerNames] = useState<Record<RoleId, string>>({
-    engineer: 'Jugador 1',
-    comms: 'Jugador 2',
-    science: 'Jugador 3',
-    director: 'Jugador 4',
+    engineer: 'Player 1',
+    comms: 'Player 2',
+    science: 'Player 3',
+    director: 'Player 4',
   })
 
   const toggleCharacter = (role: RoleId) => {
@@ -82,13 +82,13 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                   <span className="px-2 py-0.5 text-[9px] bg-yellow-400 text-black font-bold">
                     SELECT YOUR ASTRONAUT
                   </span>
-                  <span className="text-[9px] text-cyan-300">ESCUADRÓN ANDINO ESPACIAL</span>
+                  <span className="text-[9px] text-cyan-300">ANDEAN SPACE SQUADRON</span>
                 </div>
                 <h2
                   className="text-xs sm:text-sm text-yellow-300 mt-1"
                   style={{ textShadow: '2px 2px 0 #000' }}
                 >
-                  SELECCIÓN DE PERSONAJE Y ROL (1-4 JUGADORES)
+                  CREW & ROLE SELECTION (1-4 PLAYERS)
                 </h2>
               </div>
               <div className="flex items-center gap-2">
@@ -97,11 +97,11 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                   onMouseEnter={playHover}
                   onClick={selectAllSquad}
                 >
-                  <Users size={13} /> ESCUADRÓN COMPLETO (4J)
+                  <Users size={13} /> FULL SQUADRON (4P)
                 </button>
                 <button
                   className="mc-btn p-1.5"
-                  aria-label="Cerrar"
+                  aria-label="Close"
                   onMouseEnter={playHover}
                   onClick={() => {
                     playClick()
@@ -188,7 +188,7 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                             border: '2px solid #000',
                           }}
                         >
-                          {isSelected ? `P${idx + 1} LISTO` : `P${idx + 1} OFF`}
+                          {isSelected ? `P${idx + 1} READY` : `P${idx + 1} OFF`}
                         </div>
                       </div>
 
@@ -207,7 +207,7 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
 
                       {/* 1-line Specialty Summary (sin párrafo largo de lore) */}
                       <p className="text-[9px] text-cyan-100 leading-snug truncate mb-1.5" title={info.specialty}>
-                        <strong className="text-yellow-300">Esp:</strong> {info.specialty}
+                        <strong className="text-yellow-300">Spec:</strong> {info.specialty}
                       </p>
                     </div>
 
@@ -225,7 +225,7 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                           }
                           maxLength={18}
                           className="w-full min-w-0 px-2 py-1 text-[9px] font-pixel text-yellow-200 bg-[#080a14] border-2 border-black focus:border-yellow-400 focus:outline-none"
-                          placeholder={`Jugador ${idx + 1}`}
+                          placeholder={`Player ${idx + 1}`}
                         />
                       </div>
 
@@ -247,7 +247,7 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                               : undefined
                           }
                         >
-                          {isSelected ? '✔ ASIGNADO' : '+ ASIGNAR'}
+                          {isSelected ? '✔ ASSIGNED' : '+ ASSIGN'}
                         </button>
                         <button
                           onMouseEnter={playHover}
@@ -258,10 +258,10 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                             handleLaunch(roleId)
                           }}
                           className="mc-btn py-1.5 px-2.5 text-[9px]"
-                          title="Entrar al Taller con este personaje"
+                          title="Enter Workshop with this crew member"
                           style={isLeader ? { color: '#ffff55' } : undefined}
                         >
-                          ▶ JUGAR
+                          ▶ PLAY
                         </button>
                       </div>
                     </div>
@@ -275,8 +275,8 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
               <div className="text-[9px] text-gray-300 flex items-center gap-2">
                 <UserCheck size={14} className="text-green-400 shrink-0" />
                 <span>
-                  ASTRONAUTAS ACTIVOS: <strong className="text-yellow-300">{count}/4</strong> ·
-                  Cambia de personaje con teclas <strong className="text-cyan-300">1-4</strong>.
+                  ACTIVE ASTRONAUTS: <strong className="text-yellow-300">{count}/4</strong> ·
+                  Switch crew with keys <strong className="text-cyan-300">1-4</strong>.
                 </span>
               </div>
               <div className="flex gap-2.5">
@@ -288,7 +288,7 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                     onClose()
                   }}
                 >
-                  CANCELAR
+                  CANCEL
                 </button>
                 <button
                   className="mc-btn px-4 py-2 text-[10px] disabled:opacity-40 disabled:cursor-not-allowed"
@@ -299,7 +299,7 @@ export default function SquadModal({ open, mode = 'squad', onClose, onStart }: P
                     handleLaunch()
                   }}
                 >
-                  🚀 ENTRAR AL HANGAR ({count}/4)
+                  🚀 ENTER HANGAR ({count}/4)
                 </button>
               </div>
             </div>

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GAME OVER · Colisión Orbital 32x32</title>
+    <title>GAME OVER · 32x32 Orbital Collision</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -215,31 +215,31 @@
     <canvas id="scene" width="320" height="180"></canvas>
     <div class="scanlines"></div>
 
-    <div id="hud-alert">⚠ FALLA EN LOS CONTROLES ⚠</div>
+    <div id="hud-alert">⚠ CONTROL FAILURE ⚠</div>
     <div id="hud-telemetry">
-      <span id="hud-left">TELEMETRÍA DE ORBITADOR · INTEGRIDAD CRÍTICA</span>
-      <span id="hud-right">DISTANCIA RELATIVA: 142 M</span>
+      <span id="hud-left">ORBITER TELEMETRY · CRITICAL INTEGRITY</span>
+      <span id="hud-right">RELATIVE DISTANCE: 142 M</span>
     </div>
 
     <div id="end-overlay" role="dialog" aria-modal="true" aria-label="GAME OVER">
       <div class="end-card">
         <div class="end-title">💥 GAME OVER 💥</div>
-        <div class="end-subtitle">DESTRUCCIÓN TOTAL DE LA MISIÓN ORBITAL</div>
+        <div class="end-subtitle">TOTAL CONTROL FAILURE · ORBITAL LOSS</div>
 
         <div class="end-cause-box">
-          <div class="end-cause-label">📋 CAUSA OFICIAL DEL COLAPSO ORBITAL:</div>
+          <div class="end-cause-label">📋 OFFICIAL ORBITAL COLLAPSE REPORT:</div>
           <div class="end-cause-text" id="end-reason-text">
-            Pérdida catastrófica de integridad estructural y control orbital de la estación.
+            Catastrophic loss of structural integrity and station attitude control.
           </div>
           <div class="end-mission-tag" id="end-mission-tag"></div>
         </div>
 
         <div class="end-actions">
           <button type="button" class="px-btn btn-retry" id="btn-retry">
-            [ ↻ REINTENTAR MISIÓN ACTUAL ]
+            [ ↻ RETRY MISSION ]
           </button>
           <button type="button" class="px-btn btn-menu" id="btn-menu">
-            [ ⌂ VOLVER AL MENÚ PRINCIPAL ]
+            [ ⌂ MAIN MENU ]
           </button>
         </div>
       </div>
@@ -250,14 +250,14 @@
         var qs = new URLSearchParams(window.location.search || '');
         var reasonText =
           qs.get('reason') ||
-          'Colapso crítico de la Estación Espacial: integridad general reducida a 0%.';
+          'Critical Space Station collapse: hull integrity dropped to 0%.';
         var missionText = qs.get('mission') || '';
 
         var reasonEl = document.getElementById('end-reason-text');
         if (reasonEl) reasonEl.textContent = reasonText;
         var missionEl = document.getElementById('end-mission-tag');
         if (missionEl) {
-          missionEl.textContent = missionText ? 'ETAPA AFECTADA: ' + missionText : '';
+          missionEl.textContent = missionText ? 'AFFECTED STAGE: ' + missionText : '';
         }
 
         // Matrices exactas 32x32 de dos CubeSats en colisión orbital
@@ -583,7 +583,7 @@
               }
             } else {
               if (hudAlert && !hudAlert.classList.contains('imminent')) {
-                hudAlert.textContent = '🚨 COLISIÓN INMINENTE 🚨';
+                hudAlert.textContent = '🚨 IMMINENT COLLISION 🚨';
                 hudAlert.classList.add('imminent');
               }
               var b2 = Math.floor(elapsed / 0.24);
@@ -600,7 +600,7 @@
           var progress = Math.min(1, elapsed / impactTime);
           var ease = progress * progress;
 
-          // Trayectorias convergentes de CUBESAT1 y CUBESAT2
+          // Converging trajectories for CUBESAT1 and CUBESAT2
           var sat1X = Math.round(-22 + (cx - 14 - -22) * ease);
           var sat1Y = Math.round(30 + (cy - 14 - 30) * ease);
           var sat2X = Math.round(310 + (cx - 18 - 310) * ease);
@@ -608,14 +608,14 @@
           var relMeters = Math.max(0, Math.round((1 - ease) * 185));
           if (hudRight) {
             hudRight.textContent = exploded
-              ? 'SEÑAL PERDIDA · KESSLER CASCADE'
-              : 'DISTANCIA RELATIVA: ' + relMeters + ' M';
+              ? 'SIGNAL LOST · KESSLER CASCADE'
+              : 'RELATIVE DISTANCE: ' + relMeters + ' M';
           }
 
           if (!exploded && elapsed >= impactTime) {
             spawnExplosion(cx, cy);
             if (hudAlert) {
-              hudAlert.textContent = '💥 IMPACTO ORBITAL DETECTADO · PÉRDIDA TOTAL 💥';
+              hudAlert.textContent = '💥 ORBITAL IMPACT • SUPER EXPLOSION 💥';
             }
           }
 

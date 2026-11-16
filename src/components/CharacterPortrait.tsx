@@ -262,9 +262,9 @@ export function RpgStatBars({
 
   return (
     <div className={`flex flex-col ${compact ? 'gap-1' : 'gap-1.5'} w-full font-pixel`}>
-      {/* Red HP / Energía Bar */}
+      {/* Red HP / Energy Bar */}
       <div className="flex items-center gap-1.5">
-        <span className="text-[9px] leading-none text-red-400 w-7 shrink-0">VIT</span>
+        <span className="text-[9px] leading-none text-red-400 w-7 shrink-0">HP</span>
         <div
           className={`flex-1 ${compact ? 'h-2' : 'h-2.5'} p-[1px]`}
           style={{ background: '#140c1c', border: '2px solid #000' }}
@@ -280,7 +280,7 @@ export function RpgStatBars({
       </div>
       {/* Blue Specialty Bar */}
       <div className="flex items-center gap-1.5">
-        <span className="text-[9px] leading-none text-cyan-300 w-7 shrink-0">ESP</span>
+        <span className="text-[9px] leading-none text-cyan-300 w-7 shrink-0">SP</span>
         <div
           className={`flex-1 ${compact ? 'h-2' : 'h-2.5'} p-[1px]`}
           style={{ background: '#0c162c', border: '2px solid #000' }}

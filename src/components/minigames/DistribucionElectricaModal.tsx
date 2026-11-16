@@ -7,7 +7,7 @@ export default function DistribucionElectricaModal(props: MinigameModalProps) {
       {...props}
       game="eps"
       file="distribucion_electrica.html"
-      title="DISTRIBUCIÓN ELÉCTRICA EPS · ALPACA-1"
+      title="EPS ELECTRICAL POWER DISTRIBUTION · ALPACA-1"
       accent="#ff9f1c"
     />
   )

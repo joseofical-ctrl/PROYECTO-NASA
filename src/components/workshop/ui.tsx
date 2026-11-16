@@ -60,7 +60,7 @@ export function BigGauge({
           className="text-[clamp(7.5px,0.58vw,9px)] px-1.5 py-0.5 font-bold border border-black shrink-0"
           style={{ background: badgeBg, color: col }}
         >
-          {ok ? 'OK' : 'ALERTA'}
+          {ok ? 'OK' : 'ALERT'}
         </span>
       </div>
 

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reencuentro Cometa - Defensa contra Meteoritos</title>
+    <title>Comet Rendezvous - Meteorite Defense</title>
     <style>
         :root {
             --bg-hull: #0f141c;
@@ -224,19 +224,19 @@
 
     <header>
         <div class="title-block">
-            <span class="badge-system">DIRECTOR // DEFENSA ORBITAL (CÓNDOR-4)</span>
-            <h1>DEFENSA ORBITAL CONTRA METEORITOS · CÓNDOR-4</h1>
+            <span class="badge-system">COMMAND · CONDOR-4 (DIRECTOR)</span>
+            <h1>ORBITAL METEORITE DEFENSE · CONDOR-4</h1>
         </div>
         <div class="top-controls">
-            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <label for="diffSelect" style="color: #94a3b8;">DIFFICULTY:</label>
             <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Tranquilo</option>
-                <option value="2" selected>Nivel 2 - Moderado</option>
-                <option value="3">Nivel 3 - Intenso</option>
+                <option value="1">Level 1 - Calm</option>
+                <option value="2" selected>Level 2 - Moderate</option>
+                <option value="3">Level 3 - Intense</option>
             </select>
             <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
-            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
-            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSE</button>
+            <button class="btn-header" onclick="resetMission()">↻ RESET</button>
         </div>
     </header>
 
@@ -247,8 +247,8 @@
             <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
             <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>RADAR DE INTERCEPCIÓN TÁCTICA</span>
-                <span id="threatStatus" style="color:var(--crt-green)">ESTADO: PERÍMETRO SEGURO</span>
+                <span>TACTICAL INTERCEPTION RADAR</span>
+                <span id="threatStatus" style="color:var(--crt-green)">STATUS: PERIMETER SECURE</span>
             </div>
             <div class="panel-body" style="padding:0;">
                 <div class="canvas-container">
@@ -263,27 +263,27 @@
             <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
             <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>ESTADO DEL CASCO Y MISIÓN</span>
+                <span>HULL &amp; MISSION STATUS</span>
                 <span id="clockDisplay">00:00</span>
             </div>
             <div class="panel-body">
                 <div class="telemetry-block">
                     <div class="tele-row">
-                        <span style="color:#94a3b8">INTEGRIDAD DEL CASCO:</span>
+                        <span style="color:#94a3b8">HULL INTEGRITY:</span>
                         <span class="tele-val" id="teleHull">100%</span>
                     </div>
                     <div class="bar-container">
                         <div class="bar-fill" id="barHull" style="width: 100%;"></div>
                     </div>
                     <div class="tele-row" style="margin-top:8px;">
-                        <span style="color:#94a3b8">METEORITOS DESTRUIDOS:</span>
+                        <span style="color:#94a3b8">METEORITES DESTROYED:</span>
                         <span class="tele-val" id="teleScore" style="color:var(--crt-cyan)">0 / 15</span>
                     </div>
                 </div>
 
                 <div style="background:rgba(0,0,0,0.3); border:1px solid #263342; padding:12px; font-size:11px; line-height:1.5;">
-                    <b style="color:var(--crt-cyan)">INSTRUCCIONES DE DEFENSA:</b>
-                    <p style="color:#94a3b8; margin-top:6px;">Haz <b>clic izquierdo</b> sobre los meteoritos que vengan desde el espacio hacia la estación central para destruirlos con el cañón láser antes de que impacten.</p>
+                    <b style="color:var(--crt-cyan)">DEFENSE INSTRUCTIONS:</b>
+                    <p style="color:#94a3b8; margin-top:6px;"><b>Left-click</b> on incoming meteorites approaching the central station from deep space to destroy them with the laser turret before impact.</p>
                 </div>
             </div>
         </div>
@@ -293,27 +293,27 @@
     <div class="modal-overlay" id="debriefModal">
         <div class="modal-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-highlight); padding-bottom:8px;">
-                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME TÉCNICO DE DEFENSA</span>
-                <span class="badge-system" id="debBadge">ÉXITO</span>
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">DEFENSE TECHNICAL REPORT</span>
+                <span class="badge-system" id="debBadge">SUCCESS</span>
             </div>
             <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-cyan)">1. RESULTADO DE INTERCEPCIÓN:</b>
-                    <p id="debDesc">La estación repelió con éxito la amenaza meteórica.</p>
+                    <b style="color:var(--crt-cyan)">1. INTERCEPTION RESULT:</b>
+                    <p id="debDesc">The station successfully repelled the meteoric threat.</p>
                 </div>
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE COMBATE:</b>
+                    <b style="color:var(--crt-amber)">2. COMBAT METRICS:</b>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
-                        <div>Meteoritos Destruidos: <b id="debScore">-</b></div>
-                        <div>Casco Restante: <b id="debHullFinal">-</b></div>
-                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
-                        <div>Calificación: <b id="debGrade">-</b></div>
+                        <div>Meteorites Destroyed: <b id="debScore">-</b></div>
+                        <div>Remaining Hull: <b id="debHullFinal">-</b></div>
+                        <div>Elapsed Time: <b id="debTime">-</b></div>
+                        <div>Grade: <b id="debGrade">-</b></div>
                     </div>
                 </div>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
-                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+                <button class="btn-header" onclick="closeModalAndRetry()">REPLAY</button>
+                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">NEXT LEVEL</button>
             </div>
         </div>
     </div>
@@ -394,7 +394,7 @@
             const initInterval = difficulty === 1 ? 1.4 : (difficulty === 2 ? 1.1 : 0.9);
             spawnTimer = Math.max(0, initInterval - 0.3);
 
-            // Meta accesible según dificultad
+            // Accessible target score by difficulty
             if (difficulty === 1) targetScore = 5;
             else if (difficulty === 2) targetScore = 7;
             else if (difficulty === 3) targetScore = 9;
@@ -403,7 +403,7 @@
         }
 
         function changeDifficulty(val) { setupScenario(val); }
-        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
         function resetMission() { setupScenario(difficulty); }
 
         const canvas = document.getElementById('defenseCanvas');
@@ -417,7 +417,7 @@
         }
         window.addEventListener('resize', resizeCanvas);
 
-        // Disparar al hacer clic en el canvas
+        // Fire on canvas click
         canvas.addEventListener('click', (e) => {
             if (isPaused || isMissionEnded) return;
             const rect = canvas.getBoundingClientRect();
@@ -427,7 +427,7 @@
             playLaserSound();
             lasers.push({ x: clickX, y: clickY, life: 1.0 });
 
-            // Hitbox amplio (m.radius + 28)
+            // Wide hitbox (m.radius + 28)
             for (let i = meteorites.length - 1; i >= 0; i--) {
                 const m = meteorites[i];
                 const dist = Math.hypot(m.x - clickX, m.y - clickY);
@@ -458,26 +458,26 @@
         function completeMission() {
             isMissionEnded = true;
             document.getElementById('debriefModal').style.display = 'flex';
-            document.getElementById('debTitle').textContent = "¡DEFENSA EXITOSA!";
-            document.getElementById('debBadge').textContent = "SECTOR SEGURO";
-            document.getElementById('debDesc').textContent = "Todos los incoming meteorites fueron interceptados con éxito antes de dañar el casco.";
+            document.getElementById('debTitle').textContent = "DEFENSE SUCCESSFUL!";
+            document.getElementById('debBadge').textContent = "SECTOR SECURE";
+            document.getElementById('debDesc').textContent = "All incoming meteorites were successfully intercepted before damaging the hull.";
             document.getElementById('debScore').textContent = `${score} / ${targetScore}`;
             document.getElementById('debHullFinal').textContent = `${hull}%`;
             document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
-            document.getElementById('debGrade').textContent = hull === 100 ? "A+ PERFECTO" : "A BUENO";
+            document.getElementById('debGrade').textContent = hull === 100 ? "A+ PERFECT" : "A GOOD";
         }
 
         function failMission() {
             isMissionEnded = true;
             document.getElementById('debriefModal').style.display = 'flex';
-            document.getElementById('debTitle').textContent = "CASCO COLAPSADO";
-            document.getElementById('debBadge').textContent = "FALLO";
+            document.getElementById('debTitle').textContent = "HULL BREACHED";
+            document.getElementById('debBadge').textContent = "FAILED";
             document.getElementById('debBadge').style.background = "#7f1d1d";
-            document.getElementById('debDesc').textContent = "Demasiados impactos de meteoritos destruyeron los escudos de la estación.";
+            document.getElementById('debDesc').textContent = "Too many meteorite impacts destroyed the station shields.";
             document.getElementById('debScore').textContent = `${score} / ${targetScore}`;
             document.getElementById('debHullFinal').textContent = `0%`;
             document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
-            document.getElementById('debGrade').textContent = "F - REPROBADO";
+            document.getElementById('debGrade').textContent = "F - FAILED";
         }
 
         function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
@@ -566,7 +566,7 @@
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
 
-            // Anillos concéntricos verdes del radar orbital y haz de barrido
+            // Concentric green orbital radar rings and sweep beam
             const maxR = Math.max(120, Math.min(canvas.width, canvas.height) * 0.46);
             ctx.strokeStyle = 'rgba(0, 255, 136, 0.18)';
             ctx.lineWidth = 1;
@@ -588,7 +588,7 @@
             ctx.lineTo(cx + Math.cos(sweepAngle) * maxR, cy + Math.sin(sweepAngle) * maxR);
             ctx.stroke();
 
-            // Dibujar la base/nave en el centro
+            // Draw base/ship at center
             ctx.strokeStyle = '#38bdf8';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -599,7 +599,7 @@
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(cx - 3, cy - 3, 6, 6);
 
-            // Rayos láser cian desde la estación al objetivo clicado
+            // Cyan laser beams from station to clicked target
             for (let i = lasers.length - 1; i >= 0; i--) {
                 const l = lasers[i];
                 ctx.save();
@@ -618,7 +618,7 @@
                 if (l.life <= 0) lasers.splice(i, 1);
             }
 
-            // Partículas de explosión
+            // Explosion particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 ctx.save();
@@ -632,7 +632,7 @@
                 if (p.life <= 0) particles.splice(i, 1);
             }
 
-            // Dibujar meteoritos acercándose
+            // Draw approaching meteorites
             for (let m of meteorites) {
                 ctx.fillStyle = '#94a3b8';
                 ctx.beginPath();
@@ -912,49 +912,49 @@
           }
 
           var NEW_OK_LABELS = {
-            gyro: '✔ CARDANES CMG ESTABILIZADOS',
-            debris: '✔ CORREDOR KESSLER DESPEJADO',
-            reactor: '✔ NÚCLEOS DEL REACTOR REFRIGERADOS',
-            pcb: '✔ CIRCUITOS PCB RUTADOS CORRECTAMENTE',
-            spectro: '✔ ESPECTROMETRÍA COMPLETADA',
-            thermal: '✔ BARRIDO MULTIESPECTRAL VALIDADO',
-            hga: '✔ ENLACE PARABÓLICO HGA / DSN CONFIRMADO',
-            decrypt: '✔ CANAL CUÁNTICO DESCIFRADO'
+            gyro: '✔ CMG GIMBALS STABILIZED',
+            debris: '✔ KESSLER CORRIDOR CLEARED',
+            reactor: '✔ REACTOR CORES COOLED',
+            pcb: '✔ PCB CIRCUITS ROUTED PROPERLY',
+            spectro: '✔ SPECTROMETRY COMPLETED',
+            thermal: '✔ MULTISPECTRAL SCAN VALIDATED',
+            hga: '✔ PARABOLIC HGA / DSN LINK CONFIRMED',
+            decrypt: '✔ QUANTUM CHANNEL DECRYPTED'
           };
 
           function evalVerifyStatus(gid) {
             switch (gid) {
               case 'dock': {
-                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ ACOPLAMIENTO APAS VERIFICADO' };
+                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ APAS DOCKING VERIFIED' };
                 var lat = Math.hypot(state.pos.x, state.pos.y);
                 return {
                   ready: lat <= 1.50,
-                  needMsg: 'Centra desvío lateral a <= 1.50m (actual ' + lat.toFixed(2) + 'm) con WASD/Flechas',
-                  okMsg: '✔ Listo: desvío ' + lat.toFixed(2) + 'm — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Center lateral offset <= 1.50m (current ' + lat.toFixed(2) + 'm) using WASD/Arrows',
+                  okMsg: '✔ Ready: offset ' + lat.toFixed(2) + 'm — Press [ CONFIRM ] above',
                   onApprove: function () { state.pos.z = 0; state.isEnded = true; }
                 };
               }
               case 'comet': {
                 if (typeof hull === 'number' && hull <= 0) {
-                  return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
                 }
                 var sc = typeof score === 'number' ? score : 0;
                 return {
                   ready: sc >= 3,
-                  needMsg: 'Destruye ' + (3 - sc) + ' meteorito(s) más con clic para confirmar (' + sc + '/3)',
-                  okMsg: '✔ Listo: ' + sc + ' meteoritos destruidos — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Destroy ' + (3 - sc) + ' more meteorite(s) by clicking to confirm (' + sc + '/3)',
+                  okMsg: '✔ Ready: ' + sc + ' meteorites destroyed — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'eps': {
-                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ MATRIZ EPS OK' };
+                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ EPS MATRIX NOMINAL' };
                 var sv = state.loads[0] && state.loads[0].active ? state.loads[0].power : 0;
                 var bat = Math.round(state.battery || 0);
                 var okEps = sv >= 50 && state.battery > 15;
                 return {
                   ready: okEps,
-                  needMsg: sv < 50 ? 'Sube Sop. Vital >= 50 MW o pulsa AUTO-BALANCEAR' : 'Batería <= 15% (' + bat + '%): pulsa AUTO-BALANCEAR CARGAS',
-                  okMsg: '✔ Listo: Sop. Vital ' + sv + ' MW y Batería ' + bat + '% — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: sv < 50 ? 'Raise Life Support >= 50 MW or press AUTO-BALANCE' : 'Battery <= 15% (' + bat + '%): press AUTO-BALANCE LOADS',
+                  okMsg: '✔ Ready: Life Support ' + sv + ' MW & Battery ' + bat + '% — Press [ CONFIRM ] above',
                   onApprove: function () { state.isEnded = true; }
                 };
               }
@@ -963,22 +963,22 @@
                 var co2Ok = typeof co2Val !== 'number' || co2Val < 1.2;
                 var actOk = (typeof activeScrub === 'number' && activeScrub === 1) || (typeof isSealed === 'boolean' && isSealed);
                 var msgNeed = !o2Ok
-                  ? 'Ajusta O2 entre 18% y 26% o pulsa ESTABILIZAR AUTOMÁTICO'
+                  ? 'Adjust O2 between 18% and 26% or press AUTO-STABILIZE'
                   : !co2Ok
-                    ? 'Reduce CO2 < 1.2% con Canister B o ESTABILIZAR AUTOMÁTICO'
-                    : 'Cambia a Canister B o sella la esclusa para confirmar';
+                    ? 'Reduce CO2 < 1.2% with Canister B or AUTO-STABILIZE'
+                    : 'Switch to Canister B or seal airlock to confirm';
                 return {
                   ready: o2Ok && co2Ok && actOk,
                   needMsg: msgNeed,
-                  okMsg: '✔ Listo: gases seguros y esclusa/filtro OK — Pulsa [ CONFIRMAR ] arriba',
+                  okMsg: '✔ Ready: gases nominal and airlock/scrubber OK — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
               case 'nav': {
                 if (typeof isBurning !== 'undefined' && isBurning) {
-                  return { ready: false, needMsg: 'Espera 1s a que termine el encendido orbital' };
+                  return { ready: false, needMsg: 'Wait 1s for orbital burn to complete' };
                 }
-                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ ÓRBITA HOHMANN OK' };
+                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ HOHMANN ORBIT NOMINAL' };
                 var navErr = Math.abs(orbitState.altitude - orbitState.targetAlt);
                 var recSigned = Math.round((orbitState.targetAlt - orbitState.altitude) / 0.95);
                 var curSigned = orbitState.vector === 'prograde' ? orbitState.deltaV : -orbitState.deltaV;
@@ -986,8 +986,8 @@
                 var okNav = Boolean(orbitState.done || navErr <= 45 || dvDiff <= 35);
                 return {
                   ready: okNav,
-                  needMsg: 'Pon Δv cerca de ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) y confirma',
-                  okMsg: '✔ Listo: impulso Δv alineado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Δv near ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) and confirm',
+                  okMsg: '✔ Ready: Δv impulse aligned — Press [ CONFIRM ] above',
                   onApprove: function () { orbitState.altitude = orbitState.targetAlt; orbitState.done = true; orbitState.isEnded = true; }
                 };
               }
@@ -995,8 +995,8 @@
                 var vel = typeof velocity === 'number' ? velocity : 0;
                 return {
                   ready: vel < 10.0,
-                  needMsg: 'Frena con [ESPACIO] por debajo de 10.0 m/s (actual ' + vel.toFixed(1) + ' m/s)',
-                  okMsg: '✔ Listo: velocidad ' + vel.toFixed(1) + ' m/s — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Brake with [SPACE] below 10.0 m/s (current ' + vel.toFixed(1) + ' m/s)',
+                  okMsg: '✔ Ready: velocity ' + vel.toFixed(1) + ' m/s — Press [ CONFIRM ] above',
                   onApprove: function () {
                     if (typeof altitude !== 'undefined') altitude = 0;
                     if (typeof updateUI === 'function') updateUI();
@@ -1009,20 +1009,20 @@
                 var gDiff = Math.abs(userGain - targetGain);
                 return {
                   ready: fDiff <= 25 && gDiff <= 20,
-                  needMsg: 'Pon Freq ~' + targetFreq + ' Hz (±25) y Ampl ~' + targetGain + '% (±20)',
-                  okMsg: '✔ Listo: señal DSN sincronizada — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Freq ~' + targetFreq + ' Hz (±25) and Gain ~' + targetGain + '% (±20)',
+                  okMsg: '✔ Ready: DSN signal synchronized — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'cyber': {
                 if (typeof shieldIntegrity === 'number' && shieldIntegrity <= 0) {
-                  return { ready: false, needMsg: 'Escudo en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Shield at 0%: press RESET above' };
                 }
                 var pc = typeof packetsChecked === 'number' ? packetsChecked : 0;
                 return {
                   ready: pc >= 3,
-                  needMsg: 'Filtra ' + (3 - pc) + ' paquete(s) más (verde PERMITIR / rojo BLOQUEAR)',
-                  okMsg: '✔ Listo: ' + pc + ' paquetes filtrados — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Filter ' + (3 - pc) + ' more packet(s) (green ALLOW / red BLOCK)',
+                  okMsg: '✔ Ready: ' + pc + ' packets filtered — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
@@ -1034,21 +1034,21 @@
               case 'thermal':
               case 'hga':
               case 'decrypt': {
-                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
-                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Batería agotada: pulsa REINICIAR arriba' };
-                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Sobrepresión: pulsa REINICIAR arriba' };
+                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
+                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Battery depleted: press RESET above' };
+                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Overpressure: press RESET above' };
                 var interacted = (window.__mgAdjustCount || 0) >= 1;
                 var mTime = typeof missionTime === 'number' ? missionTime : 0;
                 var okNew = interacted || mTime >= 4.0;
                 return {
                   ready: okNew,
-                  needMsg: 'Haz 1 ajuste (o pulsa AUTO-CALIBRAR / opera ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
-                  okMsg: '✔ Listo: sistema calibrado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Make 1 adjustment (or press AUTO-CALIBRATE / operate ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
+                  okMsg: '✔ Ready: system calibrated — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
             }
-            return { ready: true, okMsg: '✔ SISTEMA VERIFICADO' };
+            return { ready: true, okMsg: '✔ SYSTEM VERIFIED' };
           }
 
           function refreshLiveVerifyBanner() {
@@ -1063,9 +1063,9 @@
             var gid = 'comet';
             try {
               var st = evalVerifyStatus(gid);
-              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Completa el paso indicado'));
+              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Complete the indicated step'));
               if (typeof st.onApprove === 'function') st.onApprove();
-              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SISTEMA ESTABILIZADO');
+              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SYSTEM STABILIZED');
             } catch (err) {}
             return false;
           }
@@ -1081,7 +1081,7 @@
 </script>
 
 <script>
-/* === Puente con la Estación Espacial (iframe -> React) === */
+/* === Space Station Bridge (iframe -> React) === */
 (function () {
   var wonPending = false;
   var victorySent = false;
@@ -1142,7 +1142,7 @@
     if (!btn) return;
     btn.setAttribute('data-solved-btn', '1');
     if (!btn.hasAttribute('data-orig-label')) {
-      btn.setAttribute('data-orig-label', btn.textContent || 'SIGUIENTE NIVEL');
+      btn.setAttribute('data-orig-label', btn.textContent || 'NEXT LEVEL');
     }
     if (!btn.hasAttribute('data-bridge-click')) {
       btn.setAttribute('data-bridge-click', '1');
@@ -1155,14 +1155,14 @@
       });
     }
     if (isVictory) {
-      btn.textContent = "[ ✔ DESACTIVAR TORRETA Y VOLVER AL PUENTE ]";
+      btn.textContent = "[ ✔ DEACTIVATE TURRET & RETURN TO BRIDGE ]";
       btn.style.background = 'linear-gradient(180deg, #059669 0%, #047857 100%)';
       btn.style.borderColor = '#00ff88';
       btn.style.color = '#ffffff';
       btn.style.fontWeight = 'bold';
       btn.style.boxShadow = '0 0 14px rgba(0, 255, 136, 0.45)';
     } else {
-      btn.textContent = btn.getAttribute('data-orig-label') || 'REINTENTAR';
+      btn.textContent = btn.getAttribute('data-orig-label') || 'RETRY';
       btn.style.background = '#1e293b';
       btn.style.borderColor = '#475569';
       btn.style.color = '#e2e8f0';

@@ -80,7 +80,7 @@ export const SATELLITE_META: Record<
   sat1: {
     id: 'sat1',
     code: 'SAT-01 AMARU-COMMS',
-    subtitle: 'Observación Andina y Enlace Telecom',
+    subtitle: 'Andean Earth Observation & Telecom Relay',
     icon: '🛰️',
     defaultContract: 'andes',
     defaultLauncher: 'rideshare',
@@ -89,7 +89,7 @@ export const SATELLITE_META: Record<
   sat2: {
     id: 'sat2',
     code: 'SAT-02 INTI-SCIENCE',
-    subtitle: 'Exploración Científica Secundaria',
+    subtitle: 'Secondary Deep-Space Science Explorer',
     icon: '🔭',
     defaultContract: 'andes',
     defaultLauncher: 'rideshare',
@@ -102,24 +102,24 @@ export const ROLE_WORKSHOP_FOCUS: Record<
   { badge: string; shortDuty: string; stationTasks: string }
 > = {
   director: {
-    badge: 'Órbitas, Contratos, Cohete y Despegue',
-    shortDuty: 'Validación de Órbita y Lanzamiento',
-    stationTasks: 'Acoplamiento APAS · Defensa Cometa',
+    badge: 'Orbits, Contracts, Launch Vehicle & Liftoff',
+    shortDuty: 'Orbit & Launch Validation',
+    stationTasks: 'APAS Docking · Comet Defense',
   },
   engineer: {
-    badge: 'Paneles Solares, Baterías, ADCS, Blindaje y Motor',
-    shortDuty: 'Energía y Estructura del CubeSat',
-    stationTasks: 'Distribución EPS · Soporte Vital O2',
+    badge: 'Solar Arrays, Batteries, ADCS, Shielding & Thrusters',
+    shortDuty: 'Spacecraft Power & Structure',
+    stationTasks: 'EPS Grid · ECLSS O₂ Support',
   },
   science: {
-    badge: 'Cámaras, Espectrómetros y Carga Útil NASA',
-    shortDuty: 'Carga Útil Científica',
-    stationTasks: 'Sonda Planetaria · Órbita SAT-02',
+    badge: 'Cameras, Spectrometers & NASA Science Payload',
+    shortDuty: 'Scientific Payload Integration',
+    stationTasks: 'Planetary Probe · SAT-02 Orbit',
   },
   comms: {
-    badge: 'Antenas UHF, Banda S/X y Enlace DSN',
-    shortDuty: 'Antenas y Telecomunicaciones',
-    stationTasks: 'Telecom DSN · Ciberdefensa 8080',
+    badge: 'UHF, S/X-Band Antennas & DSN Deep-Space Link',
+    shortDuty: 'Antennas & Telecommunications',
+    stationTasks: 'DSN Telecom · Firewall 8080',
   },
 }
 
@@ -150,7 +150,7 @@ export function getDefaultPlayerName(clientId: string): string {
   } catch {
     // ignorar errores de almacenamiento
   }
-  return `PILOTO-${clientId.slice(-4).toUpperCase()}`
+  return `PILOT-${clientId.slice(-4).toUpperCase()}`
 }
 
 export function savePlayerName(name: string): void {

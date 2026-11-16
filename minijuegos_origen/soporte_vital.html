@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soporte Vital - Control Ambiental ECLSS</title>
+    <title>Life Support - ECLSS Environmental Control</title>
     <style>
         :root {
             --bg-deep: #050811;
@@ -301,35 +301,35 @@
 
     <header>
         <div class="header-title-block">
-            <span class="badge-system">ECLSS // SOPORTE VITAL</span>
-            <h1>SISTEMA DE CONTROL AMBIENTAL Y RECICLADO</h1>
+            <span class="badge-system">ECLSS // LIFE SUPPORT</span>
+            <h1>ENVIRONMENTAL CONTROL &amp; LIFE SUPPORT SYSTEM</h1>
         </div>
         <div class="header-actions">
             <button class="btn-ui" onclick="location.href='index.html'">⌂ HUB</button>
-            <label for="diffSelect" style="color:var(--text-dim)">DIFICULTAD:</label>
+            <label for="diffSelect" style="color:var(--text-dim)">DIFFICULTY:</label>
             <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Calibración Térmica y Oxígeno</option>
-                <option value="2" selected>Nivel 2 - Saturación de Filtro LiOH (CO2)</option>
-                <option value="3">Nivel 3 - Micro-Fuga de Casco y Presurización</option>
-                <option value="4">Nivel 4 - Contención de Hiperoxia e Incendio</option>
-                <option value="5">Nivel 5 - Descompresión Explosiva Extrema</option>
+                <option value="1">Level 1 - Thermal &amp; Oxygen Calibration</option>
+                <option value="2" selected>Level 2 - LiOH Scrubber Saturation (CO2)</option>
+                <option value="3">Level 3 - Hull Micro-Leak &amp; Pressurization</option>
+                <option value="4">Level 4 - Hyperoxia &amp; Fire Containment</option>
+                <option value="5">Level 5 - Extreme Explosive Decompression</option>
             </select>
-            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORIAL</button>
-            <button class="btn-ui" onclick="openGuideModal()">? GUÍA</button>
+            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORY</button>
+            <button class="btn-ui" onclick="openGuideModal()">? GUIDE</button>
             <button class="btn-ui" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO</button>
-            <button class="btn-ui" onclick="resetMission()">↻ REINICIAR</button>
+            <button class="btn-ui" onclick="resetMission()">↻ RESET</button>
         </div>
     </header>
 
     <div class="mission-bar">
         <div>
-            <span class="mission-text" id="missionText">MISIÓN: Reciclado Atmosférico de Cabina ECLSS</span>
+            <span class="mission-text" id="missionText">MISSION: ECLSS Cabin Atmospheric Recycling</span>
         </div>
         <div class="mission-goal" id="missionGoal">
-            OBJETIVO: Mantén el O2 entre 19.5% y 23.5%, y rota los filtros de CO2 antes de que alcancen 0.80%.
+            OBJECTIVE: Keep O2 between 19.5% and 23.5%, and rotate CO2 scrubbers before reaching 0.80%.
         </div>
         <div>
-            ESTADO: <span class="mission-status-pill" id="missionStatusPill">ATMÓSFERA NOMINAL</span>
+            STATUS: <span class="mission-status-pill" id="missionStatusPill">NOMINAL ATMOSPHERE</span>
         </div>
     </div>
 
@@ -337,45 +337,45 @@
         <!-- Left: Sensors -->
         <div class="card-panel">
             <div class="card-header">
-                <span>SENSORES DE CABINA</span>
+                <span>CABIN SENSORS</span>
                 <span style="color:var(--crt-green)">NORMAL</span>
             </div>
 
             <!-- Oxygen -->
             <div class="sensor-box">
                 <div class="sensor-row">
-                    <span>FRACCIÓN DE OXÍGENO (O2)</span>
+                    <span>OXYGEN FRACTION (O2)</span>
                     <b id="valO2" style="color:var(--crt-green); font-size:13px;">21.0%</b>
                 </div>
                 <div class="bar-container"><div class="bar-fill" id="barO2" style="width:70%;"></div></div>
                 <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
                     <span>Nominal: 19.5% - 23.5%</span>
-                    <span id="stO2" style="color:var(--crt-green)">SEGURO</span>
+                    <span id="stO2" style="color:var(--crt-green)">SAFE</span>
                 </div>
             </div>
 
             <!-- Carbon Dioxide -->
             <div class="sensor-box">
                 <div class="sensor-row">
-                    <span>DIÓXIDO DE CARBONO (CO2)</span>
+                    <span>CARBON DIOXIDE (CO2)</span>
                     <b id="valCO2" style="color:var(--crt-green); font-size:13px;">0.04%</b>
                 </div>
                 <div class="bar-container"><div class="bar-fill" id="barCO2" style="width:15%;"></div></div>
                 <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
-                    <span>Límite: &lt; 0.80%</span>
-                    <span id="stCO2" style="color:var(--crt-green)">BAJO</span>
+                    <span>Limit: &lt; 0.80%</span>
+                    <span id="stCO2" style="color:var(--crt-green)">LOW</span>
                 </div>
             </div>
 
             <!-- Pressure -->
             <div class="sensor-box">
                 <div class="sensor-row">
-                    <span>PRESIÓN BAROMÉTRICA</span>
+                    <span>BAROMETRIC PRESSURE</span>
                     <b id="valPress" style="color:var(--crt-cyan); font-size:13px;">101.3 kPa</b>
                 </div>
                 <div class="bar-container"><div class="bar-fill" id="barPress" style="width:80%;"></div></div>
                 <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
-                    <span>Normobárica: 101.3 kPa</span>
+                    <span>Normobaric: 101.3 kPa</span>
                     <span id="stPress" style="color:var(--crt-green)">NORMAL</span>
                 </div>
             </div>
@@ -383,19 +383,19 @@
             <!-- Temp -->
             <div class="sensor-box">
                 <div class="sensor-row">
-                    <span>TEMPERATURA INTERNA</span>
+                    <span>INTERNAL TEMPERATURE</span>
                     <b id="valTemp" style="color:var(--crt-cyan); font-size:13px;">21.5°C</b>
                 </div>
                 <div class="bar-container"><div class="bar-fill" id="barTemp" style="width:60%;"></div></div>
                 <div class="sensor-row" style="color:var(--text-dim); font-size:9px;">
-                    <span>Margen: 18°C - 24°C</span>
-                    <span>ÓPTIMO</span>
+                    <span>Range: 18°C - 24°C</span>
+                    <span>OPTIMAL</span>
                 </div>
             </div>
 
             <!-- Dynamic Gas Trend Graph -->
             <div class="card-header" style="margin-top:auto">
-                <span>EVOLUCIÓN DE GASES EN VIVO</span>
+                <span>LIVE GAS EVOLUTION</span>
             </div>
             <div class="chart-box">
                 <canvas id="trendCanvas"></canvas>
@@ -410,13 +410,13 @@
         <!-- Right: Actuators -->
         <div class="card-panel">
             <div class="card-header">
-                <span>ACTUADORES Y CONTROLES</span>
-                <span id="airlockTag" style="color:var(--crt-cyan)">ESCLUSA SELLADA</span>
+                <span>ACTUATORS &amp; CONTROLS</span>
+                <span id="airlockTag" style="color:var(--crt-cyan)">AIRLOCK SEALED</span>
             </div>
 
             <div class="control-unit">
                 <div class="sensor-row">
-                    <span>INYECCIÓN OXÍGENO (O2):</span>
+                    <span>OXYGEN INJECTION (O2):</span>
                     <b id="txtO2Flow" style="color:var(--crt-cyan)">95%</b>
                 </div>
                 <input type="range" class="slider-eclss" id="slO2" min="0" max="150" value="95" oninput="updatePreview()">
@@ -424,7 +424,7 @@
 
             <div class="control-unit">
                 <div class="sensor-row">
-                    <span>INYECCIÓN AMORTIGUADOR N2:</span>
+                    <span>N2 BUFFER INJECTION:</span>
                     <b id="txtN2Flow" style="color:var(--crt-green)">20%</b>
                 </div>
                 <input type="range" class="slider-eclss" id="slN2" min="0" max="100" value="20" oninput="updatePreview()">
@@ -432,31 +432,31 @@
 
             <div class="control-unit">
                 <div class="sensor-row">
-                    <span>DEPURADOR LiOH (CO2):</span>
+                    <span>LiOH SCRUBBER (CO2):</span>
                     <b id="txtScrub" style="color:var(--crt-amber)">Canister A (45% Sat.)</b>
                 </div>
                 <div class="btn-group">
                     <button class="btn-mode active" id="btnScrubA" onclick="setScrubber(0)">CANISTER A</button>
                     <button class="btn-mode" id="btnScrubB" onclick="setScrubber(1)">CANISTER B</button>
-                    <button class="btn-mode" id="btnScrubReg" onclick="setScrubber(2)">PURGA VACÍO</button>
+                    <button class="btn-mode" id="btnScrubReg" onclick="setScrubber(2)">VACUUM PURGE</button>
                 </div>
             </div>
 
             <div class="control-unit">
                 <div class="sensor-row">
-                    <span>RECIRCULACIÓN TURBINA:</span>
+                    <span>TURBINE RECIRCULATION:</span>
                     <b id="txtVent" style="color:var(--crt-cyan)">AUTO</b>
                 </div>
                 <div class="btn-group">
                     <button class="btn-mode active" id="btnVAuto" onclick="setVent('auto')">AUTO</button>
-                    <button class="btn-mode" id="btnVMax" onclick="setVent('max')">MÁX</button>
-                    <button class="btn-mode" id="btnVPurge" onclick="setVent('purge')">PURGA</button>
+                    <button class="btn-mode" id="btnVMax" onclick="setVent('max')">MAX</button>
+                    <button class="btn-mode" id="btnVPurge" onclick="setVent('purge')">PURGE</button>
                 </div>
             </div>
 
             <div class="control-unit">
                 <div class="sensor-row">
-                    <span>CLIMATIZADOR:</span>
+                    <span>CLIMATE CONTROL:</span>
                     <b id="txtTemp" style="color:var(--crt-cyan)">21.0°C</b>
                 </div>
                 <input type="range" class="slider-eclss" id="slTemp" min="14" max="30" value="21" oninput="updatePreview()">
@@ -464,10 +464,10 @@
 
             <div style="margin-top:auto; display:flex; flex-direction:column; gap:6px;">
                 <button class="btn-ui" style="background:#0284c7; color:#fff; justify-content:center; padding:9px;" onclick="applySettings()">
-                    APLICAR PARÁMETROS
+                    APPLY PARAMETERS
                 </button>
                 <button class="btn-ui" style="border-color:var(--crt-red); color:#fca5a5; justify-content:center; padding:9px;" id="btnSeal" onclick="toggleSeal()">
-                    CERRAR / SELLAR ESCLUSA
+                    CLOSE / SEAL AIRLOCK
                 </button>
             </div>
         </div>
@@ -477,28 +477,28 @@
     <div class="modal-overlay" id="historyModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span>HISTORIAL DE SOPORTE VITAL (ECLSS)</span>
+                <span>LIFE SUPPORT HISTORY (ECLSS)</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th>Fecha</th>
-                            <th>Misión</th>
-                            <th>Resultado</th>
-                            <th>O2 Final</th>
-                            <th>CO2 Final</th>
-                            <th>Presión</th>
-                            <th>Tiempo</th>
-                            <th>Calificación</th>
+                            <th>Date</th>
+                            <th>Mission</th>
+                            <th>Outcome</th>
+                            <th>Final O2</th>
+                            <th>Final CO2</th>
+                            <th>Pressure</th>
+                            <th>Time</th>
+                            <th>Grade</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody"></tbody>
                 </table>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 registros</span>
-                    <button class="btn-ui" onclick="clearHistory()">LIMPIAR HISTORIAL</button>
+                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 records</span>
+                    <button class="btn-ui" onclick="clearHistory()">CLEAR HISTORY</button>
                 </div>
             </div>
         </div>
@@ -508,13 +508,13 @@
     <div class="modal-overlay" id="guideModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span>MANUAL TÉCNICO DE SOPORTE VITAL (ECLSS)</span>
+                <span>LIFE SUPPORT TECHNICAL MANUAL (ECLSS)</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
-                <p><b>1. Parámetros Fisiológicos:</b> El oxígeno debe mantenerse entre 19.5% y 23.5%. Niveles inferiores al 16% provocan hipoxia grave; niveles superiores al 28% causan riesgo de incendio espontáneo.</p>
-                <p><b>2. Saturación de LiOH:</b> El CO2 debe ser menor a 0.80%. Cuando el Canister A se sature (>80%), conmuta al Canister B para no intoxicar a la tripulación.</p>
-                <p><b>3. Despresurización:</b> Si la presión cae por micro-fugas, eleva el buffer de nitrógeno (N2) y pulsa CERRAR ESCLUSA.</p>
+                <p><b>1. Physiological Parameters:</b> Oxygen must be kept between 19.5% and 23.5%. Levels below 16% cause severe hypoxia; levels above 28% create spontaneous fire risk.</p>
+                <p><b>2. LiOH Saturation:</b> CO2 must remain below 0.80%. When Canister A saturates (&gt;80%), switch to Canister B to prevent crew intoxication.</p>
+                <p><b>3. Depressurization:</b> If pressure drops due to micro-leaks, increase the nitrogen (N2) buffer and press CLOSE AIRLOCK.</p>
             </div>
         </div>
     </div>
@@ -523,20 +523,20 @@
     <div class="modal-overlay" id="debriefModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span id="debTitle" style="color:var(--crt-green)">INFORME DE CABINA ECLSS</span>
+                <span id="debTitle" style="color:var(--crt-green)">ECLSS CABIN REPORT</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
-                <p id="debMessage">La atmósfera se mantuvo en condiciones seguras.</p>
+                <p id="debMessage">Atmosphere remained within safe parameters.</p>
                 <div style="background:#091220; border:1px solid var(--border-panel); padding:10px; border-radius:3px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                    <div>Oxígeno Final: <b id="debO2" style="color:var(--crt-green)">21.1%</b></div>
-                    <div>CO2 Final: <b id="debCO2" style="color:var(--crt-cyan)">0.05%</b></div>
-                    <div>Presión: <b id="debPress" style="color:var(--crt-green)">101.2 kPa</b></div>
-                    <div>Calificación: <b id="debGrade" style="color:var(--crt-green)">A+ EXCELENTE</b></div>
+                    <div>Final Oxygen: <b id="debO2" style="color:var(--crt-green)">21.1%</b></div>
+                    <div>Final CO2: <b id="debCO2" style="color:var(--crt-cyan)">0.05%</b></div>
+                    <div>Pressure: <b id="debPress" style="color:var(--crt-green)">101.2 kPa</b></div>
+                    <div>Grade: <b id="debGrade" style="color:var(--crt-green)">A+ EXCELLENT</b></div>
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-                    <button class="btn-ui" onclick="closeModals(); resetMission();">REINTENTAR</button>
-                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">SIGUIENTE NIVEL</button>
+                    <button class="btn-ui" onclick="closeModals(); resetMission();">RETRY</button>
+                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">NEXT LEVEL</button>
                 </div>
             </div>
         </div>
@@ -697,18 +697,18 @@
             isSealed = !isSealed;
             if (isSealed) {
                 leakRate = Math.max(0, leakRate - 0.5);
-                document.getElementById('airlockTag').textContent = "ESCLUSA SELLADA";
+                document.getElementById('airlockTag').textContent = "AIRLOCK SEALED";
                 document.getElementById('airlockTag').style.color = "var(--crt-cyan)";
-                document.getElementById('btnSeal').textContent = "ABRIR ESCLUSA";
+                document.getElementById('btnSeal').textContent = "OPEN AIRLOCK";
                 playAirSound();
             } else {
-                document.getElementById('airlockTag').textContent = "ESCLUSA ABIERTA";
+                document.getElementById('airlockTag').textContent = "AIRLOCK OPEN";
                 document.getElementById('airlockTag').style.color = "var(--crt-amber)";
-                document.getElementById('btnSeal').textContent = "CERRAR / SELLAR ESCLUSA";
+                document.getElementById('btnSeal').textContent = "CLOSE / SEAL AIRLOCK";
             }
         }
 
-        /* Audio procedural */
+        /* Procedural audio */
         let audioCtx = null;
         let soundActive = true;
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -728,9 +728,9 @@
                 noise.start();
             } catch(e) {}
         }
-        function toggleAudio() { soundActive = !soundActive; document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUDO'; }
+        function toggleAudio() { soundActive = !soundActive; document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUTE'; }
 
-        /* Simulación Tick */
+        /* Simulation Tick */
         function updatePhysics(dt) {
             if (isEnded) return;
 
@@ -738,7 +738,7 @@
             const fanSpeed = ventMode === 'purge' ? 0.35 : ventMode === 'max' ? 0.22 : 0.08;
             fanAngle += fanSpeed;
 
-            // Cinética metabólica
+            // Metabolic kinetics
             const o2Consume = 0.08 * dt;
             const o2Supply = (o2Flow / 100) * 0.10 * dt;
             o2Val = o2Val - o2Consume + o2Supply;
@@ -754,17 +754,17 @@
             pressVal = Math.max(20, pressVal - (leakRate * dt) + (n2Flow / 100) * 0.8 * dt);
             tempVal += (targetTemp - tempVal) * 0.15 * dt;
 
-            // Historial de gráficos
+            // Trend history
             if (trendGases.length === 0 || missionTime - trendGases[trendGases.length - 1].t > 0.4) {
                 trendGases.push({ t: missionTime, o2: o2Val, co2: co2Val * 15 });
                 if (trendGases.length > 50) trendGases.shift();
             }
 
-            // Chequeos de seguridad
-            if (o2Val < 16.0) { isEnded = true; showDebriefModal(false, "Hipoxia severa por caída de oxígeno."); }
-            else if (o2Val > 28.0) { isEnded = true; showDebriefModal(false, "Riesgo crítico de fuego por hiperoxia."); }
-            else if (co2Val > 1.2) { isEnded = true; showDebriefModal(false, "Intoxicación letal por hipercapnia."); }
-            else if (pressVal < 70) { isEnded = true; showDebriefModal(false, "Descompresión crítica de cabina."); }
+            // Safety checks
+            if (o2Val < 16.0) { isEnded = true; showDebriefModal(false, "Severe hypoxia due to oxygen drop."); }
+            else if (o2Val > 28.0) { isEnded = true; showDebriefModal(false, "Critical fire hazard due to hyperoxia."); }
+            else if (co2Val > 1.2) { isEnded = true; showDebriefModal(false, "Lethal hypercapnia poisoning."); }
+            else if (pressVal < 70) { isEnded = true; showDebriefModal(false, "Critical cabin decompression."); }
 
             const targetTime = difficulty === 1 ? 25 : difficulty === 2 ? 35 : 45;
             if (missionTime >= targetTime) {
@@ -798,15 +798,15 @@
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
             if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No hay registros de soporte vital aún.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No life support logs recorded yet.</td></tr>';
                 return;
             }
             list.forEach(r => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${r.timestamp}</td>
-                    <td>${r.missionName.replace('MISIÓN: ', '')}</td>
-                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'ÉXITO' : 'FALLO'}</td>
+                    <td>${r.missionName.replace(/^(MISSION|MISIÓN): /, '')}</td>
+                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'PASS' : 'FAIL'}</td>
                     <td>${r.o2}%</td>
                     <td>${r.co2}%</td>
                     <td>${r.press} kPa</td>
@@ -815,19 +815,19 @@
                 `;
                 tbody.appendChild(tr);
             });
-            document.getElementById('historyStatsSummary').textContent = `${list.length} registros`;
+            document.getElementById('historyStatsSummary').textContent = `${list.length} records`;
         }
 
         function showDebriefModal(success, reason = "") {
             const modal = document.getElementById('debriefModal');
             modal.style.display = 'flex';
-            document.getElementById('debTitle').textContent = success ? "¡CABINA ESTABILIZADA CON ÉXITO!" : "COLAPSO AMBIENTAL";
+            document.getElementById('debTitle').textContent = success ? "CABIN STABILIZED SUCCESSFULLY!" : "ENVIRONMENTAL COLLAPSE";
             document.getElementById('debTitle').style.color = success ? "var(--crt-green)" : "var(--crt-red)";
-            document.getElementById('debMessage').textContent = success ? "La atmósfera de cabina se mantuvo en condiciones normobáricas seguras." : reason;
+            document.getElementById('debMessage').textContent = success ? "Cabin atmosphere remained within safe normobaric parameters." : reason;
             document.getElementById('debO2').textContent = `${o2Val.toFixed(1)}%`;
             document.getElementById('debCO2').textContent = `${co2Val.toFixed(2)}%`;
             document.getElementById('debPress').textContent = `${pressVal.toFixed(1)} kPa`;
-            document.getElementById('debGrade').textContent = success ? "A+ EXCELENTE" : "F REPROBADO";
+            document.getElementById('debGrade').textContent = success ? "A+ EXCELLENT" : "F FAILED";
 
             saveRecord({
                 timestamp: new Date().toLocaleTimeString(),
@@ -837,7 +837,7 @@
                 co2: co2Val.toFixed(2),
                 press: pressVal.toFixed(1),
                 time: Math.round(missionTime),
-                grade: success ? "A+ EXCELENTE" : "F REPROBADO"
+                grade: success ? "A+ EXCELLENT" : "F FAILED"
             });
         }
 
@@ -847,7 +847,7 @@
                 document.getElementById('diffSelect').value = difficulty + 1;
                 setupDifficulty(difficulty + 1);
             } else {
-                alert("¡Has completado todos los escenarios de Soporte Vital!");
+                alert("All Life Support scenarios completed!");
                 setupDifficulty(1);
             }
         }
@@ -914,7 +914,7 @@
             document.getElementById('barTemp').style.width = `${Math.min(100, (tempVal / 35) * 100)}%`;
 
             let scrubTxt = activeScrub === 0 ? `Canister A (${Math.round(scrubA)}% Sat.)` :
-                           activeScrub === 1 ? `Canister B (${Math.round(scrubB)}% Sat.)` : "Purga Vacío";
+                           activeScrub === 1 ? `Canister B (${Math.round(scrubB)}% Sat.)` : "Vacuum Purge";
             document.getElementById('txtScrub').textContent = scrubTxt;
         }
 

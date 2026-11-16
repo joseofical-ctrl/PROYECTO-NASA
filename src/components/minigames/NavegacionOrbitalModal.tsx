@@ -12,7 +12,7 @@ export default function NavegacionOrbitalModal({ satTarget = 'sat1', ...props }:
       game="nav"
       file="navegacion_orbital.html"
       query={`sat=${satTarget}`}
-      title="NAVEGACIÓN ORBITAL HOHMANN DUAL · SAT-01 AMARU-COMMS / SAT-02 INTI-SCIENCE"
+      title="DUAL HOHMANN ORBITAL NAVIGATION · SAT-01 AMARU-COMMS / SAT-02 INTI-SCIENCE"
       accent="#74b9ff"
     />
   )

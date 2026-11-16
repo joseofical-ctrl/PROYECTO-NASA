@@ -20,9 +20,9 @@ function Director({
   const commsOk = t.linkOk
 
   const statusBadges = [
-    { icon: '🌍', label: 'Órbita', ok: orbitOk },
-    { icon: '⚡', label: 'Energía', ok: energyOk },
-    { icon: '🔬', label: 'Ciencia', ok: scienceOk },
+    { icon: '🌍', label: 'Orbit', ok: orbitOk },
+    { icon: '⚡', label: 'Power', ok: energyOk },
+    { icon: '🔬', label: 'Science', ok: scienceOk },
     { icon: '📡', label: 'Comms', ok: commsOk },
   ]
 
@@ -31,7 +31,7 @@ function Director({
       {/* 1) Barra de Presupuesto */}
       <BigGauge
         icon="💰"
-        label="PRESUPUESTO"
+        label="BUDGET"
         valueText={`$${t.cost}k / $${t.budget}k`}
         ratio={t.budget > 0 ? t.cost / t.budget : 0}
         ok={t.cost <= t.budget}
@@ -40,7 +40,7 @@ function Director({
       {/* 2) Barra de Masa */}
       <BigGauge
         icon="⚖️"
-        label="MASA HÚMEDA"
+        label="WET MASS"
         valueText={`${t.mass.toFixed(1)} / ${t.massCap} kg`}
         ratio={t.massCap > 0 ? t.mass / t.massCap : 0}
         ok={t.mass <= t.massCap}
@@ -49,7 +49,7 @@ function Director({
       {/* 3) Barra de Volumen (Slots U) */}
       <BigGauge
         icon="📦"
-        label="VOLUMEN CHASIS"
+        label="CHASSIS VOLUME"
         valueText={`${t.slotsUsed} / ${t.slotsCap} U`}
         ratio={t.slotsCap > 0 ? t.slotsUsed / t.slotsCap : 0}
         ok={t.slotsUsed <= t.slotsCap}
@@ -94,7 +94,7 @@ function Director({
             : undefined
         }
       >
-        🚀 AUTORIZAR DESPEGUE
+        🚀 AUTHORIZE LAUNCH
       </button>
     </div>
   )
@@ -112,7 +112,7 @@ function Engineer({ t }: { t: Telemetry }) {
       {/* 1) Energía Diurna (W) */}
       <BigGauge
         icon="☀️"
-        label="ENERGÍA DIURNA"
+        label="DAYLIGHT POWER"
         valueText={`${t.genW.toFixed(1)}W gen / ${t.loadW.toFixed(1)}W`}
         ratio={t.genW / powerMax}
         ok={t.genW >= t.loadW}
@@ -121,10 +121,10 @@ function Engineer({ t }: { t: Telemetry }) {
       {/* 2) Batería en Eclipse (Wh) */}
       <BigGauge
         icon="🔋"
-        label="BATERÍA ECLIPSE"
+        label="ECLIPSE BATTERY"
         valueText={
           t.eclipseMin === 0
-            ? 'Órbita L1 (Sin eclipse)'
+            ? 'L1 Orbit (No eclipse)'
             : `${t.batteryWh.toFixed(0)} / ${t.eclipseNeedWh.toFixed(0)} Wh`
         }
         ratio={t.eclipseMin === 0 ? 1 : t.batteryWh / eclMax}
@@ -134,7 +134,7 @@ function Engineer({ t }: { t: Telemetry }) {
       {/* 3) Propulsión Delta-V (m/s) */}
       <BigGauge
         icon="🔥"
-        label="PROPULSIÓN DELTA-V"
+        label="DELTA-V PROPULSION"
         valueText={`${Math.round(t.dvMs)} / ${t.dvReq} m/s`}
         ratio={t.dvReq === 0 ? 1 : t.dvMs / dvMax}
         ok={t.dvOk}
@@ -143,7 +143,7 @@ function Engineer({ t }: { t: Telemetry }) {
       {/* 4) Blindaje Radiación (krad) */}
       <BigGauge
         icon="🛡️"
-        label="BLINDAJE RADIACIÓN"
+        label="RADIATION SHIELDING"
         valueText={`${t.krad} / ${t.kradReq} krad`}
         ratio={t.krad / kradMax}
         ok={t.kradOk}
@@ -159,7 +159,7 @@ function Science({ t }: { t: Telemetry }) {
       {/* 1) Medidor gigante de Puntos de Ciencia */}
       <BigGauge
         icon="🔬"
-        label="PUNTOS DE CIENCIA"
+        label="SCIENCE POINTS"
         valueText={`${t.sciPts.toFixed(0)} / ${t.sciGoal} pts`}
         ratio={t.sciGoal > 0 ? t.sciPts / t.sciGoal : 0}
         ok={t.sciPts >= t.sciGoal}
@@ -167,7 +167,7 @@ function Science({ t }: { t: Telemetry }) {
 
       {/* 2) Los 2 Instrumentos Obligatorios */}
       <Box>
-        <div className="text-[clamp(8.5px,0.68vw,10px)] text-cyan-300 mb-0.5">📋 OBLIGATORIOS</div>
+        <div className="text-[clamp(8.5px,0.68vw,10px)] text-cyan-300 mb-0.5">📋 MANDATORY</div>
         {t.mandatory.map((m) => {
           const part = PART_BY_ID[m.id]
           return (
@@ -197,10 +197,10 @@ function Science({ t }: { t: Telemetry }) {
           boxShadow: 'inset 2px 2px 0 #2e3866',
         }}
       >
-        <div className="text-[clamp(8.5px,0.68vw,10px)] text-yellow-300 mb-0.5">⚡ CONSUMO DE PAYLOAD</div>
+        <div className="text-[clamp(8.5px,0.68vw,10px)] text-yellow-300 mb-0.5">⚡ PAYLOAD POWER DRAW</div>
         <div className="text-[clamp(8px,0.62vw,9px)] text-white leading-snug">
-          Tus cámaras usan{' '}
-          <strong className="text-orange-300">{t.sciPower.toFixed(1)} W</strong> y{' '}
+          Your cameras draw{' '}
+          <strong className="text-orange-300">{t.sciPower.toFixed(1)} W</strong> and weigh{' '}
           <strong className="text-cyan-300">{t.sciMass.toFixed(1)} kg</strong>
         </div>
       </div>
@@ -221,8 +221,8 @@ function Comms({ t, contractId }: { t: Telemetry; contractId: string }) {
 
   const orbits: { id: 'LEO' | 'LLO' | 'L1'; label: string }[] = [
     { id: 'LEO', label: 'LEO' },
-    { id: 'LLO', label: 'LUNA' },
-    { id: 'L1', label: 'SOL L1' },
+    { id: 'LLO', label: 'MOON' },
+    { id: 'L1', label: 'SUN L1' },
   ]
 
   // Si tiene antena en banda S/X llega a las 3; UHF solo LEO
@@ -237,7 +237,7 @@ function Comms({ t, contractId }: { t: Telemetry; contractId: string }) {
       {/* 1) Barra comparativa grande de Datos Generados vs Descarga */}
       <BigGauge
         icon="📶"
-        label="DATOS vs DESCARGA"
+        label="DATA vs DOWNLINK"
         valueText={`↓${t.downEffMbps.toFixed(2)} / ${t.dataGenMbps.toFixed(2)} Mbps`}
         ratio={t.downEffMbps / maxMbps}
         ok={t.linkOk}
@@ -245,7 +245,7 @@ function Comms({ t, contractId }: { t: Telemetry; contractId: string }) {
 
       {/* 2) Indicador visual de Alcance de Antena (LEO / Luna / L1) */}
       <Box>
-        <div className="text-[10px] text-cyan-300">🛰️ ALCANCE DE ANTENA</div>
+        <div className="text-[10px] text-cyan-300">🛰️ ANTENNA RANGE</div>
         <div className="grid grid-cols-3 gap-1.5">
           {orbits.map((o) => {
             const isTarget = contract.orbit === o.id
@@ -271,8 +271,8 @@ function Comms({ t, contractId }: { t: Telemetry; contractId: string }) {
       {/* 3) Porcentaje de Éxito de Transmisión */}
       <BigGauge
         icon="📡"
-        label="ÉXITO DE TRANSMISIÓN"
-        valueText={`${txPct}% TRANSMITIDO`}
+        label="TRANSMISSION SUCCESS"
+        valueText={`${txPct}% TRANSMITTED`}
         ratio={txPct / 100}
         ok={txPct >= 100 && t.hasAntenna}
       />
@@ -310,9 +310,9 @@ export default function TelemetryPanel({
           color: '#e2e8f0',
         }}
       >
-        Tu gasto en este rol:{' '}
+        Your role spend:{' '}
         <strong className="text-yellow-300">${roleSpend}k</strong> (
-        <strong className="text-cyan-300">{rolePct}%</strong> del equipo)
+        <strong className="text-cyan-300">{rolePct}%</strong> of team)
       </div>
 
       {role === 'director' && <Director t={t} onLaunch={onLaunch} launchReady={ready} />}
@@ -339,7 +339,7 @@ export default function TelemetryPanel({
               : undefined
           }
         >
-          🚀 AUTORIZAR DESPEGUE DE LA FLOTA
+          🚀 AUTHORIZE FLEET LAUNCH
         </button>
       )}
     </div>

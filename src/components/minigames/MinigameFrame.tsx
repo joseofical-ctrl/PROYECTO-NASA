@@ -24,82 +24,82 @@ export const MINIGAME_META: Record<
 > = {
   dock: {
     file: 'acoplamiento_espacial.html',
-    title: 'ACOPLAMIENTO ESPACIAL 6-DOF APAS · CÓNDOR-4',
+    title: '6-DOF APAS SPACECRAFT DOCKING · CONDOR-4',
     accent: '#ffd23f',
   },
   comet: {
     file: 'reencuentro_cometa.html',
-    title: 'DEFENSA ORBITAL CONTRA METEORITOS · CÓNDOR-4',
+    title: 'ORBITAL METEOROID DEFENSE · CONDOR-4',
     accent: '#fb923c',
   },
   gyro: {
     file: 'calibracion_giroscopio.html',
-    title: 'CALIBRACIÓN DE GIROSCOPIO 3D Y CONTROL ADCS · CÓNDOR-4',
+    title: '3D GYROSCOPE CALIBRATION & ADCS CONTROL · CONDOR-4',
     accent: '#facc15',
   },
   debris: {
     file: 'eyeccion_escombros.html',
-    title: 'RADAR ORBITAL KESSLER Y EYECCIÓN DE ESCOMBROS · CÓNDOR-4',
+    title: 'KESSLER ORBITAL RADAR & DEBRIS EJECTION · CONDOR-4',
     accent: '#f59e0b',
   },
   eps: {
     file: 'distribucion_electrica.html',
-    title: 'DISTRIBUCIÓN ELÉCTRICA EPS · ALPACA-1',
+    title: 'EPS ELECTRICAL POWER DISTRIBUTION · ALPACA-1',
     accent: '#ff9f1c',
   },
   eclss: {
     file: 'soporte_vital.html',
-    title: 'SOPORTE VITAL ECLSS Y TANQUES O2 · ALPACA-1',
+    title: 'ECLSS LIFE SUPPORT & O2 TANKS · ALPACA-1',
     accent: '#4ade80',
   },
   reactor: {
     file: 'refrigeracion_reactor.html',
-    title: 'REFRIGERACIÓN CRIOGÉNICA DEL REACTOR · ALPACA-1',
+    title: 'CRYOGENIC REACTOR COOLING · ALPACA-1',
     accent: '#fb923c',
   },
   pcb: {
     file: 'reparacion_circuitos.html',
-    title: 'ENRUTAMIENTO DE BUSES PCB Y BYPASS · ALPACA-1',
+    title: 'PCB BUS ROUTING & BYPASS · ALPACA-1',
     accent: '#34d399',
   },
   lander: {
     file: 'aterrizaje_planetario.html',
-    title: 'ATERRIZAJE PLANETARIO DE SONDA CIENTÍFICA · PUMA-3',
+    title: 'SCIENCE PROBE PLANETARY LANDING · PUMA-3',
     accent: '#55efc4',
   },
   nav: {
     file: 'navegacion_orbital.html',
-    title: 'NAVEGACIÓN ORBITAL HOHMANN DUAL · PUMA-3',
+    title: 'DUAL HOHMANN ORBITAL NAVIGATION · PUMA-3',
     accent: '#2dd4bf',
   },
   spectro: {
     file: 'espectrometria_masas.html',
-    title: 'ESPECTROMETRÍA DE MASAS GLACIAR · PUMA-3',
+    title: 'GLACIAL MASS SPECTROMETRY · PUMA-3',
     accent: '#22d3ee',
   },
   thermal: {
     file: 'telemetria_multiespectral.html',
-    title: 'TELEMETRÍA MULTIESPECTRAL IR/UV · PUMA-3',
+    title: 'MULTISPECTRAL IR/UV TELEMETRY · PUMA-3',
     accent: '#a78bfa',
   },
   telecom: {
     file: 'reparacion_telecom.html',
-    title: 'SINTONIZACIÓN DE TELECOMUNICACIONES DSN · SERPIENTE-2',
+    title: 'DSN TELECOMMUNICATIONS TUNING · SERPIENTE-2',
     accent: '#38bdf8',
   },
   cyber: {
     file: 'ciberdefensa_satelital.html',
-    title: 'CIBERDEFENSA SATELITAL Y FIREWALL 8080 · SERPIENTE-2',
+    title: 'SATELLITE CYBER DEFENSE & FIREWALL 8080 · SERPIENTE-2',
     accent: '#60a5fa',
   },
   hga: {
     file: 'alineacion_antena_dsn.html',
-    title: 'ALINEACIÓN DE ANTENA DE ALTA GANANCIA DSN · SERPIENTE-2',
+    title: 'DSN HIGH-GAIN ANTENNA ALIGNMENT · SERPIENTE-2',
     accent: '#74b9ff',
   },
   decrypt: {
     file: 'desencriptacion_cuantica.html',
-    title: 'DESENCRIPTACIÓN CUÁNTICA Y CHECKSUM CRC · SERPIENTE-2',
+    title: 'QUANTUM DECRYPTION & CRC CHECKSUM · SERPIENTE-2',
     accent: '#818cf8',
   },
 }
@@ -230,7 +230,7 @@ export default function MinigameFrame({
               className="shrink-0 border px-2 py-1 text-[9px] leading-snug"
               style={{ color: '#4ade80', borderColor: '#4ade80', background: '#022c22' }}
             >
-              ✔ PROBLEMA RESUELTO
+              ✔ SYSTEM RESOLVED
             </span>
           )}
         </div>
@@ -256,7 +256,7 @@ export default function MinigameFrame({
                 boxShadow: '0 0 12px rgba(34, 211, 238, 0.35)',
               }}
             >
-              [ ✔ CONFIRMAR Y VALIDAR SISTEMA ]
+              [ ✔ CONFIRM &amp; VALIDATE SYSTEM ]
             </button>
           )}
           <button
@@ -270,8 +270,8 @@ export default function MinigameFrame({
             }}
           >
             {completed || wonPending
-              ? '[ ✔ VOLVER A LA ESTACIÓN ]'
-              : '[ ✕ VOLVER A LA ESTACIÓN (ESC) ]'}
+              ? '[ ✔ RETURN TO STATION ]'
+              : '[ ✕ RETURN TO STATION (ESC) ]'}
           </button>
         </div>
       </div>

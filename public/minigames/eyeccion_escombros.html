@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Eyección de Escombros Kessler - CÓNDOR-4</title>
+<title>Kessler Debris Ejection - CONDOR-4</title>
 <style>
 :root {
   --bg: #050811;
@@ -131,24 +131,24 @@ h1 { font-size: 14px; letter-spacing: 0.6px; color: #f8fafc; white-space: nowrap
 <div class="scanlines"></div>
 <header>
   <div class="title-block">
-    <span class="badge-system">DIRECTOR // EVASIÓN KESSLER (CÓNDOR-4)</span>
-    <h1>RADAR ORBITAL KESSLER Y EYECCIÓN DE ESCOMBROS · CÓNDOR-4</h1>
+    <span class="badge-system">FLIGHT DIRECTOR // KESSLER AVOIDANCE (CONDOR-4)</span>
+    <h1>KESSLER ORBITAL RADAR & DEBRIS AVOIDANCE · CONDOR-4</h1>
   </div>
   <div class="top-controls">
-    <label for="diffSelect" style="font-size:11px;color:var(--dim);">NIVEL:</label>
+    <label for="diffSelect" style="font-size:11px;color:var(--dim);">LEVEL:</label>
     <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-      <option value="1">Nivel 1 - Tránsito Moderado</option><option value="2" selected>Nivel 2 - Nube de Fragmentos</option><option value="3">Nivel 3 - Síndrome Kessler</option>
+      <option value="1">Level 1 - Moderate Traffic</option><option value="2" selected>Level 2 - Debris Cloud</option><option value="3">Level 3 - Kessler Syndrome</option>
     </select>
     <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
-    <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
-    <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+    <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSE</button>
+    <button class="btn-header" onclick="resetMission()">↻ RESET</button>
   </div>
 </header>
 <div class="workspace">
   <div class="panel">
     <div class="panel-head">
-      <span>RADAR POLAR DE ESCOMBROS ORBITALES</span>
-      <span id="debrisStatus" style="color:var(--crt-amber)">ESQUIVE ACTIVO</span>
+      <span>POLAR ORBITAL DEBRIS RADAR</span>
+      <span id="debrisStatus" style="color:var(--crt-amber)">EVASIVE MANEUVERING</span>
     </div>
     <div class="canvas-wrap">
       <canvas id="mainCanvas"></canvas>
@@ -158,31 +158,31 @@ h1 { font-size: 14px; letter-spacing: 0.6px; color: #f8fafc; white-space: nowrap
   </div>
   <div class="panel">
     <div class="panel-head">
-      <span>CONSOLA DE CONTROL</span>
+      <span>CONTROL CONSOLE</span>
       <span id="clockDisplay">00:00</span>
     </div>
     <div class="side-body">
-      <div class="guide-box" id="directGuideBox">Sigue la guía en pantalla o pulsa AUTO-CALIBRAR.</div>
-      <button type="button" class="btn-assist" id="btnQuickAssist" onclick="triggerQuickAssist()">⚡ AUTO-CALIBRAR / ASISTENCIA IA</button>
+      <div class="guide-box" id="directGuideBox">Follow on-screen guidance or press AUTO-CALIBRATE.</div>
+      <button type="button" class="btn-assist" id="btnQuickAssist" onclick="triggerQuickAssist()">⚡ AUTO-CALIBRATE / AI ASSIST</button>
       
       <div class="tele-card">
-        <div class="tele-row"><span class="tele-lbl">INTEGRIDAD CASCO:</span><span class="tele-val" id="valHull">100%</span></div>
+        <div class="tele-row"><span class="tele-lbl">HULL INTEGRITY:</span><span class="tele-val" id="valHull">100%</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barHull" style="width:100%"></div></div>
-        <div class="tele-row"><span class="tele-lbl">SUPERVIVENCIA:</span><span class="tele-val" id="valSurv" style="color:var(--crt-green)">0.0 / 9.0 s</span></div>
+        <div class="tele-row"><span class="tele-lbl">SURVIVAL TIME:</span><span class="tele-val" id="valSurv" style="color:var(--crt-green)">0.0 / 9.0 s</span></div>
         <div class="bar-bg"><div class="bar-fill" id="barSurv" style="width:0%;background:var(--crt-cyan)"></div></div>
-        <div class="tele-row"><span class="tele-lbl">ESCOMBROS EVADIDOS:</span><span class="tele-val" id="valDodged">0</span></div>
+        <div class="tele-row"><span class="tele-lbl">DEBRIS EVADED:</span><span class="tele-val" id="valDodged">0</span></div>
       </div>
       <div class="ctrl-box">
-        <div class="tele-row"><span class="tele-lbl">PROPULSORES EVASIVOS X/Y:</span><span class="tele-val">WASD / FLECHAS</span></div>
+        <div class="tele-row"><span class="tele-lbl">X/Y EVASIVE THRUSTERS:</span><span class="tele-val">WASD / ARROWS</span></div>
         <div class="btn-grid-3">
-          <div></div><button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=-1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=-1" ontouchend="thrust.y=0">▲ NORTE</button><div></div>
-          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=-1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=-1" ontouchend="thrust.x=0">◄ OESTE</button>
-          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=1" ontouchend="thrust.y=0">▼ SUR</button>
-          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=1" ontouchend="thrust.x=0">► ESTE</button>
+          <div></div><button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=-1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=-1" ontouchend="thrust.y=0">▲ NORTH</button><div></div>
+          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=-1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=-1" ontouchend="thrust.x=0">◄ WEST</button>
+          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.y=1" onmouseup="thrust.y=0" ontouchstart="noteUserAdjust();thrust.y=1" ontouchend="thrust.y=0">▼ SOUTH</button>
+          <button class="btn-ctrl" onmousedown="noteUserAdjust();thrust.x=1" onmouseup="thrust.x=0" ontouchstart="noteUserAdjust();thrust.x=1" ontouchend="thrust.x=0">► EAST</button>
         </div>
-        <button class="btn-primary" id="btnEmp" onclick="fireEmp()">🛡 DEFLECTOR EMP DE CHOQUE [ESPACIO]</button>
+        <button class="btn-primary" id="btnEmp" onclick="fireEmp()">🛡 SHOCKWAVE EMP DEFLECTOR [SPACE]</button>
       </div>
-      <div class="note-box">Esquiva con <b>WASD / Flechas</b> o pulsa <b>EMP</b> durante 8–10 segundos.</div>
+      <div class="note-box">Evade debris with <b>WASD / Arrow Keys</b> or trigger <b>EMP</b> for 8–10 seconds.</div>
     
     </div>
   </div>
@@ -190,14 +190,14 @@ h1 { font-size: 14px; letter-spacing: 0.6px; color: #f8fafc; white-space: nowrap
 <div class="modal-overlay" id="debriefModal">
   <div class="modal-card">
     <div class="modal-head">
-      <span style="font-size:15px;font-weight:bold;color:var(--crt-green)" id="debTitle">CORREDOR ORBITAL DESPEJADO</span>
-      <span class="badge-system" id="debBadge">ÉXITO</span>
+      <span style="font-size:15px;font-weight:bold;color:var(--crt-green)" id="debTitle">ORBITAL CORRIDOR CLEARED</span>
+      <span class="badge-system" id="debBadge">SUCCESS</span>
     </div>
-    <p id="debDesc" style="font-size:12px;color:#cbd5e1;line-height:1.5;">Sistema estabilizado nominalmente.</p>
-    <div class="modal-metrics"><div>Casco Restante: <b id="debHull">-</b></div><div>Fragmentos Evadidos: <b id="debCount">-</b></div><div>Pulsos EMP: <b id="debEmp">-</b></div><div>Rango: <b id="debGrade">-</b></div></div>
+    <p id="debDesc" style="font-size:12px;color:#cbd5e1;line-height:1.5;">System stabilized nominally.</p>
+    <div class="modal-metrics"><div>Hull Remaining: <b id="debHull">-</b></div><div>Fragments Evaded: <b id="debCount">-</b></div><div>EMP Pulses: <b id="debEmp">-</b></div><div>Rating: <b id="debGrade">-</b></div></div>
     <div class="modal-actions">
-      <button class="btn-header" onclick="closeModalAndRetry()">REINTENTAR</button>
-      <button class="btn-header" style="background:#0284c7;color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+      <button class="btn-header" onclick="closeModalAndRetry()">RETRY</button>
+      <button class="btn-header" style="background:#0284c7;color:#fff;" onclick="nextLevelOrFinish()">NEXT LEVEL</button>
     </div>
   </div>
 </div>
@@ -281,7 +281,7 @@ function resizeCanvasEl(c) {
         updateUI();
       }
       function changeDifficulty(v) { setupScenario(v); }
-      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+      function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
       function resetMission() { setupScenario(difficulty); }
       function autoAssistMinigame() {
         if (isPaused || isEnded) return;
@@ -290,7 +290,7 @@ function resizeCanvasEl(c) {
         empWave = 1.0;
         empCd = 0;
         missionTime = Math.max(missionTime, targetTime - 1.5);
-        showHud('✔ RADAR DESPEJADO POR ASISTENCIA IA', 'ok');
+        showHud('✔ RADAR CLEARED BY AI ASSIST', 'ok');
         updateUI();
       }
       function fireEmp() {
@@ -306,7 +306,7 @@ function resizeCanvasEl(c) {
             debris.splice(i, 1); dodged++;
           }
         }
-        showHud('🛡 DEFLECTOR EMP ACTIVADO', 'ok');
+        showHud('🛡 EMP DEFLECTOR ACTIVATED', 'ok');
       }
       window.addEventListener('keydown', (e) => {
         const k = e.key.toLowerCase();
@@ -319,26 +319,26 @@ function resizeCanvasEl(c) {
       function completeMission() {
         isEnded = true; playTone(920, 0.2, 'sine');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = '¡TRÁNSITO DE ESCOMBROS COMPLETADO!';
+        document.getElementById('debTitle').textContent = 'DEBRIS TRANSIT COMPLETED!';
         document.getElementById('debTitle').style.color = 'var(--crt-green)';
-        document.getElementById('debBadge').textContent = 'ÓRBITA SEGURA';
-        document.getElementById('debDesc').textContent = 'La estación atravesó el cinturón de fragmentos Kessler protegiendo la integridad estructural.';
+        document.getElementById('debBadge').textContent = 'ORBIT CLEAR';
+        document.getElementById('debDesc').textContent = 'Station cleared the Kessler debris belt while preserving structural integrity.';
         document.getElementById('debHull').textContent = Math.round(hull) + '%';
         document.getElementById('debCount').textContent = dodged;
         document.getElementById('debEmp').textContent = empUses;
-        document.getElementById('debGrade').textContent = hull >= 80 ? 'A+ EXCELENTE' : 'A ESTABLE';
+        document.getElementById('debGrade').textContent = hull >= 80 ? 'A+ EXCELLENT' : 'A NOMINAL';
       }
       function failMission() {
         isEnded = true; playTone(140, 0.35, 'sawtooth');
         document.getElementById('debriefModal').style.display = 'flex';
-        document.getElementById('debTitle').textContent = 'IMPACTO CRÍTICO DE ESCOMBROS';
+        document.getElementById('debTitle').textContent = 'CRITICAL DEBRIS IMPACT';
         document.getElementById('debTitle').style.color = 'var(--crt-red)';
-        document.getElementById('debBadge').textContent = 'BRECHA';
-        document.getElementById('debDesc').textContent = 'Múltiples impactos fragmentaron el blindaje orbital. Usa los propulsores y el deflector EMP.';
+        document.getElementById('debBadge').textContent = 'HULL BREACH';
+        document.getElementById('debDesc').textContent = 'Multiple impacts breached orbital shielding. Use RCS thrusters and the EMP deflector.';
         document.getElementById('debHull').textContent = '0%';
         document.getElementById('debCount').textContent = dodged;
         document.getElementById('debEmp').textContent = empUses;
-        document.getElementById('debGrade').textContent = 'F REPROBADO';
+        document.getElementById('debGrade').textContent = 'F FAILED';
       }
       function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
       function nextLevelOrFinish() { document.getElementById('debriefModal').style.display = 'none'; setupScenario(Math.min(3, difficulty + 1)); }
@@ -353,12 +353,12 @@ function resizeCanvasEl(c) {
         document.getElementById('valDodged').textContent = dodged;
         const b = document.getElementById('btnEmp');
         b.disabled = empCd > 0;
-        b.textContent = empCd > 0 ? '⏳ RECARGA EMP (' + Math.ceil(empCd) + 's)' : '🛡 DEFLECTOR EMP DE CHOQUE [ESPACIO]';
+        b.textContent = empCd > 0 ? '⏳ EMP RECHARGE (' + Math.ceil(empCd) + 's)' : '🛡 SHOCKWAVE EMP DEFLECTOR [SPACE]';
         document.getElementById('clockDisplay').textContent = fmtClock(missionTime);
         const rem = Math.max(0, targetTime - missionTime);
         setGuideText(rem <= 0.1 || missionTime >= 4.0
-          ? '✔ Corredor seguro — Listo para CONFIRMAR arriba'
-          : '👉 Esquiva o pulsa [ESPACIO] EMP (' + rem.toFixed(1) + 's restantes)');
+          ? '✔ Corridor clear — Ready to CONFIRM above'
+          : '👉 Evade or press [SPACE] EMP (' + rem.toFixed(1) + 's remaining)');
       }
 
       let last = performance.now();
@@ -400,7 +400,7 @@ function resizeCanvasEl(c) {
             if (Math.hypot(d.x - px, d.y - py) < d.r + 12) {
               debris.splice(i, 1); hull = Math.max(0, hull - 10);
               playTone(190, 0.16, 'square');
-              showHud('⚠ ROZADURA EN CASCO (-10%)', 'warn');
+              showHud('⚠ HULL GRAZE (-10%)', 'warn');
               for (let k = 0; k < 10; k++) sparks.push({ x: px, y: py, vx: (Math.random()-0.5)*190, vy: (Math.random()-0.5)*190, l: 0.45, c: '#ff3b5c' });
               if (hull <= 0) { failMission(); break; }
             } else if (d.x < -40 || d.x > w + 40 || d.y < -40 || d.y > h + 40) {
@@ -701,49 +701,49 @@ function resizeCanvasEl(c) {
           }
 
           var NEW_OK_LABELS = {
-            gyro: '✔ CARDANES CMG ESTABILIZADOS',
-            debris: '✔ CORREDOR KESSLER DESPEJADO',
-            reactor: '✔ NÚCLEOS DEL REACTOR REFRIGERADOS',
-            pcb: '✔ CIRCUITOS PCB RUTADOS CORRECTAMENTE',
-            spectro: '✔ ESPECTROMETRÍA COMPLETADA',
-            thermal: '✔ BARRIDO MULTIESPECTRAL VALIDADO',
-            hga: '✔ ENLACE PARABÓLICO HGA / DSN CONFIRMADO',
-            decrypt: '✔ CANAL CUÁNTICO DESCIFRADO'
+            gyro: '✔ CMG GIMBALS STABILIZED',
+            debris: '✔ KESSLER CORRIDOR CLEARED',
+            reactor: '✔ REACTOR CORES COOLED',
+            pcb: '✔ PCB CIRCUITS ROUTED PROPERLY',
+            spectro: '✔ SPECTROMETRY COMPLETED',
+            thermal: '✔ MULTISPECTRAL SCAN VALIDATED',
+            hga: '✔ PARABOLIC HGA / DSN LINK CONFIRMED',
+            decrypt: '✔ QUANTUM CHANNEL DECRYPTED'
           };
 
           function evalVerifyStatus(gid) {
             switch (gid) {
               case 'dock': {
-                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ ACOPLAMIENTO APAS VERIFICADO' };
+                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ APAS DOCKING VERIFIED' };
                 var lat = Math.hypot(state.pos.x, state.pos.y);
                 return {
                   ready: lat <= 1.50,
-                  needMsg: 'Centra desvío lateral a <= 1.50m (actual ' + lat.toFixed(2) + 'm) con WASD/Flechas',
-                  okMsg: '✔ Listo: desvío ' + lat.toFixed(2) + 'm — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Center lateral offset <= 1.50m (current ' + lat.toFixed(2) + 'm) using WASD/Arrows',
+                  okMsg: '✔ Ready: offset ' + lat.toFixed(2) + 'm — Press [ CONFIRM ] above',
                   onApprove: function () { state.pos.z = 0; state.isEnded = true; }
                 };
               }
               case 'comet': {
                 if (typeof hull === 'number' && hull <= 0) {
-                  return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
                 }
                 var sc = typeof score === 'number' ? score : 0;
                 return {
                   ready: sc >= 3,
-                  needMsg: 'Destruye ' + (3 - sc) + ' meteorito(s) más con clic para confirmar (' + sc + '/3)',
-                  okMsg: '✔ Listo: ' + sc + ' meteoritos destruidos — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Destroy ' + (3 - sc) + ' more meteorite(s) by clicking to confirm (' + sc + '/3)',
+                  okMsg: '✔ Ready: ' + sc + ' meteorites destroyed — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'eps': {
-                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ MATRIZ EPS OK' };
+                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ EPS MATRIX NOMINAL' };
                 var sv = state.loads[0] && state.loads[0].active ? state.loads[0].power : 0;
                 var bat = Math.round(state.battery || 0);
                 var okEps = sv >= 50 && state.battery > 15;
                 return {
                   ready: okEps,
-                  needMsg: sv < 50 ? 'Sube Sop. Vital >= 50 MW o pulsa AUTO-BALANCEAR' : 'Batería <= 15% (' + bat + '%): pulsa AUTO-BALANCEAR CARGAS',
-                  okMsg: '✔ Listo: Sop. Vital ' + sv + ' MW y Batería ' + bat + '% — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: sv < 50 ? 'Raise Life Support >= 50 MW or press AUTO-BALANCE' : 'Battery <= 15% (' + bat + '%): press AUTO-BALANCE LOADS',
+                  okMsg: '✔ Ready: Life Support ' + sv + ' MW & Battery ' + bat + '% — Press [ CONFIRM ] above',
                   onApprove: function () { state.isEnded = true; }
                 };
               }
@@ -752,22 +752,22 @@ function resizeCanvasEl(c) {
                 var co2Ok = typeof co2Val !== 'number' || co2Val < 1.2;
                 var actOk = (typeof activeScrub === 'number' && activeScrub === 1) || (typeof isSealed === 'boolean' && isSealed);
                 var msgNeed = !o2Ok
-                  ? 'Ajusta O2 entre 18% y 26% o pulsa ESTABILIZAR AUTOMÁTICO'
+                  ? 'Adjust O2 between 18% and 26% or press AUTO-STABILIZE'
                   : !co2Ok
-                    ? 'Reduce CO2 < 1.2% con Canister B o ESTABILIZAR AUTOMÁTICO'
-                    : 'Cambia a Canister B o sella la esclusa para confirmar';
+                    ? 'Reduce CO2 < 1.2% with Canister B or AUTO-STABILIZE'
+                    : 'Switch to Canister B or seal airlock to confirm';
                 return {
                   ready: o2Ok && co2Ok && actOk,
                   needMsg: msgNeed,
-                  okMsg: '✔ Listo: gases seguros y esclusa/filtro OK — Pulsa [ CONFIRMAR ] arriba',
+                  okMsg: '✔ Ready: gases nominal and airlock/scrubber OK — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
               case 'nav': {
                 if (typeof isBurning !== 'undefined' && isBurning) {
-                  return { ready: false, needMsg: 'Espera 1s a que termine el encendido orbital' };
+                  return { ready: false, needMsg: 'Wait 1s for orbital burn to complete' };
                 }
-                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ ÓRBITA HOHMANN OK' };
+                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ HOHMANN ORBIT NOMINAL' };
                 var navErr = Math.abs(orbitState.altitude - orbitState.targetAlt);
                 var recSigned = Math.round((orbitState.targetAlt - orbitState.altitude) / 0.95);
                 var curSigned = orbitState.vector === 'prograde' ? orbitState.deltaV : -orbitState.deltaV;
@@ -775,8 +775,8 @@ function resizeCanvasEl(c) {
                 var okNav = Boolean(orbitState.done || navErr <= 45 || dvDiff <= 35);
                 return {
                   ready: okNav,
-                  needMsg: 'Pon Δv cerca de ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) y confirma',
-                  okMsg: '✔ Listo: impulso Δv alineado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Δv near ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) and confirm',
+                  okMsg: '✔ Ready: Δv impulse aligned — Press [ CONFIRM ] above',
                   onApprove: function () { orbitState.altitude = orbitState.targetAlt; orbitState.done = true; orbitState.isEnded = true; }
                 };
               }
@@ -784,8 +784,8 @@ function resizeCanvasEl(c) {
                 var vel = typeof velocity === 'number' ? velocity : 0;
                 return {
                   ready: vel < 10.0,
-                  needMsg: 'Frena con [ESPACIO] por debajo de 10.0 m/s (actual ' + vel.toFixed(1) + ' m/s)',
-                  okMsg: '✔ Listo: velocidad ' + vel.toFixed(1) + ' m/s — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Brake with [SPACE] below 10.0 m/s (current ' + vel.toFixed(1) + ' m/s)',
+                  okMsg: '✔ Ready: velocity ' + vel.toFixed(1) + ' m/s — Press [ CONFIRM ] above',
                   onApprove: function () {
                     if (typeof altitude !== 'undefined') altitude = 0;
                     if (typeof updateUI === 'function') updateUI();
@@ -798,20 +798,20 @@ function resizeCanvasEl(c) {
                 var gDiff = Math.abs(userGain - targetGain);
                 return {
                   ready: fDiff <= 25 && gDiff <= 20,
-                  needMsg: 'Pon Freq ~' + targetFreq + ' Hz (±25) y Ampl ~' + targetGain + '% (±20)',
-                  okMsg: '✔ Listo: señal DSN sincronizada — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Freq ~' + targetFreq + ' Hz (±25) and Gain ~' + targetGain + '% (±20)',
+                  okMsg: '✔ Ready: DSN signal synchronized — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'cyber': {
                 if (typeof shieldIntegrity === 'number' && shieldIntegrity <= 0) {
-                  return { ready: false, needMsg: 'Escudo en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Shield at 0%: press RESET above' };
                 }
                 var pc = typeof packetsChecked === 'number' ? packetsChecked : 0;
                 return {
                   ready: pc >= 3,
-                  needMsg: 'Filtra ' + (3 - pc) + ' paquete(s) más (verde PERMITIR / rojo BLOQUEAR)',
-                  okMsg: '✔ Listo: ' + pc + ' paquetes filtrados — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Filter ' + (3 - pc) + ' more packet(s) (green ALLOW / red BLOCK)',
+                  okMsg: '✔ Ready: ' + pc + ' packets filtered — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
@@ -823,21 +823,21 @@ function resizeCanvasEl(c) {
               case 'thermal':
               case 'hga':
               case 'decrypt': {
-                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
-                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Batería agotada: pulsa REINICIAR arriba' };
-                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Sobrepresión: pulsa REINICIAR arriba' };
+                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
+                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Battery depleted: press RESET above' };
+                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Overpressure: press RESET above' };
                 var interacted = (window.__mgAdjustCount || 0) >= 1;
                 var mTime = typeof missionTime === 'number' ? missionTime : 0;
                 var okNew = interacted || mTime >= 4.0;
                 return {
                   ready: okNew,
-                  needMsg: 'Haz 1 ajuste (o pulsa AUTO-CALIBRAR / opera ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
-                  okMsg: '✔ Listo: sistema calibrado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Make 1 adjustment (or press AUTO-CALIBRATE / operate ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
+                  okMsg: '✔ Ready: system calibrated — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
             }
-            return { ready: true, okMsg: '✔ SISTEMA VERIFICADO' };
+            return { ready: true, okMsg: '✔ SYSTEM VERIFIED' };
           }
 
           function refreshLiveVerifyBanner() {
@@ -852,9 +852,9 @@ function resizeCanvasEl(c) {
             var gid = 'debris';
             try {
               var st = evalVerifyStatus(gid);
-              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Completa el paso indicado'));
+              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Complete the indicated step'));
               if (typeof st.onApprove === 'function') st.onApprove();
-              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SISTEMA ESTABILIZADO');
+              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SYSTEM STABILIZED');
             } catch (err) {}
             return false;
           }
@@ -870,7 +870,7 @@ function resizeCanvasEl(c) {
 </script>
 
 <script>
-/* === Puente con la Estación Espacial (iframe -> React) === */
+/* === Space Station Bridge (iframe -> React) === */
 (function () {
   var wonPending = false;
   var victorySent = false;
@@ -931,7 +931,7 @@ function resizeCanvasEl(c) {
     if (!btn) return;
     btn.setAttribute('data-solved-btn', '1');
     if (!btn.hasAttribute('data-orig-label')) {
-      btn.setAttribute('data-orig-label', btn.textContent || 'SIGUIENTE NIVEL');
+      btn.setAttribute('data-orig-label', btn.textContent || 'NEXT LEVEL');
     }
     if (!btn.hasAttribute('data-bridge-click')) {
       btn.setAttribute('data-bridge-click', '1');
@@ -944,14 +944,14 @@ function resizeCanvasEl(c) {
       });
     }
     if (isVictory) {
-      btn.textContent = "[ ✔ CONFIRMAR TRAYECTORIA LIMPIA ]";
+      btn.textContent = "[ ✔ CONFIRM CLEAR TRAJECTORY ]";
       btn.style.background = 'linear-gradient(180deg, #059669 0%, #047857 100%)';
       btn.style.borderColor = '#00ff88';
       btn.style.color = '#ffffff';
       btn.style.fontWeight = 'bold';
       btn.style.boxShadow = '0 0 14px rgba(0, 255, 136, 0.45)';
     } else {
-      btn.textContent = btn.getAttribute('data-orig-label') || 'REINTENTAR';
+      btn.textContent = btn.getAttribute('data-orig-label') || 'RETRY';
       btn.style.background = '#1e293b';
       btn.style.borderColor = '#475569';
       btn.style.color = '#e2e8f0';

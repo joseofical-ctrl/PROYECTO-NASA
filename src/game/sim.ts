@@ -134,17 +134,17 @@ export function analyze(d: Design): Telemetry {
 
   const f1 = (n: number) => n.toFixed(1)
   const checks: Check[] = [
-    { id: 'orbit', role: 'director', label: 'Lanzador alcanza la órbita', ok: orbitReachable && launcherFitsChassis, detail: !orbitReachable ? `${launcher.name} no llega a ${contract.orbit}` : !launcherFitsChassis ? `${launcher.name} admite hasta ${launcher.maxU}U` : 'OK' },
-    { id: 'budget', role: 'director', label: 'Presupuesto', ok: cost <= contract.budget, detail: `$${cost}k / $${contract.budget}k` },
-    { id: 'mass', role: 'director', label: 'Masa vs capacidad', ok: mass <= launcher.capKg, detail: `${f1(mass)} / ${launcher.capKg} kg` },
-    { id: 'slots', role: 'director', label: 'Slots U', ok: slotsUsed <= chassis.units, detail: `${slotsUsed} / ${chassis.units} U` },
-    { id: 'power', role: 'engineer', label: 'Balance energético', ok: genW >= loadW, detail: `${f1(genW)} W gen / ${f1(loadW)} W` },
-    { id: 'eclipse', role: 'engineer', label: 'Supervivencia en eclipse', ok: eclipseOk, detail: `${f1(batteryWh)} / ${f1(eclipseNeedWh)} Wh` },
+    { id: 'orbit', role: 'director', label: 'Launcher reaches orbit', ok: orbitReachable && launcherFitsChassis, detail: !orbitReachable ? `${launcher.name} cannot reach ${contract.orbit}` : !launcherFitsChassis ? `${launcher.name} supports up to ${launcher.maxU}U` : 'OK' },
+    { id: 'budget', role: 'director', label: 'Budget', ok: cost <= contract.budget, detail: `$${cost}k / $${contract.budget}k` },
+    { id: 'mass', role: 'director', label: 'Mass vs payload cap', ok: mass <= launcher.capKg, detail: `${f1(mass)} / ${launcher.capKg} kg` },
+    { id: 'slots', role: 'director', label: 'Chassis U-slots', ok: slotsUsed <= chassis.units, detail: `${slotsUsed} / ${chassis.units} U` },
+    { id: 'power', role: 'engineer', label: 'Power balance', ok: genW >= loadW, detail: `${f1(genW)} W gen / ${f1(loadW)} W` },
+    { id: 'eclipse', role: 'engineer', label: 'Eclipse survival', ok: eclipseOk, detail: `${f1(batteryWh)} / ${f1(eclipseNeedWh)} Wh` },
     { id: 'dv', role: 'engineer', label: 'Delta-V', ok: tel.dvOk, detail: `${Math.round(dvMs)} / ${contract.dvReq} m/s` },
-    { id: 'krad', role: 'engineer', label: 'Radiación', ok: tel.kradOk, detail: `${krad} / ${contract.kradReq} krad` },
-    { id: 'mand', role: 'science', label: 'Instrumentos obligatorios', ok: mandatory.every((m) => m.have), detail: `${mandatory.filter((m) => m.have).length}/${mandatory.length}` },
-    { id: 'sci', role: 'science', label: 'Meta de ciencia', ok: sciPts >= contract.sciGoal, detail: `${f1(sciPts)} / ${contract.sciGoal} pts` },
-    { id: 'link', role: 'comms', label: 'Enlace de descarga', ok: linkOk, detail: !hasAntenna ? 'Sin antena' : !bandOk ? 'Banda no soportada' : `${downEffMbps.toFixed(2)} / ${dataGenMbps.toFixed(2)} Mbps` },
+    { id: 'krad', role: 'engineer', label: 'Radiation', ok: tel.kradOk, detail: `${krad} / ${contract.kradReq} krad` },
+    { id: 'mand', role: 'science', label: 'Mandatory payloads', ok: mandatory.every((m) => m.have), detail: `${mandatory.filter((m) => m.have).length}/${mandatory.length}` },
+    { id: 'sci', role: 'science', label: 'Science goal', ok: sciPts >= contract.sciGoal, detail: `${f1(sciPts)} / ${contract.sciGoal} pts` },
+    { id: 'link', role: 'comms', label: 'Downlink budget', ok: linkOk, detail: !hasAntenna ? 'No antenna' : !bandOk ? 'Band unsupported' : `${downEffMbps.toFixed(2)} / ${dataGenMbps.toFixed(2)} Mbps` },
   ]
   return { ...tel, checks, allOk: checks.every((c) => c.ok) }
 }

@@ -71,7 +71,7 @@ function DirectorLeft({
 
   return (
     <div className="flex flex-col gap-2">
-      <Section title="🎖️ CONTRATOS NASA">
+      <Section title="🎖️ NASA CONTRACTS">
         {CONTRACTS.map((c, idx) => {
           const cardStage = (idx + 1) as 1 | 2 | 3
           const isCampaignLocked = Boolean(lockedContractId && c.id !== lockedContractId)
@@ -96,13 +96,13 @@ function DirectorLeft({
               <div className="text-[clamp(8px,0.6vw,9px)] flex items-center justify-between text-gray-300 mt-0.5 gap-1">
                 <span>💰 ${c.budget}k</span>
                 {isPastStage ? (
-                  <span className="text-emerald-300 font-bold">✅ COMPLETADA</span>
+                  <span className="text-emerald-300 font-bold">✅ COMPLETED</span>
                 ) : isFutureStage ? (
-                  <span className="text-slate-400 font-bold">🔒 BLOQUEADA</span>
+                  <span className="text-slate-400 font-bold">🔒 LOCKED</span>
                 ) : lockedContractId ? (
-                  <span className="text-yellow-300 font-bold">▶ ETAPA {cardStage}</span>
+                  <span className="text-yellow-300 font-bold">▶ STAGE {cardStage}</span>
                 ) : (
-                  <span>🔬 Meta {c.sciGoal} pts</span>
+                  <span>🔬 Goal {c.sciGoal} pts</span>
                 )}
               </div>
             </CompactCard>
@@ -110,7 +110,7 @@ function DirectorLeft({
         })}
       </Section>
 
-      <Section title="🚀 LANZADOR">
+      <Section title="🚀 LAUNCH VEHICLE">
         {LAUNCHERS.map((l) => {
           const bad = !l.orbits.includes(contract.orbit)
           return (
@@ -131,7 +131,7 @@ function DirectorLeft({
                   ⚖️ {l.capKg}kg · 📦 {l.maxU}U
                 </span>
                 {bad ? (
-                  <span className="text-red-400">❌ Sin {contract.orbit}</span>
+                  <span className="text-red-400">❌ No {contract.orbit}</span>
                 ) : (
                   <span className="text-green-300">✔ {l.orbits.join('/')}</span>
                 )}
@@ -141,7 +141,7 @@ function DirectorLeft({
         })}
       </Section>
 
-      <Section title="📦 CHASIS CUBESAT">
+      <Section title="📦 CUBESAT CHASSIS">
         <div className="grid grid-cols-3 gap-1">
           {CHASSIS.map((c) => (
             <CompactCard
@@ -178,10 +178,10 @@ function mainStatBadge(p: Part): { text: string; color: string; bg: string } {
 type EngTab = 'energy' | 'adcs' | 'shield' | 'thruster'
 
 const ENG_TABS: { id: EngTab; label: string; cats: PartCat[] }[] = [
-  { id: 'energy', label: '☀️ Energía', cats: ['solar', 'battery'] },
+  { id: 'energy', label: '☀️ Power', cats: ['solar', 'battery'] },
   { id: 'adcs', label: '🧭 ADCS', cats: ['adcs'] },
-  { id: 'shield', label: '🛡️ Blindaje', cats: ['shield'] },
-  { id: 'thruster', label: '🔥 Motor', cats: ['thruster'] },
+  { id: 'shield', label: '🛡️ Shielding', cats: ['shield'] },
+  { id: 'thruster', label: '🔥 Thruster', cats: ['thruster'] },
 ]
 
 function PartRow({
@@ -339,7 +339,7 @@ function SimpleRoleParts({
   ops: WorkshopOps
 }) {
   const cat: PartCat = role === 'science' ? 'instrument' : 'antenna'
-  const title = role === 'science' ? '🔭 INSTRUMENTOS NASA' : '📡 ANTENAS ESPACIALES'
+  const title = role === 'science' ? '🔭 NASA INSTRUMENTS' : '📡 SPACE ANTENNAS'
   const color = role === 'science' ? '#55efc4' : '#74b9ff'
   const list = PARTS.filter((p) => p.cat === cat)
 
@@ -381,7 +381,7 @@ export default function LeftPanel({
           }}
         >
           <span className="truncate">
-            {isOwnSpecialty ? '⭐ TU ESPECIALIDAD:' : '🤝 ASISTIENDO A:'} {activeInfo.icon} {activeInfo.code}
+            {isOwnSpecialty ? '⭐ YOUR SPECIALTY:' : '🤝 ASSISTING:'} {activeInfo.icon} {activeInfo.code}
           </span>
         </div>
       )}

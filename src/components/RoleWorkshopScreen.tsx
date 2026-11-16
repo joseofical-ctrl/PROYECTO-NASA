@@ -93,7 +93,7 @@ function designsEqual(a: Design, b: Design): boolean {
 
 /** Colores del Stacked Progress Bar para cada uno de los 4 roles */
 const STACK_ROLE_STYLE: Record<RoleId, { color: string; label: string }> = {
-  director: { color: '#fbbf24', label: 'CÓNDOR-4' }, // Ámbar/Dorado
+  director: { color: '#fbbf24', label: 'CONDOR-4' }, // Ámbar/Dorado
   engineer: { color: '#22d3ee', label: 'ALPACA-1' }, // Cian
   science: { color: '#10b981', label: 'PUMA-3' },   // Esmeralda
   comms: { color: '#a855f7', label: 'SERPIENTE-2' }, // Violeta
@@ -131,7 +131,7 @@ function SharedTeamBudgetBar({
       <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           <span className="text-[clamp(8.5px,0.68vw,10px)] text-yellow-300 whitespace-nowrap">
-            💰 FONDO COMÚN NASA:{' '}
+            💰 SHARED NASA BUDGET:{' '}
             <strong className="text-white">
               ${t.cost}k / ${t.budget}k
             </strong>
@@ -147,8 +147,8 @@ function SharedTeamBudgetBar({
             }}
           >
             {isOver
-              ? `⚠️ EXCEDIDO -$${Math.abs(remaining)}k`
-              : `RESTANTE: $${remaining}k`}
+              ? `⚠️ OVER BUDGET -$${Math.abs(remaining)}k`
+              : `REMAINING: $${remaining}k`}
           </span>
 
           {/* Animación flotante al comprar [+$XXk / -$XXk] */}
@@ -184,7 +184,7 @@ function SharedTeamBudgetBar({
               color: t.mass <= t.massCap ? '#93c5fd' : '#ff8a8a',
             }}
           >
-            ⚖️ MASA: {t.mass.toFixed(1)}/{t.massCap}kg
+            ⚖️ MASS: {t.mass.toFixed(1)}/{t.massCap}kg
           </span>
           <span
             className="px-1.5 py-0.5 border border-black whitespace-nowrap"
@@ -254,10 +254,10 @@ function SharedTeamBudgetBar({
               }}
               title={
                 isLockedByOther
-                  ? `🔒 Rol bloqueado por ${claim!.playerName}`
+                  ? `🔒 Role locked by ${claim!.playerName}`
                   : isVacant
-                    ? `${info.code} [BOT / LIBRE] - Haz clic para cubrir sus piezas`
-                    : `Cambiar a ${info.code}`
+                    ? `${info.code} [BOT / OPEN] - Click to manage subsystems`
+                    : `Switch to ${info.code}`
               }
             >
               <span className="flex items-center gap-1 min-w-0 flex-1">
@@ -332,7 +332,7 @@ export default function RoleWorkshopScreen({
   playerNames,
   roomCode = null,
   clientId,
-  playerName = 'Astronauta',
+  playerName = 'Astronaut',
   roomSnapshot = null,
   assignedRole = null,
   isSoloOffline = false,
@@ -358,10 +358,10 @@ export default function RoleWorkshopScreen({
   const effectiveRole: RoleId = assignedRole ?? startRole
   const effectiveNames = useMemo<Record<RoleId, string>>(() => {
     const base: Record<RoleId, string> = {
-      engineer: playerNames?.engineer ?? 'Jugador 1',
-      comms: playerNames?.comms ?? 'Jugador 2',
-      science: playerNames?.science ?? 'Jugador 3',
-      director: playerNames?.director ?? 'Jugador 4',
+      engineer: playerNames?.engineer ?? 'Player 1',
+      comms: playerNames?.comms ?? 'Player 2',
+      science: playerNames?.science ?? 'Player 3',
+      director: playerNames?.director ?? 'Player 4',
     }
     if (roomSnapshot?.roles) {
       for (const r of ROLE_ORDER) {
@@ -479,13 +479,13 @@ export default function RoleWorkshopScreen({
               role: actorRole,
               kind: 'info',
               installedId: changedPartId,
-              text: `"${activeSync.updatedByName ?? 'Escuadrón'} actualizó ${SATELLITE_META[activeSatId].code}: ${activeSync.lastActionLabel}"`,
+              text: `"${activeSync.updatedByName ?? 'Squadron'} updated ${SATELLITE_META[activeSatId].code}: ${activeSync.lastActionLabel}"`,
             }
           : { role: actorRole, kind: 'info', installedId: changedPartId }
       )
       if (isNewRemoteAction && activeSync.lastActionLabel) {
         setRemoteEventBanner(
-          `📡 ${activeSync.updatedByName ?? 'Equipo'}: ${activeSync.lastActionLabel} (${SATELLITE_META[activeSatId].code})`
+          `📡 ${activeSync.updatedByName ?? 'Team'}: ${activeSync.lastActionLabel} (${SATELLITE_META[activeSatId].code})`
         )
       }
     } else if (sync1 || sync2) {
@@ -495,7 +495,7 @@ export default function RoleWorkshopScreen({
           lastRemoteSatStampRef.current[sid] = sy.updatedAt
           if (sid !== activeSatId) {
             setRemoteEventBanner(
-              `📡 ${sy.updatedByName ?? 'Equipo'}: ${sy.lastActionLabel} (${SATELLITE_META[sid].code})`
+              `📡 ${sy.updatedByName ?? 'Team'}: ${sy.lastActionLabel} (${SATELLITE_META[sid].code})`
             )
           }
         }
@@ -612,7 +612,7 @@ export default function RoleWorkshopScreen({
           parts: { ...s.parts },
         }
         setSatDesigns((prev) => ({ ...prev, [activeSatId]: next }))
-        void pushSatConfigToRoom(activeSatId, next, `contrato ${cName}`)
+        void pushSatConfigToRoom(activeSatId, next, `contract ${cName}`)
       },
       setLauncher(id: string) {
         actions.setLauncher(id)
@@ -624,7 +624,7 @@ export default function RoleWorkshopScreen({
           parts: { ...s.parts },
         }
         setSatDesigns((prev) => ({ ...prev, [activeSatId]: next }))
-        void pushSatConfigToRoom(activeSatId, next, `lanzador ${lName}`)
+        void pushSatConfigToRoom(activeSatId, next, `launcher ${lName}`)
       },
       setChassis(id: string) {
         actions.setChassis(id)
@@ -651,7 +651,7 @@ export default function RoleWorkshopScreen({
           parts: nextParts,
         }
         setSatDesigns((prev) => ({ ...prev, [activeSatId]: next }))
-        void pushSatConfigToRoom(activeSatId, next, `chasis ${ch.name}`)
+        void pushSatConfigToRoom(activeSatId, next, `chassis ${ch.name}`)
       },
       changePart(id: string, delta: number) {
         const p = PART_BY_ID[id]
@@ -737,7 +737,7 @@ export default function RoleWorkshopScreen({
       parts: { ...pr.parts },
     }
     setSatDesigns((prev) => ({ ...prev, [activeSatId]: next }))
-    void pushSatConfigToRoom(activeSatId, next, `preset óptimo ${activeSatMeta.code}`)
+    void pushSatConfigToRoom(activeSatId, next, `optimal preset ${activeSatMeta.code}`)
   }
 
   const handleAutoFillBothSats = () => {
@@ -761,10 +761,10 @@ export default function RoleWorkshopScreen({
       role: assignedRole ?? s.activeRole,
       kind: 'ok',
       installedId: 'preset',
-      text: '"¡Flota doble lista! SAT-01 AMARU-COMMS y SAT-02 INTI-SCIENCE completados con presets óptimos."',
+      text: '"Dual fleet ready! SAT-01 AMARU-COMMS and SAT-02 INTI-SCIENCE configured with optimal presets."',
     })
-    void pushSatConfigToRoom('sat1', next1, 'preset óptimo SAT-01')
-    void pushSatConfigToRoom('sat2', next2, 'preset óptimo SAT-02')
+    void pushSatConfigToRoom('sat1', next1, 'optimal preset SAT-01')
+    void pushSatConfigToRoom('sat2', next2, 'optimal preset SAT-02')
   }
 
   const handleClearCurrentSat = () => {
@@ -777,7 +777,7 @@ export default function RoleWorkshopScreen({
       parts: {},
     }
     setSatDesigns((prev) => ({ ...prev, [activeSatId]: next }))
-    void pushSatConfigToRoom(activeSatId, next, `vació ${activeSatMeta.code}`)
+    void pushSatConfigToRoom(activeSatId, next, `cleared ${activeSatMeta.code}`)
   }
 
   useEffect(() => {
@@ -789,7 +789,7 @@ export default function RoleWorkshopScreen({
         const ownerName = getLockedOwnerName(targetRole)
         if (ownerName !== null) {
           setRemoteEventBanner(
-            `🔒 ${ROLE_INFO[targetRole].code} está bloqueado por ${ownerName}`
+            `🔒 ${ROLE_INFO[targetRole].code} is locked by ${ownerName}`
           )
           return
         }
@@ -825,7 +825,7 @@ export default function RoleWorkshopScreen({
                 'director',
                 'todos',
                 'warn',
-                '"Solo el Host de la sala o 🦅 CÓNDOR-4 pueden autorizar el despegue sincronizado."'
+                '"Only the Room Host or 🦅 CONDOR-4 can authorize synchronized launch."'
               )
             )
             return
@@ -841,7 +841,7 @@ export default function RoleWorkshopScreen({
           'director',
           'todos',
           'ok',
-          `"¡Despegue sincronizado autorizado! SAT-01 AMARU-COMMS y SAT-02 INTI-SCIENCE listos para órbita."`
+          `"Synchronized launch authorized! SAT-01 AMARU-COMMS and SAT-02 INTI-SCIENCE cleared for orbit."`
         )
       )
       if (onAuthorizedLaunch) {
@@ -864,14 +864,14 @@ export default function RoleWorkshopScreen({
           'director',
           'todos',
           'warn',
-          `"¡Despegue abortado! Faltan requisitos en: ${summary}."`
+          `"Launch aborted! Missing requirements on: ${summary}."`
         )
       )
       setLaunch('fail')
     }
   }
 
-  const activePlayerName = s.playerNames?.[s.activeRole] ?? 'Astronauta'
+  const activePlayerName = s.playerNames?.[s.activeRole] ?? 'Astronaut'
   const activeRoleInfo = ROLE_INFO[s.activeRole]
   const currentMsg = s.chat[Math.min(msgIdx, Math.max(0, s.chat.length - 1))]
   const fromInfo =
@@ -908,7 +908,7 @@ export default function RoleWorkshopScreen({
               onExit()
             }}
           >
-            <ArrowLeft size={13} /> MENÚ
+            <ArrowLeft size={13} /> MENU
           </button>
           <div className="leading-tight min-w-0 flex-1">
             <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
@@ -916,15 +916,15 @@ export default function RoleWorkshopScreen({
                 className="text-[clamp(9px,0.72vw,11px)] text-cyan-300 truncate min-w-0"
                 style={{ textShadow: '2px 2px 0 #000' }}
               >
-                TALLER · {activeSatMeta.icon} {activeSatMeta.code}
+                ASSEMBLY WORKSHOP · {activeSatMeta.icon} {activeSatMeta.code}
               </span>
               {roomCode ? (
                 <span className="px-1.5 py-0.5 text-[clamp(7.5px,0.58vw,9px)] bg-yellow-400 text-black font-bold border border-black whitespace-nowrap shrink-0">
-                  🔑 SALA: {roomCode}
+                  🔑 ROOM: {roomCode}
                 </span>
               ) : (
                 <span className="px-1.5 py-0.5 text-[clamp(7.5px,0.58vw,9px)] bg-slate-800 text-slate-300 border border-slate-600 whitespace-nowrap shrink-0">
-                  {isSoloOffline ? '🛠️ TALLER LOCAL' : '🛠️ TALLER LOCAL'}
+                  {isSoloOffline ? '🛠️ LOCAL WORKSHOP' : '🛠️ LOCAL WORKSHOP'}
                 </span>
               )}
               <span
@@ -935,12 +935,12 @@ export default function RoleWorkshopScreen({
                 }`}
               >
                 {bothSatsReady
-                  ? '✅ FLOTA 2/2'
-                  : `🛠️ ${(t1.allOk ? 1 : 0) + (t2.allOk ? 1 : 0)}/2 LISTOS`}
+                  ? '✅ FLEET 2/2'
+                  : `🛠️ ${(t1.allOk ? 1 : 0) + (t2.allOk ? 1 : 0)}/2 READY`}
               </span>
             </div>
             <div className="text-[clamp(8px,0.6vw,9px)] text-gray-300 truncate mt-0.5">
-              🔒 ETAPA {sequentialMissionIndex}/3 · {contract.icon} {contract.name} · Chasis{' '}
+              🔒 STAGE {sequentialMissionIndex}/3 · {contract.icon} {contract.name} · Chassis{' '}
               {chassis.name}
             </div>
           </div>
@@ -948,7 +948,7 @@ export default function RoleWorkshopScreen({
 
         <div className="flex items-center gap-1 shrink-0 min-w-0">
           <span className="hidden 2xl:inline text-[9px] text-gray-400 whitespace-nowrap shrink-0">
-            ROL (1-4):
+            ROLE (1-4):
           </span>
           <div className="flex items-center gap-1 flex-nowrap min-w-0">
             {ROLE_ORDER.map((r, i) => {
@@ -992,10 +992,10 @@ export default function RoleWorkshopScreen({
                   }}
                   title={
                     isOtherOwner
-                      ? `🔒 ${info.code} ocupado por ${lockedOwner} (Bloqueado)`
+                      ? `🔒 ${info.code} claimed by ${lockedOwner} (Locked)`
                       : isVacant
-                        ? `${info.code} [BOT / LIBRE] - Vacante, haz clic para cubrir sus piezas`
-                        : `Tu personaje (${info.code}) - ${pName}`
+                        ? `${info.code} [BOT / OPEN] - Vacant, click to manage subsystems`
+                        : `Your character (${info.code}) - ${pName}`
                   }
                 >
                   <CharacterPortrait
@@ -1009,7 +1009,7 @@ export default function RoleWorkshopScreen({
                   {isMine && <span className="text-emerald-300 font-bold">★</span>}
                   {isVacant && !on && (
                     <span className="px-1 py-0 text-[7px] bg-cyan-950 border border-cyan-500/60 text-cyan-200">
-                      LIBRE
+                      OPEN
                     </span>
                   )}
                   {isOtherOwner && (
@@ -1076,7 +1076,7 @@ export default function RoleWorkshopScreen({
                           : 'bg-amber-950/80 border-amber-500/60 text-amber-200'
                       }`}
                     >
-                      {tel.allOk ? '✅ LISTO' : '⏳ PENDIENTE'}
+                      {tel.allOk ? '✅ READY' : '⏳ PENDING'}
                     </div>
                     <div className="text-[clamp(7.5px,0.58vw,8.5px)] text-cyan-300 mt-0.5">
                       ${tel.cost}k · {tel.slotsUsed}/{tel.slotsCap}U
@@ -1116,7 +1116,7 @@ export default function RoleWorkshopScreen({
                   onMouseEnter={playHover}
                   onClick={handleAutoFillCurrentSat}
                 >
-                  ⚙️ AUTO SAT ACTUAL
+                  ⚙️ AUTO CURRENT SAT
                 </button>
                 <button
                   className="mc-btn px-1.5 py-0.5 text-[clamp(7.5px,0.6vw,9px)] whitespace-nowrap"
@@ -1127,13 +1127,13 @@ export default function RoleWorkshopScreen({
                     borderColor: '#2dd4bf',
                   }}
                 >
-                  ✨ AUTO AMBOS SATÉLITES
+                  ✨ AUTO-BUILD BOTH SATELLITES
                 </button>
                 <button
                   className="mc-btn px-1.5 py-0.5 text-[clamp(7.5px,0.6vw,9px)]"
                   onMouseEnter={playHover}
                   onClick={handleClearCurrentSat}
-                  title="Vaciar satélite actual"
+                  title="Clear current satellite"
                 >
                   🗑️
                 </button>
@@ -1175,7 +1175,7 @@ export default function RoleWorkshopScreen({
                   className="font-bold truncate"
                   style={{ color: fromInfo ? fromInfo.color : '#ffd23f' }}
                 >
-                  [{fromInfo ? `${fromInfo.icon} ${fromInfo.code}` : '🤖 SISTEMA'}]
+                  [{fromInfo ? `${fromInfo.icon} ${fromInfo.code}` : '🤖 SYSTEM'}]
                 </span>
                 {currentMsg && currentMsg.to !== 'todos' && (
                   <span className="text-gray-400 shrink-0">
@@ -1187,7 +1187,7 @@ export default function RoleWorkshopScreen({
                 className="text-[clamp(8px,0.62vw,9px)] leading-snug line-clamp-2"
                 style={{ color: msgCol }}
               >
-                {currentMsg ? currentMsg.text : 'Sin alertas activas.'}
+                {currentMsg ? currentMsg.text : 'No active alerts.'}
               </div>
             </div>
 
@@ -1202,7 +1202,7 @@ export default function RoleWorkshopScreen({
                     playClick()
                     setMsgIdx((i) => Math.max(0, i - 1))
                   }}
-                  title="Alerta anterior"
+                  title="Previous alert"
                 >
                   &lt;
                 </button>
@@ -1214,7 +1214,7 @@ export default function RoleWorkshopScreen({
                     playClick()
                     setMsgIdx((i) => Math.min(s.chat.length - 1, i + 1))
                   }}
-                  title="Siguiente alerta"
+                  title="Next alert"
                 >
                   &gt;
                 </button>
@@ -1236,7 +1236,7 @@ export default function RoleWorkshopScreen({
               textShadow: '2px 2px 0 #000',
             }}
           >
-            <span className="truncate">📊 TELEMETRÍA · {activeRoleInfo.code}</span>
+            <span className="truncate">📊 TELEMETRY · {activeRoleInfo.code}</span>
             <span className="shrink-0">{activeRoleInfo.icon}</span>
           </div>
           <TelemetryPanel
@@ -1283,10 +1283,10 @@ export default function RoleWorkshopScreen({
                     className="ui-title text-green-300 mt-4"
                     style={{ textShadow: '3px 3px 0 #000' }}
                   >
-                    ¡DESPEGUE EXITOSO DEL ESCUADRÓN ANDINO!
+                    ANDEAN SQUADRON LAUNCH SUCCESSFUL!
                   </h2>
                   <p className="ui-meta mt-3 leading-relaxed text-gray-300">
-                    {contract.name} · Ciencia {t.sciPts.toFixed(0)} pts · ${t.cost}k
+                    {contract.name} · Science {t.sciPts.toFixed(0)} pts · ${t.cost}k
                   </p>
                 </>
               ) : (
@@ -1296,7 +1296,7 @@ export default function RoleWorkshopScreen({
                     className="ui-title text-red-400 mt-3"
                     style={{ textShadow: '3px 3px 0 #000' }}
                   >
-                    DESPEGUE ABORTADO
+                    LAUNCH ABORTED
                   </h2>
                   <div className="mt-3 flex flex-col gap-2 text-left max-h-64 overflow-y-auto pr-1">
                     {[
@@ -1336,7 +1336,7 @@ export default function RoleWorkshopScreen({
                   setLaunch(null)
                 }}
               >
-                CERRAR
+                CLOSE
               </button>
             </motion.div>
           </motion.div>

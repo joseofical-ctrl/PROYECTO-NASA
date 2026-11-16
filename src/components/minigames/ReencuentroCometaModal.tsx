@@ -7,7 +7,7 @@ export default function ReencuentroCometaModal(props: MinigameModalProps) {
       {...props}
       game="comet"
       file="reencuentro_cometa.html"
-      title="DEFENSA ORBITAL CONTRA METEORITOS · CÓNDOR-4"
+      title="ORBITAL METEOROID DEFENSE · CONDOR-4"
       accent="#f87171"
     />
   )

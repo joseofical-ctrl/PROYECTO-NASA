@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reparación de Telecom - Sintonización de Frecuencia Satelital</title>
+    <title>Telecom Repair - Satellite Frequency Tuning</title>
     <style>
         :root {
             --bg-hull: #0f141c;
@@ -230,20 +230,20 @@
 
     <header>
         <div class="title-block">
-            <span class="badge-system">SISTEMAS // ANTENAS</span>
-            <h1>SINTONIZACIÓN Y ALINEACIÓN DE TELECOMUNICACIONES</h1>
+            <span class="badge-system">SYSTEMS // ANTENNAS</span>
+            <h1>TELECOMMUNICATIONS TUNING &amp; ALIGNMENT</h1>
         </div>
         <div class="top-controls">
             <button class="btn-header" onclick="location.href='index.html'">⌂ HUB</button>
-            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <label for="diffSelect" style="color: #94a3b8;">DIFFICULTY:</label>
             <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Señal Clara</option>
-                <option value="2" selected>Nivel 2 - Interferencia Estelar</option>
-                <option value="3">Nivel 3 - Espectro Caótico</option>
+                <option value="1">Level 1 - Clear Signal</option>
+                <option value="2" selected>Level 2 - Stellar Interference</option>
+                <option value="3">Level 3 - Chaotic Spectrum</option>
             </select>
             <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
-            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
-            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSE</button>
+            <button class="btn-header" onclick="resetMission()">↻ RESET</button>
         </div>
     </header>
 
@@ -254,8 +254,8 @@
             <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
             <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>OSCILOSCOPIO DE FRECUENCIA (ANÁLISIS DE ONDA)</span>
-                <span id="matchStatus" style="color:var(--crt-amber)">ESTADO: DESALINEADO</span>
+                <span>FREQUENCY OSCILLOSCOPE (WAVEFORM ANALYSIS)</span>
+                <span id="matchStatus" style="color:var(--crt-amber)">STATUS: MISALIGNED</span>
             </div>
             <div class="panel-body" style="padding:0;">
                 <div class="canvas-container">
@@ -270,13 +270,13 @@
             <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
             <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>CONTROLES DE SINTONÍA</span>
+                <span>TUNING CONTROLS</span>
                 <span id="clockDisplay">00:00</span>
             </div>
             <div class="panel-body">
                 <div class="telemetry-block">
                     <div class="control-row">
-                        <span>FRECUENCIA DE ONDA (Hz):</span>
+                        <span>WAVE FREQUENCY (Hz):</span>
                         <b id="freqVal" style="color:var(--crt-cyan)">50 Hz</b>
                     </div>
                     <input type="range" class="slider-telecom" id="sliderFreq" min="10" max="100" value="50" oninput="updateSliders()">
@@ -284,19 +284,19 @@
 
                 <div class="telemetry-block">
                     <div class="control-row">
-                        <span>AMPLITUD DE SEÑAL (Gain):</span>
+                        <span>SIGNAL AMPLITUDE (Gain):</span>
                         <b id="gainVal" style="color:var(--crt-green)">50 %</b>
                     </div>
                     <input type="range" class="slider-telecom" id="sliderGain" min="10" max="100" value="50" oninput="updateSliders()">
                 </div>
 
                 <div style="background:rgba(0,0,0,0.3); border:1px solid #263342; padding:10px; font-size:11px; line-height:1.5;">
-                    <b style="color:var(--crt-cyan)">MISIÓN:</b>
-                    <p style="color:#94a3b8; margin-top:4px;">Ajusta la frecuencia y la amplitud para que la onda generada coincida exactamente con la señal objetivo (línea punteada verde).</p>
+                    <b style="color:var(--crt-cyan)">MISSION:</b>
+                    <p style="color:#94a3b8; margin-top:4px;">Adjust frequency and amplitude so the generated waveform matches the target signal (green dashed line).</p>
                 </div>
 
                 <button class="btn-action" onclick="lockSignal()">
-                    ✔ SINTONIZAR Y SELLADO DE ENLACE
+                    ✔ TUNE &amp; LOCK LINK
                 </button>
             </div>
         </div>
@@ -306,27 +306,27 @@
     <div class="modal-overlay" id="debriefModal">
         <div class="modal-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-highlight); padding-bottom:8px;">
-                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME DE TELECOMUNICACIONES</span>
-                <span class="badge-system" id="debBadge">ÉXITO</span>
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">TELECOMMUNICATIONS REPORT</span>
+                <span class="badge-system" id="debBadge">SUCCESS</span>
             </div>
             <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-cyan)">1. ESTADO DE ENLACE SATELITAL:</b>
-                    <p id="debDesc">Frecuencia sincronizada con éxito sin pérdida de paquetes de telemetría.</p>
+                    <b style="color:var(--crt-cyan)">1. SATELLITE LINK STATUS:</b>
+                    <p id="debDesc">Frequency synchronized successfully with zero telemetry packet loss.</p>
                 </div>
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE SEÑAL:</b>
+                    <b style="color:var(--crt-amber)">2. SIGNAL METRICS:</b>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
-                        <div>Precisión de Onda: <b id="debAccuracy">-</b></div>
-                        <div>Ancho de Banda: <b id="debBandwidth">100 Mbps</b></div>
-                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
-                        <div>Calificación: <b id="debGrade">-</b></div>
+                        <div>Waveform Accuracy: <b id="debAccuracy">-</b></div>
+                        <div>Bandwidth: <b id="debBandwidth">100 Mbps</b></div>
+                        <div>Elapsed Time: <b id="debTime">-</b></div>
+                        <div>Grade: <b id="debGrade">-</b></div>
                     </div>
                 </div>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
-                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+                <button class="btn-header" onclick="closeModalAndRetry()">REPLAY</button>
+                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">NEXT LEVEL</button>
             </div>
         </div>
     </div>
@@ -386,7 +386,7 @@
         }
 
         function changeDifficulty(val) { setupScenario(val); }
-        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
         function resetMission() { setupScenario(difficulty); }
 
         function updateSliders() {
@@ -408,7 +408,7 @@
                 completeMission(freqDiff, gainDiff);
             } else {
                 playBeep(150, 0.3);
-                alert("¡Señal desalineada! La onda no coincide con el objetivo satelital.");
+                alert("Signal misaligned! Waveform does not match the satellite target.");
             }
         }
 
@@ -418,7 +418,7 @@
             const acc = Math.max(0, 100 - (fDiff + gDiff) * 3);
             document.getElementById('debAccuracy').textContent = `${acc.toFixed(1)}%`;
             document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
-            document.getElementById('debGrade').textContent = acc > 90 ? "A+ PERFECTO" : "B BUENO";
+            document.getElementById('debGrade').textContent = acc > 90 ? "A+ PERFECT" : "B GOOD";
         }
 
         function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
@@ -479,10 +479,10 @@
             const gainDiff = Math.abs(userGain - targetGain);
             const statusTag = document.getElementById('matchStatus');
             if (freqDiff <= 5 && gainDiff <= 5) {
-                statusTag.textContent = "ESTADO: SEÑAL SINCRONIZADA OK";
+                statusTag.textContent = "STATUS: SIGNAL LOCKED OK";
                 statusTag.style.color = "var(--crt-green)";
             } else {
-                statusTag.textContent = "ESTADO: DESALINEADO";
+                statusTag.textContent = "STATUS: MISALIGNED";
                 statusTag.style.color = "var(--crt-amber)";
             }
 

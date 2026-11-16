@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acoplamiento Espacial - Simulador Aeroespacial Avanzado</title>
+    <title>Space Docking - Advanced Aerospace Simulator</title>
     <style>
         :root {
             --bg-deep: #050811;
@@ -472,34 +472,34 @@
     <header>
         <div class="header-title-block">
             <span class="badge-system">APAS // 6-DOF</span>
-            <h1>SISTEMA DE ACOPLAMIENTO Y RENDEZVOUS CERCANO</h1>
+            <h1>CLOSE-PROXIMITY RENDEZVOUS &amp; DOCKING SYSTEM</h1>
         </div>
         <div class="header-actions">
             <button class="btn-ui" onclick="location.href='index.html'">⌂ HUB</button>
-            <label for="diffSelect" style="color:var(--text-dim)">DIFICULTAD:</label>
+            <label for="diffSelect" style="color:var(--text-dim)">DIFFICULTY:</label>
             <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Inserción Rectilínea Guiada</option>
-                <option value="2" selected>Nivel 2 - Desalineación Tridimensional</option>
-                <option value="3">Nivel 3 - Estación en Rotación Progresiva</option>
-                <option value="4">Nivel 4 - Falla Asimétrica en Propulsor RCS</option>
-                <option value="5">Nivel 5 - Atraque Nocturno con Fuerza de Mareas</option>
+                <option value="1">Level 1 - Guided Rectilinear Insertion</option>
+                <option value="2" selected>Level 2 - 3D Misalignment</option>
+                <option value="3">Level 3 - Progressive Station Rotation</option>
+                <option value="4">Level 4 - Asymmetric RCS Thruster Fault</option>
+                <option value="5">Level 5 - Night Docking with Tidal Forces</option>
             </select>
-            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORIAL</button>
-            <button class="btn-ui" onclick="openGuideModal()">? GUÍA</button>
+            <button class="btn-ui" onclick="openHistoryModal()">📊 HISTORY</button>
+            <button class="btn-ui" onclick="openGuideModal()">? GUIDE</button>
             <button class="btn-ui" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO</button>
-            <button class="btn-ui" onclick="resetMission()">↻ REINICIAR</button>
+            <button class="btn-ui" onclick="resetMission()">↻ RESET</button>
         </div>
     </header>
 
     <div class="mission-bar">
         <div>
-            <span class="mission-text" id="missionText">MISIÓN: Acoplamiento con Estación Orbital Freedom</span>
+            <span class="mission-text" id="missionText">MISSION: Orbital Station Freedom Docking</span>
         </div>
         <div class="mission-goal" id="missionGoal">
-            OBJETIVO: Alinea el vector relativo en cruz, reduce velocidad &lt; 0.15 m/s y encastra a Z = 0.0 m.
+            OBJECTIVE: Align the relative crosshairs, reduce velocity &lt; 0.15 m/s, and latch at Z = 0.0 m.
         </div>
         <div>
-            ESTADO: <span class="mission-status-pill" id="missionStatusPill">EN APROXIMACIÓN</span>
+            STATUS: <span class="mission-status-pill" id="missionStatusPill">ON APPROACH</span>
         </div>
     </div>
 
@@ -507,8 +507,8 @@
         <!-- Main 3D Perspective Viewport Panel -->
         <div class="viewport-panel">
             <div class="viewport-header">
-                <span style="color:var(--crt-cyan)">VENTANA DE VUELO // VISOR ÓPTICO</span>
-                <span id="captureConeStatus" style="color:var(--crt-green)">CORREDOR DE CAPTURA ACTIVO</span>
+                <span style="color:var(--crt-cyan)">FLIGHT WINDOW // OPTICAL VISOR</span>
+                <span id="captureConeStatus" style="color:var(--crt-green)">CAPTURE CORRIDOR ACTIVE</span>
             </div>
 
             <!-- Full High-Res Canvas -->
@@ -517,23 +517,23 @@
             <!-- Floating Head-Up Display Telemetry -->
             <div class="hud-top-left">
                 <div class="hud-row">
-                    <span class="hud-label">DISTANCIA (Z):</span>
+                    <span class="hud-label">RANGE (Z):</span>
                     <span class="hud-val" id="hudDistance">42.50 m</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">VEL. RELATIVA:</span>
+                    <span class="hud-label">REL. VELOCITY:</span>
                     <span class="hud-val" id="hudVelocity">0.12 m/s</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">DESVÍO LATERAL:</span>
+                    <span class="hud-label">LATERAL OFFSET:</span>
                     <span class="hud-val" id="hudOffset">0.24 m</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">COMBUSTIBLE RCS:</span>
+                    <span class="hud-label">RCS PROPELLANT:</span>
                     <span class="hud-val" id="hudFuel">84.2%</span>
                 </div>
                 <div class="hud-row">
-                    <span class="hud-label">PRECISIÓN VUELO:</span>
+                    <span class="hud-label">FLIGHT PRECISION:</span>
                     <span class="hud-val good" id="hudPrecision">96%</span>
                 </div>
             </div>
@@ -544,22 +544,22 @@
             <!-- Attitude Gauges -->
             <div class="card-panel">
                 <div class="card-header">
-                    <span>ACTITUD ANGULAR (DESVIACIÓN)</span>
-                    <span style="color:var(--text-dim); font-size:10px;">LÍMITE: &plusmn;1.5°</span>
+                    <span>ANGULAR ATTITUDE (DEVIATION)</span>
+                    <span style="color:var(--text-dim); font-size:10px;">LIMIT: &plusmn;1.5°</span>
                 </div>
                 <div class="attitude-grid">
                     <div class="attitude-meter">
-                        <span class="att-axis">YAW (GUIÑADA)</span>
+                        <span class="att-axis">YAW</span>
                         <span class="att-val" id="valYaw">0.2°</span>
                         <div class="att-bar-track"><div class="att-bar-thumb" id="barYaw"></div></div>
                     </div>
                     <div class="attitude-meter">
-                        <span class="att-axis">PITCH (CABECEO)</span>
+                        <span class="att-axis">PITCH</span>
                         <span class="att-val" id="valPitch">-0.1°</span>
                         <div class="att-bar-track"><div class="att-bar-thumb" id="barPitch"></div></div>
                     </div>
                     <div class="attitude-meter">
-                        <span class="att-axis">ROLL (ALABEO)</span>
+                        <span class="att-axis">ROLL</span>
                         <span class="att-val" id="valRoll">0.4°</span>
                         <div class="att-bar-track"><div class="att-bar-thumb" id="barRoll"></div></div>
                     </div>
@@ -569,63 +569,63 @@
             <!-- Dynamic Telemetry Trend Graph -->
             <div class="card-panel">
                 <div class="card-header">
-                    <span>PERFIL DE APROXIMACIÓN (DISTANCIA vs TIEMPO)</span>
+                    <span>APPROACH PROFILE (RANGE vs TIME)</span>
                     <span style="color:var(--crt-cyan)" id="graphTimeText">T+00:00</span>
                 </div>
                 <div class="chart-box">
                     <canvas id="trendCanvas"></canvas>
                 </div>
                 <div style="font-size:9px; color:var(--text-dim); display:flex; justify-content:space-between;">
-                    <span>Velocidad de aproximación: <b id="speedReadout" style="color:var(--crt-green)">0.12 m/s</b></span>
-                    <span>Tasa segura: &lt; 0.15 m/s</span>
+                    <span>Approach rate: <b id="speedReadout" style="color:var(--crt-green)">0.12 m/s</b></span>
+                    <span>Safe rate: &lt; 0.15 m/s</span>
                 </div>
             </div>
 
             <!-- 6-DOF RCS Control Deck -->
             <div class="card-panel">
                 <div class="card-header">
-                    <span>MANDO DE REACCIÓN RCS (6-DOF)</span>
-                    <span style="font-size:10px; color:var(--text-dim)">INERCIA REAL</span>
+                    <span>RCS REACTION CONTROL (6-DOF)</span>
+                    <span style="font-size:10px; color:var(--text-dim)">REAL INERTIA</span>
                 </div>
 
                 <div class="flight-deck">
                     <!-- Translation Pad (X / Y / Z) -->
                     <div class="control-subpanel">
-                        <div class="subpanel-title">TRASLACIÓN (W,A,S,D / F,V)</div>
+                        <div class="subpanel-title">TRANSLATION (W,A,S,D / F,V)</div>
                         <div class="pad-grid">
                             <div></div>
-                            <button class="btn-rcs" onclick="applyImpulse('posY', +1)" title="Subir (W / Flecha Arriba)">▲</button>
+                            <button class="btn-rcs" onclick="applyImpulse('posY', +1)" title="Up (W / Up Arrow)">▲</button>
                             <div></div>
-                            <button class="btn-rcs" onclick="applyImpulse('posX', -1)" title="Izquierda (A / Flecha Izq)">◄</button>
+                            <button class="btn-rcs" onclick="applyImpulse('posX', -1)" title="Left (A / Left Arrow)">◄</button>
                             <div style="font-size:8px; line-height:28px; text-align:center; color:var(--text-dim)">XY</div>
-                            <button class="btn-rcs" onclick="applyImpulse('posX', +1)" title="Derecha (D / Flecha Der)">►</button>
+                            <button class="btn-rcs" onclick="applyImpulse('posX', +1)" title="Right (D / Right Arrow)">►</button>
                             <div></div>
-                            <button class="btn-rcs" onclick="applyImpulse('posY', -1)" title="Bajar (S / Flecha Abajo)">▼</button>
+                            <button class="btn-rcs" onclick="applyImpulse('posY', -1)" title="Down (S / Down Arrow)">▼</button>
                             <div></div>
                         </div>
                         <div style="display:flex; gap:3px; margin-top:2px;">
-                            <button class="btn-rcs" style="flex:1" onclick="applyImpulse('posZ', -1)" title="Avanzar (F)">+ AVANCE</button>
-                            <button class="btn-rcs" style="flex:1" onclick="applyImpulse('posZ', +1)" title="Frenar (V)">- FRENO</button>
+                            <button class="btn-rcs" style="flex:1" onclick="applyImpulse('posZ', -1)" title="Forward (F)">+ FWD</button>
+                            <button class="btn-rcs" style="flex:1" onclick="applyImpulse('posZ', +1)" title="Brake (V)">- BRAKE</button>
                         </div>
                     </div>
 
                     <!-- Rotation Pad (Pitch / Yaw / Roll) -->
                     <div class="control-subpanel">
-                        <div class="subpanel-title">ROTACIÓN (I,K,J,L / Q,E)</div>
+                        <div class="subpanel-title">ROTATION (I,K,J,L / Q,E)</div>
                         <div class="pad-grid">
                             <div></div>
-                            <button class="btn-rcs" onclick="applyTorque('pitch', -1)" title="Pitch Arriba (I)">P▲</button>
+                            <button class="btn-rcs" onclick="applyTorque('pitch', -1)" title="Pitch Up (I)">P▲</button>
                             <div></div>
-                            <button class="btn-rcs" onclick="applyTorque('yaw', -1)" title="Yaw Izq (J)">Y◄</button>
+                            <button class="btn-rcs" onclick="applyTorque('yaw', -1)" title="Yaw Left (J)">Y◄</button>
                             <div style="font-size:8px; line-height:28px; text-align:center; color:var(--text-dim)">ROT</div>
-                            <button class="btn-rcs" onclick="applyTorque('yaw', +1)" title="Yaw Der (L)">Y►</button>
+                            <button class="btn-rcs" onclick="applyTorque('yaw', +1)" title="Yaw Right (L)">Y►</button>
                             <div></div>
-                            <button class="btn-rcs" onclick="applyTorque('pitch', +1)" title="Pitch Abajo (K)">P▼</button>
+                            <button class="btn-rcs" onclick="applyTorque('pitch', +1)" title="Pitch Down (K)">P▼</button>
                             <div></div>
                         </div>
                         <div style="display:flex; gap:3px; margin-top:2px;">
-                            <button class="btn-rcs" style="flex:1" onclick="applyTorque('roll', -1)" title="Roll Antihorario (Q)">R↺</button>
-                            <button class="btn-rcs" style="flex:1" onclick="applyTorque('roll', +1)" title="Roll Horario (E)">R↻</button>
+                            <button class="btn-rcs" style="flex:1" onclick="applyTorque('roll', -1)" title="Roll CCW (Q)">R↺</button>
+                            <button class="btn-rcs" style="flex:1" onclick="applyTorque('roll', +1)" title="Roll CW (E)">R↻</button>
                         </div>
                     </div>
                 </div>
@@ -633,10 +633,10 @@
                 <!-- SAS Damping & Auto-Hold -->
                 <div class="docking-action-bar">
                     <button class="btn-sas active" id="btnSAS" onclick="toggleSAS()">
-                        ● SAS: AMORTIGUACIÓN ACTIVA
+                        ● SAS: DAMPING ACTIVE
                     </button>
                     <button class="btn-ui" style="justify-content:center" onclick="killRelativeDrift()">
-                        FRENAR DERIVAS
+                        NULL RELATIVE DRIFT
                     </button>
                 </div>
             </div>
@@ -647,23 +647,23 @@
     <div class="modal-overlay" id="historyModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span>HISTORIAL DE SIMULACIONES Y TELEMETRÍA DE VUELO</span>
+                <span>SIMULATION &amp; FLIGHT TELEMETRY HISTORY</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
-                <p style="color:var(--text-dim)">Registro de operaciones reales ejecutadas en esta consola:</p>
+                <p style="color:var(--text-dim)">Log of actual operations executed on this console:</p>
                 <div style="overflow-x:auto;">
                     <table class="history-table">
                         <thead>
                             <tr>
-                                <th>Fecha/Hora</th>
-                                <th>Misión</th>
-                                <th>Resultado</th>
-                                <th>Vel. Contacto</th>
-                                <th>Desvío</th>
-                                <th>Tiempo</th>
-                                <th>Combustible</th>
-                                <th>Calificación</th>
+                                <th>Timestamp</th>
+                                <th>Mission</th>
+                                <th>Outcome</th>
+                                <th>Contact Vel.</th>
+                                <th>Offset</th>
+                                <th>Time</th>
+                                <th>Propellant</th>
+                                <th>Grade</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
@@ -672,8 +672,8 @@
                     </table>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 intentos registrados</span>
-                    <button class="btn-ui" onclick="clearHistory()">LIMPIAR HISTORIAL</button>
+                    <span style="font-size:10px; color:var(--text-dim)" id="historyStatsSummary">0 attempts recorded</span>
+                    <button class="btn-ui" onclick="clearHistory()">CLEAR HISTORY</button>
                 </div>
             </div>
         </div>
@@ -683,25 +683,25 @@
     <div class="modal-overlay" id="guideModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span>MANUAL OPERATIVO DE ACOPLAMIENTO ESPACIAL (APAS)</span>
+                <span>SPACE DOCKING OPERATING MANUAL (APAS)</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
                 <div class="guide-card cyan">
-                    <b style="color:var(--crt-cyan)">1. FÍSICA Y DINÁMICA ESPACIAL REAL:</b>
-                    <span>En el vacío cósmico no existe fricción atmosférica. Todo impulso genera velocidad que persiste indefinidamente hasta que apliques un contra-impulso de sentido opuesto.</span>
+                    <b style="color:var(--crt-cyan)">1. REAL SPACE PHYSICS &amp; DYNAMICS:</b>
+                    <span>In the vacuum of space there is no atmospheric drag. Every thruster impulse creates velocity that persists indefinitely until you fire an opposing counter-impulse.</span>
                 </div>
                 <div class="guide-card amber">
-                    <b style="color:var(--crt-amber)">2. CONTROL 6-DOF (6 GRADOS DE LIBERTAD):</b>
-                    <span>Controlas 3 ejes de traslación (X, Y, Z) y 3 de rotación (Pitch, Yaw, Roll). Puedes usar los controles en pantalla o tu teclado: <b>WASD</b> para moverte en cruz, <b>F / V</b> para avanzar o frenar, y <b>IJKL / QE</b> para rotar la nave.</span>
+                    <b style="color:var(--crt-amber)">2. 6-DOF CONTROL (6 DEGREES OF FREEDOM):</b>
+                    <span>You command 3 translation axes (X, Y, Z) and 3 rotation axes (Pitch, Yaw, Roll). Use the on-screen flight deck or keyboard: <b>WASD</b> for lateral cross-axis translation, <b>F / V</b> to thrust forward or brake, and <b>IJKL / QE</b> to rotate the craft.</span>
                 </div>
                 <div class="guide-card green">
-                    <b style="color:var(--crt-green)">3. EL CORREDOR DE CAPTURA Y ASISTENCIA SAS:</b>
-                    <span>El sistema SAS (pulsando la tecla ESPACIO o el botón SAS) frena automáticamente las velocidades de giro residuales para estabilizar la puntería hacia el puerto de atraque.</span>
+                    <b style="color:var(--crt-green)">3. CAPTURE CORRIDOR &amp; SAS ASSIST:</b>
+                    <span>The SAS system (SPACEBAR or SAS toggle) automatically damps residual angular rates to stabilize your attitude alignment toward the docking port.</span>
                 </div>
                 <div class="guide-card red">
-                    <b style="color:var(--crt-red)">4. CONDICIONES CRÍTICAS DE ENCLAVAMIENTO (Z = 0.0 m):</b>
-                    <span>Al alcanzar la distancia cero, la velocidad relativa debe ser obligatoriamente menor a <b>0.15 m/s</b> y la desviación angular inferior a <b>1.5°</b> para que los 12 pestillos mecánicos andróginos queden asegurados.</span>
+                    <b style="color:var(--crt-red)">4. CRITICAL LATCHING CONDITIONS (Z = 0.0 m):</b>
+                    <span>Upon reaching zero range, relative closing velocity must be below <b>0.15 m/s</b> and angular deviation under <b>1.5°</b> so all 12 androgynous mechanical latches engage safely.</span>
                 </div>
             </div>
         </div>
@@ -711,22 +711,22 @@
     <div class="modal-overlay" id="debriefModal">
         <div class="modal-window">
             <div class="modal-top">
-                <span id="debTitle" style="color:var(--crt-green)">INFORME TÉCNICO DE ACOPLAMIENTO</span>
+                <span id="debTitle" style="color:var(--crt-green)">DOCKING TECHNICAL REPORT</span>
                 <button class="btn-ui" onclick="closeModals()">✕</button>
             </div>
             <div class="modal-content">
-                <p id="debMessage" style="font-size:13px; line-height:1.5;">La maniobra concluyó con enclavamiento mecánico exitoso.</p>
+                <p id="debMessage" style="font-size:13px; line-height:1.5;">Maneuver concluded with nominal mechanical capture.</p>
                 <div style="background:#091220; border:1px solid var(--border-panel); padding:10px; border-radius:3px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                    <div>Velocidad de Contacto: <b id="debVel" style="color:var(--crt-green)">0.08 m/s</b></div>
-                    <div>Desalineación Angular: <b id="debAtt" style="color:var(--crt-cyan)">0.4°</b></div>
-                    <div>Error Lateral: <b id="debOffset" style="color:var(--crt-cyan)">0.14 m</b></div>
-                    <div>Consumo de Propelente: <b id="debFuel" style="color:var(--crt-amber)">12.4%</b></div>
-                    <div>Tiempo Transcurrido: <b id="debTime" style="color:#fff">42 s</b></div>
-                    <div>Calificación de Vuelo: <b id="debGrade" style="color:var(--crt-green)">A+ PERFECTO</b></div>
+                    <div>Contact Velocity: <b id="debVel" style="color:var(--crt-green)">0.08 m/s</b></div>
+                    <div>Angular Misalignment: <b id="debAtt" style="color:var(--crt-cyan)">0.4°</b></div>
+                    <div>Lateral Offset: <b id="debOffset" style="color:var(--crt-cyan)">0.14 m</b></div>
+                    <div>Propellant Consumed: <b id="debFuel" style="color:var(--crt-amber)">12.4%</b></div>
+                    <div>Elapsed Time: <b id="debTime" style="color:#fff">42 s</b></div>
+                    <div>Flight Grade: <b id="debGrade" style="color:var(--crt-green)">A+ PERFECT</b></div>
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-                    <button class="btn-ui" onclick="closeModals(); resetMission();">REINTENTAR</button>
-                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">SIGUIENTE NIVEL</button>
+                    <button class="btn-ui" onclick="closeModals(); resetMission();">RETRY</button>
+                    <button class="btn-ui" style="border-color:var(--crt-cyan); color:var(--crt-cyan)" onclick="nextLevel()">NEXT LEVEL</button>
                 </div>
             </div>
         </div>
@@ -837,7 +837,7 @@
             if (ambientGain) {
                 ambientGain.gain.setValueAtTime(soundActive ? 0.015 : 0, audioCtx.currentTime);
             }
-            document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUDO';
+            document.getElementById('btnAudio').textContent = soundActive ? '🔊 AUDIO' : '🔇 MUTE';
         }
 
         /* =========================================================================
@@ -964,9 +964,9 @@
 
         // Estado físico 6-DOF de la nave
         let state = {
-            pos: { x: 1.8, y: -1.2, z: 42.5 },   // metros respecto al puerto
-            vel: { x: -0.015, y: 0.01, z: -0.12 },// m/s velocidad relativa
-            rot: { yaw: 2.5, pitch: -1.8, roll: 0.8 }, // grados
+            pos: { x: 1.8, y: -1.2, z: 42.5 },   // meters relative to port
+            vel: { x: -0.015, y: 0.01, z: -0.12 },// m/s relative velocity
+            rot: { yaw: 2.5, pitch: -1.8, roll: 0.8 }, // degrees
             angVel: { yaw: -0.04, pitch: 0.03, roll: 0.0 }, // deg/s
             fuel: 84.2,
             sasActive: true,
@@ -979,7 +979,7 @@
         let rcsPuffTime = 0;
         let missionElapsedTime = 0;
 
-        // Historial de telemetría para gráfico
+        // Telemetry history for trend graph
         const trendHistory = [];
 
         function setupDifficulty(lvl) {
@@ -995,7 +995,7 @@
                 state.angVel = { yaw: 0.0, pitch: 0.0, roll: 0.0 };
                 state.fuel = 95.0;
                 stationSpinRate = 0.0;
-                document.getElementById('missionText').textContent = "MISIÓN: Acoplamiento Rectilíneo Guiado";
+                document.getElementById('missionText').textContent = "MISSION: Guided Rectilinear Docking";
             } else if (missionDifficulty === 2) {
                 state.pos = { x: 1.8, y: -1.2, z: 42.5 };
                 state.vel = { x: -0.02, y: 0.01, z: -0.12 };
@@ -1003,15 +1003,15 @@
                 state.angVel = { yaw: -0.03, pitch: 0.02, roll: 0.0 };
                 state.fuel = 84.0;
                 stationSpinRate = 0.0;
-                document.getElementById('missionText').textContent = "MISIÓN: Desalineación Tridimensional";
+                document.getElementById('missionText').textContent = "MISSION: 3D Misalignment";
             } else if (missionDifficulty === 3) {
                 state.pos = { x: -2.4, y: 1.9, z: 48.0 };
                 state.vel = { x: 0.02, y: -0.02, z: -0.14 };
                 state.rot = { yaw: 3.2, pitch: -2.4, roll: -12.0 };
                 state.angVel = { yaw: 0.02, pitch: -0.02, roll: 0.0 };
                 state.fuel = 75.0;
-                stationSpinRate = 0.25; // Rotación de la estación
-                document.getElementById('missionText').textContent = "MISIÓN: Estación en Rotación Progresiva";
+                stationSpinRate = 0.25; // Station rotation
+                document.getElementById('missionText').textContent = "MISSION: Progressive Station Rotation";
             } else if (missionDifficulty === 4) {
                 state.pos = { x: 3.2, y: 2.8, z: 52.0 };
                 state.vel = { x: -0.04, y: -0.03, z: -0.15 };
@@ -1019,7 +1019,7 @@
                 state.angVel = { yaw: -0.05, pitch: 0.04, roll: 0.1 };
                 state.fuel = 60.0;
                 stationSpinRate = 0.0;
-                document.getElementById('missionText').textContent = "MISIÓN: Falla Asimétrica en Propulsor RCS";
+                document.getElementById('missionText').textContent = "MISSION: Asymmetric RCS Thruster Fault";
             } else if (missionDifficulty === 5) {
                 state.pos = { x: -4.5, y: -3.8, z: 62.0 };
                 state.vel = { x: -0.06, y: 0.05, z: -0.18 };
@@ -1027,10 +1027,10 @@
                 state.angVel = { yaw: 0.06, pitch: -0.05, roll: 0.15 };
                 state.fuel = 50.0;
                 stationSpinRate = 0.4;
-                document.getElementById('missionText').textContent = "MISIÓN EXTREMA: Atraque Nocturno con Mareas";
+                document.getElementById('missionText').textContent = "EXTREME MISSION: Night Docking with Tidal Forces";
             }
 
-            document.getElementById('missionStatusPill').textContent = "EN APROXIMACIÓN";
+            document.getElementById('missionStatusPill').textContent = "ON APPROACH";
             document.getElementById('missionStatusPill').style.color = "var(--crt-cyan)";
             document.getElementById('missionStatusPill').style.borderColor = "var(--crt-cyan)";
             updateUI();
@@ -1082,7 +1082,7 @@
             state.sasActive = !state.sasActive;
             const btn = document.getElementById('btnSAS');
             btn.classList.toggle('active', state.sasActive);
-            btn.textContent = state.sasActive ? "● SAS: AMORTIGUACIÓN ACTIVA" : "○ SAS: MODO MANUAL DESASISTIDO";
+            btn.textContent = state.sasActive ? "● SAS: DAMPING ACTIVE" : "○ SAS: UNASSISTED MANUAL";
             playRCSSound();
         }
 
@@ -1176,21 +1176,21 @@
             const latOffset = Math.sqrt(state.pos.x * state.pos.x + state.pos.y * state.pos.y);
             const maxAngle = Math.max(Math.abs(state.rot.yaw), Math.abs(state.rot.pitch), Math.abs((state.rot.roll - stationAngle) % 360));
 
-            // Criterios APAS: velocidad < 0.16 m/s, desvío < 0.65m, ángulo < 1.6°
+            // APAS criteria: speed < 0.16 m/s, offset < 0.65m, angle < 1.6°
             const success = (speed <= 0.16 && latOffset <= 0.65 && maxAngle <= 1.8);
 
             if (success) {
                 playCaptureSound();
-                document.getElementById('missionStatusPill').textContent = "¡ACOPLADO CON ÉXITO!";
+                document.getElementById('missionStatusPill').textContent = "DOCKED SUCCESSFULLY!";
                 document.getElementById('missionStatusPill').style.color = "var(--crt-green)";
                 document.getElementById('missionStatusPill').style.borderColor = "var(--crt-green)";
             } else {
-                document.getElementById('missionStatusPill').textContent = "COLISIÓN / ABORTE";
+                document.getElementById('missionStatusPill').textContent = "COLLISION / ABORT";
                 document.getElementById('missionStatusPill').style.color = "var(--crt-red)";
                 document.getElementById('missionStatusPill').style.borderColor = "var(--crt-red)";
             }
 
-            // Guardar en Historial
+            // Save to history
             saveSimulationRecord({
                 timestamp: new Date().toLocaleTimeString(),
                 missionName: document.getElementById('missionText').textContent,
@@ -1199,7 +1199,7 @@
                 offset: latOffset,
                 time: Math.round(missionElapsedTime),
                 fuelUsed: (100 - state.fuel).toFixed(1),
-                grade: success ? (speed <= 0.09 && latOffset <= 0.3 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO"
+                grade: success ? (speed <= 0.09 && latOffset <= 0.3 ? "A+ PERFECT" : "A EXCELLENT") : "F FAILED"
             });
 
             showDebriefModal(success, speed, latOffset, maxAngle);
@@ -1394,8 +1394,8 @@
             tbody.innerHTML = '';
 
             if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No hay simulaciones registradas aún. ¡Completa tu primer acoplamiento!</td></tr>';
-                document.getElementById('historyStatsSummary').textContent = "0 intentos registrados";
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:16px;">No simulations recorded yet. Complete your first docking!</td></tr>';
+                document.getElementById('historyStatsSummary').textContent = "0 attempts recorded";
                 return;
             }
 
@@ -1405,8 +1405,8 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${r.timestamp}</td>
-                    <td>${r.missionName.replace('MISIÓN: ', '')}</td>
-                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'ÉXITO' : 'FALLO'}</td>
+                    <td>${r.missionName.replace(/^(MISSION|MISIÓN): /, '')}</td>
+                    <td style="color:${r.success ? 'var(--crt-green)' : 'var(--crt-red)'}; font-weight:bold;">${r.success ? 'PASS' : 'FAIL'}</td>
                     <td>${r.speed.toFixed(2)} m/s</td>
                     <td>${r.offset.toFixed(2)} m</td>
                     <td>${r.time} s</td>
@@ -1417,19 +1417,19 @@
             });
 
             const winRate = Math.round((successes / list.length) * 100);
-            document.getElementById('historyStatsSummary').textContent = `${list.length} vuelos registrados | Tasa de éxito: ${winRate}%`;
+            document.getElementById('historyStatsSummary').textContent = `${list.length} flights recorded | Success rate: ${winRate}%`;
         }
 
         function showDebriefModal(success, speed, latOffset, maxAngle) {
             const modal = document.getElementById('debriefModal');
             modal.style.display = 'flex';
 
-            document.getElementById('debTitle').textContent = success ? "¡ACOPLAMIENTO EXITOSO!" : "COLISIÓN O DESALINEACIÓN";
+            document.getElementById('debTitle').textContent = success ? "DOCKING SUCCESSFUL!" : "COLLISION OR MISALIGNMENT";
             document.getElementById('debTitle').style.color = success ? "var(--crt-green)" : "var(--crt-red)";
 
             document.getElementById('debMessage').textContent = success ?
-                "Los 12 pestillos mecánicos andróginos bloquearon el túnel de atraque con absorción inercial nominal." :
-                (speed > 0.16 ? "Velocidad de contacto excesiva (> 0.15 m/s). El collar andrógino resultó fracturado." : "Error angular o desvío lateral fuera del corredor de captura.");
+                "All 12 androgynous mechanical latches locked the docking tunnel with nominal inertial absorption." :
+                (speed > 0.16 ? "Excessive contact velocity (> 0.15 m/s). Androgynous collar fractured." : "Angular error or lateral offset outside the capture corridor.");
 
             document.getElementById('debVel').textContent = `${speed.toFixed(2)} m/s`;
             document.getElementById('debVel').style.color = speed <= 0.15 ? "var(--crt-green)" : "var(--crt-red)";
@@ -1437,7 +1437,7 @@
             document.getElementById('debOffset').textContent = `${latOffset.toFixed(2)} m`;
             document.getElementById('debFuel').textContent = `${(100 - state.fuel).toFixed(1)}%`;
             document.getElementById('debTime').textContent = `${Math.round(missionElapsedTime)} s`;
-            document.getElementById('debGrade').textContent = success ? (speed <= 0.09 && latOffset <= 0.3 ? "A+ PERFECTO" : "A EXCELENTE") : "F REPROBADO";
+            document.getElementById('debGrade').textContent = success ? (speed <= 0.09 && latOffset <= 0.3 ? "A+ PERFECT" : "A EXCELLENT") : "F FAILED";
         }
 
         function nextLevel() {
@@ -1446,7 +1446,7 @@
                 document.getElementById('diffSelect').value = missionDifficulty + 1;
                 setupDifficulty(missionDifficulty + 1);
             } else {
-                alert("¡Has completado todos los niveles de Acoplamiento Espacial!");
+                alert("All Space Docking levels completed!");
                 setupDifficulty(1);
             }
         }

@@ -1,5 +1,5 @@
-// Genera los 16 public/minigames/*.html a partir de minijuegos_origen/*.html + new-minigames.cjs
-// Aplica parches de integración React, badges de rol, estado de amenaza en vivo, pulido UX y cierre fluido al ganar.
+// Generates the 16 public/minigames/*.html files from minijuegos_origen/*.html + new-minigames.cjs
+// Applies React bridge integration, role badges, live threat state sync, UX polish, and smooth victory exit.
 const fs = require('fs')
 const path = require('path')
 const { getNewMinigames } = require('./new-minigames.cjs')
@@ -11,7 +11,7 @@ fs.mkdirSync(OUT, { recursive: true })
 function stripOldInjections(html) {
   return html
     .replace(/\s*<style data-mg-safe-css="1">[\s\S]*?<\/style>/g, '')
-    .replace(/\s*<script>\s*\/\* === Puente con la Estación Espacial \(iframe -> React\) === \*\/[\s\S]*?<\/script>/g, '')
+    .replace(/\s*<script>\s*\/\* === (?:Puente con la Estación Espacial|Space Station Bridge) \(iframe -> React\) === \*\/[\s\S]*?<\/script>/g, '')
     .replace(/\s*\/\* === THREAT_SYNC_START === \*\/[\s\S]*?\/\* === THREAT_SYNC_END === \*\//g, '')
     .replace(/\s*\/\* === VERIFY_SYS_START === \*\/[\s\S]*?\/\* === VERIFY_SYS_END === \*\//g, '')
 }
@@ -29,38 +29,38 @@ function readFirstAvailable(candidates, fallbackOutName) {
       return stripOldInjections(fs.readFileSync(outPath, 'utf8').replace(/\r\n/g, '\n'))
     }
   }
-  throw new Error('No se encontró archivo origen entre: ' + candidates.join(', '))
+  throw new Error('Source file not found among: ' + candidates.join(', '))
 }
 
 function replaceOnce(src, find, repl, label) {
   const idx = typeof find === 'string' ? src.indexOf(find) : src.search(find)
-  if (idx < 0) throw new Error('Patch no aplicado: ' + label)
+  if (idx < 0) throw new Error('Patch not applied: ' + label)
   return src.replace(find, () => repl)
 }
 
 function injectInsideMainScript(src, snippet) {
   const idx = src.lastIndexOf('</script>')
-  if (idx < 0) throw new Error('No se encontró cierre </script> principal')
+  if (idx < 0) throw new Error('Main closing </script> not found')
   return src.slice(0, idx) + '\n' + snippet + '\n' + src.slice(idx)
 }
 
 const VICTORY_BUTTON_LABELS = {
-  dock: '[ ✔ SELLAR ESCLUSA Y CONFIRMAR ATRAQUE ]',
-  comet: '[ ✔ DESACTIVAR TORRETA Y VOLVER AL PUENTE ]',
-  gyro: '[ ✔ FIJAR CARDANES CMG Y SALIR ]',
-  debris: '[ ✔ CONFIRMAR TRAYECTORIA LIMPIA ]',
-  eps: '[ ✔ FIJAR MATRIZ EPS Y CERRAR CONSOLA ]',
-  eclss: '[ ✔ SELLAR PARÁMETROS ECLSS Y SALIR ]',
-  reactor: '[ ✔ ESTABILIZAR FLUJO CRIOGÉNICO ]',
-  pcb: '[ ✔ CERRAR DISYUNTORES PCB Y FINALIZAR ]',
-  nav: '[ ✔ FIJAR ÓRBITA HOHMANN Y CONTINUAR ]',
-  lander: '[ ✔ TRANSMITIR MUESTRAS DE SONDA Y SALIR ]',
-  spectro: '[ ✔ GUARDAR ESPECTRO QUÍMICO Y ACEPTAR ]',
-  thermal: '[ ✔ ENVIAR CAPTURA TÉRMICA Y CERRAR ]',
-  telecom: '[ ✔ BLOQUEAR FRECUENCIA DSN Y ACEPTAR ]',
-  cyber: '[ ✔ APLICAR REGLAS DE FIREWALL Y SALIR ]',
-  hga: '[ ✔ FIJAR AZIMUT PARABÓLICO Y ACEPTAR ]',
-  decrypt: '[ ✔ VALIDAR TRAMAS CRC Y FINALIZAR ]',
+  dock: '[ ✔ SEAL AIRLOCK & CONFIRM DOCKING ]',
+  comet: '[ ✔ DEACTIVATE TURRET & RETURN TO BRIDGE ]',
+  gyro: '[ ✔ LOCK CMG GIMBALS & EXIT ]',
+  debris: '[ ✔ CONFIRM CLEAR TRAJECTORY ]',
+  eps: '[ ✔ LOCK EPS MATRIX & CLOSE CONSOLE ]',
+  eclss: '[ ✔ SEAL ECLSS PARAMETERS & EXIT ]',
+  reactor: '[ ✔ STABILIZE CRYOGENIC FLOW ]',
+  pcb: '[ ✔ CLOSE PCB BREAKERS & FINISH ]',
+  nav: '[ ✔ LOCK HOHMANN ORBIT & CONTINUE ]',
+  lander: '[ ✔ TRANSMIT PROBE SAMPLES & EXIT ]',
+  spectro: '[ ✔ SAVE CHEMICAL SPECTRUM & ACCEPT ]',
+  thermal: '[ ✔ SEND THERMAL CAPTURE & CLOSE ]',
+  telecom: '[ ✔ LOCK DSN FREQUENCY & ACCEPT ]',
+  cyber: '[ ✔ SEAL FIREWALL 8080 & CONTINUE ]',
+  hga: '[ ✔ LOCK HGA BEAM & RETURN ]',
+  decrypt: '[ ✔ AUTHORIZE QUANTUM CRC KEY ]',
 }
 
 const liveThreatSyncScript = (gameId) => `
@@ -242,7 +242,7 @@ const liveThreatSyncScript = (gameId) => `
 
 const bridge = (gameId) => `
 <script>
-/* === Puente con la Estación Espacial (iframe -> React) === */
+/* === Space Station Bridge (iframe -> React) === */
 (function () {
   var wonPending = false;
   var victorySent = false;
@@ -303,7 +303,7 @@ const bridge = (gameId) => `
     if (!btn) return;
     btn.setAttribute('data-solved-btn', '1');
     if (!btn.hasAttribute('data-orig-label')) {
-      btn.setAttribute('data-orig-label', btn.textContent || 'SIGUIENTE NIVEL');
+      btn.setAttribute('data-orig-label', btn.textContent || 'NEXT LEVEL');
     }
     if (!btn.hasAttribute('data-bridge-click')) {
       btn.setAttribute('data-bridge-click', '1');
@@ -316,14 +316,14 @@ const bridge = (gameId) => `
       });
     }
     if (isVictory) {
-      btn.textContent = ${JSON.stringify(VICTORY_BUTTON_LABELS[gameId] || '[ ✔ VOLVER A LA ESTACIÓN (SISTEMA ESTABILIZADO) ]')};
+      btn.textContent = ${JSON.stringify(VICTORY_BUTTON_LABELS[gameId] || '[ ✔ RETURN TO STATION (SYSTEM STABILIZED) ]')};
       btn.style.background = 'linear-gradient(180deg, #059669 0%, #047857 100%)';
       btn.style.borderColor = '#00ff88';
       btn.style.color = '#ffffff';
       btn.style.fontWeight = 'bold';
       btn.style.boxShadow = '0 0 14px rgba(0, 255, 136, 0.45)';
     } else {
-      btn.textContent = btn.getAttribute('data-orig-label') || 'REINTENTAR';
+      btn.textContent = btn.getAttribute('data-orig-label') || 'RETRY';
       btn.style.background = '#1e293b';
       btn.style.borderColor = '#475569';
       btn.style.color = '#e2e8f0';
@@ -571,49 +571,49 @@ const verifySystemScript = (gameId) => `
           }
 
           var NEW_OK_LABELS = {
-            gyro: '✔ CARDANES CMG ESTABILIZADOS',
-            debris: '✔ CORREDOR KESSLER DESPEJADO',
-            reactor: '✔ NÚCLEOS DEL REACTOR REFRIGERADOS',
-            pcb: '✔ CIRCUITOS PCB RUTADOS CORRECTAMENTE',
-            spectro: '✔ ESPECTROMETRÍA COMPLETADA',
-            thermal: '✔ BARRIDO MULTIESPECTRAL VALIDADO',
-            hga: '✔ ENLACE PARABÓLICO HGA / DSN CONFIRMADO',
-            decrypt: '✔ CANAL CUÁNTICO DESCIFRADO'
+            gyro: '✔ CMG GIMBALS STABILIZED',
+            debris: '✔ KESSLER CORRIDOR CLEARED',
+            reactor: '✔ REACTOR CORES COOLED',
+            pcb: '✔ PCB CIRCUITS ROUTED PROPERLY',
+            spectro: '✔ SPECTROMETRY COMPLETED',
+            thermal: '✔ MULTISPECTRAL SCAN VALIDATED',
+            hga: '✔ PARABOLIC HGA / DSN LINK CONFIRMED',
+            decrypt: '✔ QUANTUM CHANNEL DECRYPTED'
           };
 
           function evalVerifyStatus(gid) {
             switch (gid) {
               case 'dock': {
-                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ ACOPLAMIENTO APAS VERIFICADO' };
+                if (typeof state !== 'object' || !state || !state.pos) return { ready: true, okMsg: '✔ APAS DOCKING VERIFIED' };
                 var lat = Math.hypot(state.pos.x, state.pos.y);
                 return {
                   ready: lat <= 1.50,
-                  needMsg: 'Centra desvío lateral a <= 1.50m (actual ' + lat.toFixed(2) + 'm) con WASD/Flechas',
-                  okMsg: '✔ Listo: desvío ' + lat.toFixed(2) + 'm — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Center lateral offset <= 1.50m (current ' + lat.toFixed(2) + 'm) using WASD/Arrows',
+                  okMsg: '✔ Ready: offset ' + lat.toFixed(2) + 'm — Press [ CONFIRM ] above',
                   onApprove: function () { state.pos.z = 0; state.isEnded = true; }
                 };
               }
               case 'comet': {
                 if (typeof hull === 'number' && hull <= 0) {
-                  return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
                 }
                 var sc = typeof score === 'number' ? score : 0;
                 return {
                   ready: sc >= 3,
-                  needMsg: 'Destruye ' + (3 - sc) + ' meteorito(s) más con clic para confirmar (' + sc + '/3)',
-                  okMsg: '✔ Listo: ' + sc + ' meteoritos destruidos — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Destroy ' + (3 - sc) + ' more meteorite(s) by clicking to confirm (' + sc + '/3)',
+                  okMsg: '✔ Ready: ' + sc + ' meteorites destroyed — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'eps': {
-                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ MATRIZ EPS OK' };
+                if (typeof state !== 'object' || !state || !Array.isArray(state.loads)) return { ready: true, okMsg: '✔ EPS MATRIX NOMINAL' };
                 var sv = state.loads[0] && state.loads[0].active ? state.loads[0].power : 0;
                 var bat = Math.round(state.battery || 0);
                 var okEps = sv >= 50 && state.battery > 15;
                 return {
                   ready: okEps,
-                  needMsg: sv < 50 ? 'Sube Sop. Vital >= 50 MW o pulsa AUTO-BALANCEAR' : 'Batería <= 15% (' + bat + '%): pulsa AUTO-BALANCEAR CARGAS',
-                  okMsg: '✔ Listo: Sop. Vital ' + sv + ' MW y Batería ' + bat + '% — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: sv < 50 ? 'Raise Life Support >= 50 MW or press AUTO-BALANCE' : 'Battery <= 15% (' + bat + '%): press AUTO-BALANCE LOADS',
+                  okMsg: '✔ Ready: Life Support ' + sv + ' MW & Battery ' + bat + '% — Press [ CONFIRM ] above',
                   onApprove: function () { state.isEnded = true; }
                 };
               }
@@ -622,22 +622,22 @@ const verifySystemScript = (gameId) => `
                 var co2Ok = typeof co2Val !== 'number' || co2Val < 1.2;
                 var actOk = (typeof activeScrub === 'number' && activeScrub === 1) || (typeof isSealed === 'boolean' && isSealed);
                 var msgNeed = !o2Ok
-                  ? 'Ajusta O2 entre 18% y 26% o pulsa ESTABILIZAR AUTOMÁTICO'
+                  ? 'Adjust O2 between 18% and 26% or press AUTO-STABILIZE'
                   : !co2Ok
-                    ? 'Reduce CO2 < 1.2% con Canister B o ESTABILIZAR AUTOMÁTICO'
-                    : 'Cambia a Canister B o sella la esclusa para confirmar';
+                    ? 'Reduce CO2 < 1.2% with Canister B or AUTO-STABILIZE'
+                    : 'Switch to Canister B or seal airlock to confirm';
                 return {
                   ready: o2Ok && co2Ok && actOk,
                   needMsg: msgNeed,
-                  okMsg: '✔ Listo: gases seguros y esclusa/filtro OK — Pulsa [ CONFIRMAR ] arriba',
+                  okMsg: '✔ Ready: gases nominal and airlock/scrubber OK — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
               case 'nav': {
                 if (typeof isBurning !== 'undefined' && isBurning) {
-                  return { ready: false, needMsg: 'Espera 1s a que termine el encendido orbital' };
+                  return { ready: false, needMsg: 'Wait 1s for orbital burn to complete' };
                 }
-                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ ÓRBITA HOHMANN OK' };
+                if (typeof orbitState !== 'object' || !orbitState) return { ready: true, okMsg: '✔ HOHMANN ORBIT NOMINAL' };
                 var navErr = Math.abs(orbitState.altitude - orbitState.targetAlt);
                 var recSigned = Math.round((orbitState.targetAlt - orbitState.altitude) / 0.95);
                 var curSigned = orbitState.vector === 'prograde' ? orbitState.deltaV : -orbitState.deltaV;
@@ -645,8 +645,8 @@ const verifySystemScript = (gameId) => `
                 var okNav = Boolean(orbitState.done || navErr <= 45 || dvDiff <= 35);
                 return {
                   ready: okNav,
-                  needMsg: 'Pon Δv cerca de ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) y confirma',
-                  okMsg: '✔ Listo: impulso Δv alineado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Δv near ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (±35 m/s) and confirm',
+                  okMsg: '✔ Ready: Δv impulse aligned — Press [ CONFIRM ] above',
                   onApprove: function () { orbitState.altitude = orbitState.targetAlt; orbitState.done = true; orbitState.isEnded = true; }
                 };
               }
@@ -654,8 +654,8 @@ const verifySystemScript = (gameId) => `
                 var vel = typeof velocity === 'number' ? velocity : 0;
                 return {
                   ready: vel < 10.0,
-                  needMsg: 'Frena con [ESPACIO] por debajo de 10.0 m/s (actual ' + vel.toFixed(1) + ' m/s)',
-                  okMsg: '✔ Listo: velocidad ' + vel.toFixed(1) + ' m/s — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Brake with [SPACE] below 10.0 m/s (current ' + vel.toFixed(1) + ' m/s)',
+                  okMsg: '✔ Ready: velocity ' + vel.toFixed(1) + ' m/s — Press [ CONFIRM ] above',
                   onApprove: function () {
                     if (typeof altitude !== 'undefined') altitude = 0;
                     if (typeof updateUI === 'function') updateUI();
@@ -668,20 +668,20 @@ const verifySystemScript = (gameId) => `
                 var gDiff = Math.abs(userGain - targetGain);
                 return {
                   ready: fDiff <= 25 && gDiff <= 20,
-                  needMsg: 'Pon Freq ~' + targetFreq + ' Hz (±25) y Ampl ~' + targetGain + '% (±20)',
-                  okMsg: '✔ Listo: señal DSN sincronizada — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Set Freq ~' + targetFreq + ' Hz (±25) and Gain ~' + targetGain + '% (±20)',
+                  okMsg: '✔ Ready: DSN signal synchronized — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
               case 'cyber': {
                 if (typeof shieldIntegrity === 'number' && shieldIntegrity <= 0) {
-                  return { ready: false, needMsg: 'Escudo en 0%: pulsa REINICIAR arriba' };
+                  return { ready: false, needMsg: 'Shield at 0%: press RESET above' };
                 }
                 var pc = typeof packetsChecked === 'number' ? packetsChecked : 0;
                 return {
                   ready: pc >= 3,
-                  needMsg: 'Filtra ' + (3 - pc) + ' paquete(s) más (verde PERMITIR / rojo BLOQUEAR)',
-                  okMsg: '✔ Listo: ' + pc + ' paquetes filtrados — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Filter ' + (3 - pc) + ' more packet(s) (green ALLOW / red BLOCK)',
+                  okMsg: '✔ Ready: ' + pc + ' packets filtered — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isMissionEnded !== 'undefined') isMissionEnded = true; }
                 };
               }
@@ -693,21 +693,21 @@ const verifySystemScript = (gameId) => `
               case 'thermal':
               case 'hga':
               case 'decrypt': {
-                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Casco en 0%: pulsa REINICIAR arriba' };
-                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Batería agotada: pulsa REINICIAR arriba' };
-                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Sobrepresión: pulsa REINICIAR arriba' };
+                if (gid === 'debris' && typeof hull === 'number' && hull <= 0) return { ready: false, needMsg: 'Hull at 0%: press RESET above' };
+                if (gid === 'pcb' && typeof battery === 'number' && battery <= 0) return { ready: false, needMsg: 'Battery depleted: press RESET above' };
+                if (gid === 'reactor' && typeof pressure === 'number' && pressure >= 105) return { ready: false, needMsg: 'Overpressure: press RESET above' };
                 var interacted = (window.__mgAdjustCount || 0) >= 1;
                 var mTime = typeof missionTime === 'number' ? missionTime : 0;
                 var okNew = interacted || mTime >= 4.0;
                 return {
                   ready: okNew,
-                  needMsg: 'Haz 1 ajuste (o pulsa AUTO-CALIBRAR / opera ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
-                  okMsg: '✔ Listo: sistema calibrado — Pulsa [ CONFIRMAR ] arriba',
+                  needMsg: 'Make 1 adjustment (or press AUTO-CALIBRATE / operate ' + Math.max(0.5, 4.0 - mTime).toFixed(1) + 's)',
+                  okMsg: '✔ Ready: system calibrated — Press [ CONFIRM ] above',
                   onApprove: function () { if (typeof isEnded !== 'undefined') isEnded = true; }
                 };
               }
             }
-            return { ready: true, okMsg: '✔ SISTEMA VERIFICADO' };
+            return { ready: true, okMsg: '✔ SYSTEM VERIFIED' };
           }
 
           function refreshLiveVerifyBanner() {
@@ -722,9 +722,9 @@ const verifySystemScript = (gameId) => `
             var gid = '${gameId}';
             try {
               var st = evalVerifyStatus(gid);
-              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Completa el paso indicado'));
+              if (!st.ready) return showStepAmber('⚡ ' + (st.needMsg || 'Complete the indicated step'));
               if (typeof st.onApprove === 'function') st.onApprove();
-              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SISTEMA ESTABILIZADO');
+              return approveVerifiedSystem(NEW_OK_LABELS[gid] || st.okMsg || '✔ SYSTEM STABILIZED');
             } catch (err) {}
             return false;
           }
@@ -758,32 +758,32 @@ function common(src, gameId, h1, badgeText) {
   return src.replace('</body>', () => bridge(gameId) + '</body>')
 }
 
-// 1) Acoplamiento Espacial 6-DOF (CÓNDOR-4)
+// 1) 6-DOF Space Docking (CONDOR-4)
 {
   let s = readFirstAvailable(['acoplamiento_espacial_2.html', 'acoplamiento_espacial.html'], 'acoplamiento_espacial.html')
   s = replaceOnce(
     s,
-    `alert("¡Has completado todos los niveles de Acoplamiento Espacial!");`,
-    `if (window.__showConsoleHudNotice) window.__showConsoleHudNotice("¡Todos los niveles de Acoplamiento APAS estabilizados!", "ok");`,
+    `alert("All Space Docking levels completed!");`,
+    `if (window.__showConsoleHudNotice) window.__showConsoleHudNotice("All APAS Docking levels stabilized!", "ok");`,
     'dock no alert'
   )
   s = replaceOnce(
     s,
     `        let state = {
-            pos: { x: 1.8, y: -1.2, z: 42.5 },   // metros respecto al puerto
-            vel: { x: -0.015, y: 0.01, z: -0.12 },// m/s velocidad relativa
-            rot: { yaw: 2.5, pitch: -1.8, roll: 0.8 }, // grados
+            pos: { x: 1.8, y: -1.2, z: 42.5 },   // meters relative to port
+            vel: { x: -0.015, y: 0.01, z: -0.12 },// m/s relative velocity
+            rot: { yaw: 2.5, pitch: -1.8, roll: 0.8 }, // degrees
             angVel: { yaw: -0.04, pitch: 0.03, roll: 0.0 }, // deg/s`,
     `        let state = {
-            pos: { x: 0.22, y: -0.18, z: 10.0 },   // metros respecto al puerto
-            vel: { x: 0.0, y: 0.0, z: -0.85 },     // m/s acercamiento suave
-            rot: { yaw: 0.3, pitch: -0.2, roll: 0.2 }, // grados (<0.5°)
+            pos: { x: 0.22, y: -0.18, z: 10.0 },   // meters relative to port
+            vel: { x: 0.0, y: 0.0, z: -0.85 },     // m/s gentle approach
+            rot: { yaw: 0.3, pitch: -0.2, roll: 0.2 }, // degrees (<0.5°)
             angVel: { yaw: 0.0, pitch: 0.0, roll: 0.0 }, // deg/s`,
     'dock easy initial state'
   )
   s = replaceOnce(
     s,
-    /            if \(missionDifficulty === 1\) \{[\s\S]*?stationSpinRate = 0\.4;\s*document\.getElementById\('missionText'\)\.textContent = "MISIÓN EXTREMA: Atraque Nocturno con Mareas";\s*\}/,
+    /            if \(missionDifficulty === 1\) \{[\s\S]*?stationSpinRate = 0\.4;\s*document\.getElementById\('missionText'\)\.textContent = "EXTREME MISSION: Night Docking with Tidal Forces";\s*\}/,
     `            state.pos = { x: 0.22, y: -0.18, z: 10.0 };
             state.vel = { x: 0.0, y: 0.0, z: -0.85 };
             state.rot = { yaw: 0.3, pitch: -0.2, roll: 0.2 };
@@ -791,32 +791,32 @@ function common(src, gameId, h1, badgeText) {
             state.fuel = 95.0;
             stationSpinRate = 0.0;
             document.getElementById('missionText').textContent = missionDifficulty === 1
-                ? "MISIÓN: Acoplamiento Rectilíneo Guiado"
-                : "MISIÓN: Aproximación Asistida APAS (10m)";`,
+                ? "MISSION: Guided Rectilinear Docking"
+                : "MISSION: Assisted APAS Approach (10m)";`,
     'dock easy setupDifficulty'
   )
   s = replaceOnce(
     s,
-    `            // Criterios APAS: velocidad < 0.16 m/s, desvío < 0.65m, ángulo < 1.6°
+    `            // APAS criteria: speed < 0.16 m/s, offset < 0.65m, angle < 1.6°
             const success = (speed <= 0.16 && latOffset <= 0.65 && maxAngle <= 1.8);`,
-    `            // Criterios APAS amplios: desvío <= 1.50m, ángulo <= 4.0°
+    `            // Wide APAS criteria: offset <= 1.50m, angle <= 4.0°
             const success = (speed <= 1.10 && latOffset <= 1.50 && maxAngle <= 4.0);`,
     'dock wide capture tolerance'
   )
   s = common(
     s,
     'dock',
-    'ACOPLAMIENTO ESPACIAL 6-DOF APAS · CÓNDOR-4',
-    'DIRECTOR // ACOPLAMIENTO APAS (CÓNDOR-4)'
+    '6-DOF APAS SPACE DOCKING · CONDOR-4',
+    'COMMAND · CONDOR-4 (DIRECTOR)'
   )
   fs.writeFileSync(path.join(OUT, 'acoplamiento_espacial.html'), s)
 }
 
-// 2) Distribución Eléctrica EPS (ALPACA-1): eclipse 10s + auto-balancear ganador limpio
+// 2) EPS Electrical Power Distribution (ALPACA-1): 10s eclipse + clean winning auto-balance
 {
   let s = readFirstAvailable(['distribucion_electrica_2.html', 'distribucion_electrica.html'], 'distribucion_electrica.html')
 
-  // Objetivo y barra de progreso en header + eclipse 10s
+  // Header objective and progress bar + 10s eclipse
   s = replaceOnce(
     s,
     `<span id="eclipse-timer" class="text-amber-400 font-bold">ECLIPSE (18s)</span>`,
@@ -825,51 +825,51 @@ function common(src, gameId, h1, badgeText) {
   )
   s = replaceOnce(
     s,
-    `<span>ESTABILIZACIÓN DE EMERGENCIA</span>`,
-    `<span>AUTO-BALANCEAR CARGAS</span>`,
+    `<span>EMERGENCY STABILIZATION</span>`,
+    `<span>AUTO-BALANCE LOADS</span>`,
     'eps button label'
   )
   s = replaceOnce(
     s,
     `<div class="shrink-0 ml-3 flex items-center gap-2 font-bold">
-                <span class="text-slate-400">INTEGRIDAD:</span>
+                <span class="text-slate-400">INTEGRITY:</span>
                 <span id="stability-timer" class="text-cyan-300">100%</span>
             </div>`,
     `<div class="shrink-0 ml-3 flex items-center gap-3 font-bold">
-                <span class="text-slate-400">ESTABILIDAD: <span id="eps-win-timer" class="text-emerald-300">0s / 10s</span></span>
-                <span class="text-slate-400">INTEGRIDAD: <span id="stability-timer" class="text-cyan-300">100%</span></span>
+                <span class="text-slate-400">STABILITY: <span id="eps-win-timer" class="text-emerald-300">0s / 10s</span></span>
+                <span class="text-slate-400">INTEGRITY: <span id="stability-timer" class="text-cyan-300">100%</span></span>
             </div>`,
     'eps header win timer'
   )
 
-  // Modal de victoria/fallo (debriefModal) + estilo modal
+  // Victory/fail modal (debriefModal) + modal style
   s = replaceOnce(
     s,
-    `<!-- TOAST DE NOTIFICACIÓN -->`,
-    `<!-- MODAL DE INFORME EPS (debriefModal) -->
+    `<!-- NOTIFICATION TOAST -->`,
+    `<!-- EPS DEBRIEF MODAL (debriefModal) -->
     <div id="debriefModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md items-center justify-center p-4" style="display:none;">
         <div class="sci-panel max-w-lg w-full rounded-lg p-5 border-2 border-emerald-400/70 shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                <h3 id="debTitle" class="font-display text-base font-bold text-emerald-400">¡RED ELÉCTRICA EPS ESTABILIZADA!</h3>
+                <h3 id="debTitle" class="font-display text-base font-bold text-emerald-400">EPS POWER GRID STABILIZED!</h3>
                 <span id="debBadge" class="badge-system text-[10px] px-2 py-0.5 border border-emerald-400 text-emerald-300">NOMINAL</span>
             </div>
-            <p id="debDesc" class="text-xs text-slate-300 leading-relaxed">Los buses A, B y C mantienen el balance energético sin sobrecargas térmicas.</p>
+            <p id="debDesc" class="text-xs text-slate-300 leading-relaxed">Buses A, B, and C maintain power balance without thermal overloads.</p>
             <div class="grid grid-cols-2 gap-2 bg-slate-950/90 border border-slate-800 p-3 rounded text-xs">
-                <div>Batería Final: <strong id="debBattery" class="text-emerald-300">-</strong></div>
-                <div>Integridad Red: <strong id="debIntegrity" class="text-cyan-300">-</strong></div>
+                <div>Final Battery: <strong id="debBattery" class="text-emerald-300">-</strong></div>
+                <div>Grid Integrity: <strong id="debIntegrity" class="text-cyan-300">-</strong></div>
             </div>
             <div class="flex justify-end gap-2">
-                <button onclick="closeModalAndRetry()" class="btn-tactical px-3 py-2 rounded text-xs font-bold text-slate-200">REINTENTAR</button>
-                <button data-solved-btn="1" onclick="nextLevelOrFinish()" class="px-4 py-2 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-300">[ ✔ FIJAR MATRIZ EPS Y CERRAR CONSOLA ]</button>
+                <button onclick="closeModalAndRetry()" class="btn-tactical px-3 py-2 rounded text-xs font-bold text-slate-200">RETRY</button>
+                <button data-solved-btn="1" onclick="nextLevelOrFinish()" class="px-4 py-2 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-300">[ ✔ LOCK EPS MATRIX & CLOSE CONSOLE ]</button>
             </div>
         </div>
     </div>
 
-    <!-- TOAST DE NOTIFICACIÓN -->`,
+    <!-- NOTIFICATION TOAST -->`,
     'eps debrief modal html'
   )
 
-  // State fields para estabilidad y eclipse 10s
+  // State fields for stability and 10s eclipse
   s = replaceOnce(
     s,
     `            eclipsePhase: 12,
@@ -887,23 +887,23 @@ function common(src, gameId, h1, badgeText) {
     'eps state fields'
   )
 
-  // Auto-balanceador ganador limpio (ajusta 4 cargas + 3 generadores al instante sin cooldown bloqueante)
+  // Clean winning auto-balancer (sets 4 loads + 3 generators instantly without blocking cooldown)
   s = replaceOnce(
     s,
     `        function emergencyStabilize() {
             playUiSound('auto');
-            // Redistribuir cargas entre los 3 buses para eliminar sobrecargas
+            // Redistribute loads across the 3 buses to eliminate overloads
             state.loads[0].bus = 0; // Bus A
             state.loads[1].bus = 1; // Bus B
             state.loads[2].bus = 2; // Bus C
-            state.loads[3].bus = 2; // Bus C (junto con Lab que consume poco)
+            state.loads[3].bus = 2; // Bus C
 
             state.loads.forEach((l, i) => {
                 l.active = true;
                 document.getElementById(\`bus-btn-\${i}\`).textContent = \`\${BUS_NAMES[l.bus]} ⇄\`;
             });
 
-            // Ajustar potencias al mínimo seguro + reparto óptimo
+            // Adjust power levels to safe minimums + optimal split
             const totalGen = state.generators.reduce((acc, g) => acc + (g.active ? g.currentPower : 0), 0);
             let budget = Math.max(135, totalGen - 10);
 
@@ -916,7 +916,7 @@ function common(src, gameId, h1, badgeText) {
                 document.getElementById(\`slider-load-\${i}\`).value = l.power;
             });
 
-            showToast('ENRUTAMIENTO Y CARGAS ESTABILIZADAS');
+            showToast('ROUTING AND LOADS STABILIZED');
             updateUI();
         }`,
     `        function emergencyStabilize() {
@@ -938,8 +938,8 @@ function common(src, gameId, h1, badgeText) {
             });
             state.battery = Math.max(state.battery, 72);
             state.integrity = 100;
-            showToast('✔ 4 CARGAS Y 3 GENERADORES BALANCEADOS');
-            if (window.__showConsoleHudNotice) window.__showConsoleHudNotice('✔ RED EPS BALANCEADA — LISTO PARA CONFIRMAR', 'ok');
+            showToast('✔ 4 LOADS & 3 GENERATORS BALANCED');
+            if (window.__showConsoleHudNotice) window.__showConsoleHudNotice('✔ EPS GRID BALANCED — READY TO CONFIRM', 'ok');
             updateUI();
         }
 
@@ -949,8 +949,8 @@ function common(src, gameId, h1, badgeText) {
             playUiSound('auto');
             const m = document.getElementById('debriefModal');
             if (m) m.style.display = 'flex';
-            const t = document.getElementById('debTitle'); if (t) { t.textContent = '¡RED ELÉCTRICA EPS ESTABILIZADA!'; t.className = 'font-display text-base font-bold text-emerald-400'; }
-            const d = document.getElementById('debDesc'); if (d) d.textContent = 'Los buses y la carga solar superaron el ciclo de demanda y eclipse.';
+            const t = document.getElementById('debTitle'); if (t) { t.textContent = 'EPS POWER GRID STABILIZED!'; t.className = 'font-display text-base font-bold text-emerald-400'; }
+            const d = document.getElementById('debDesc'); if (d) d.textContent = 'Buses and solar generation cleared the demand and eclipse cycle.';
             const b = document.getElementById('debBattery'); if (b) b.textContent = Math.round(state.battery) + '%';
             const ig = document.getElementById('debIntegrity'); if (ig) ig.textContent = Math.round(state.integrity) + '%';
         }
@@ -960,8 +960,8 @@ function common(src, gameId, h1, badgeText) {
             playUiSound('warn');
             const m = document.getElementById('debriefModal');
             if (m) m.style.display = 'flex';
-            const t = document.getElementById('debTitle'); if (t) { t.textContent = 'COLAPSO DE RED ELÉCTRICA'; t.className = 'font-display text-base font-bold text-rose-400'; }
-            const d = document.getElementById('debDesc'); if (d) d.textContent = reason || 'Sobrecarga sostenida en buses o caída crítica de batería.';
+            const t = document.getElementById('debTitle'); if (t) { t.textContent = 'POWER GRID COLLAPSE'; t.className = 'font-display text-base font-bold text-rose-400'; }
+            const d = document.getElementById('debDesc'); if (d) d.textContent = reason || 'Sustained bus overload or critical battery drop.';
             const b = document.getElementById('debBattery'); if (b) b.textContent = Math.round(state.battery) + '%';
             const ig = document.getElementById('debIntegrity'); if (ig) ig.textContent = Math.round(state.integrity) + '%';
         }
@@ -980,7 +980,7 @@ function common(src, gameId, h1, badgeText) {
     'eps clean winning autobalance and debrief'
   )
 
-  // Reset stableSec/isEnded in applyDifficulty (meta 8/10/12s)
+  // Reset stableSec/isEnded in applyDifficulty (target 8/10/12s)
   s = replaceOnce(
     s,
     `function applyDifficulty(lvl) {
@@ -1014,7 +1014,7 @@ function common(src, gameId, h1, badgeText) {
                     if (hasOverload || hasVitalFail || state.battery <= 15) {
                         state.integrity = Math.max(0, state.integrity - 2.0);
                         state.stableSec = Math.max(0, state.stableSec - 1);
-                        if (state.integrity <= 0) failMission('Sobrecarga térmica o batería agotada (<15%).');
+                        if (state.integrity <= 0) failMission('Thermal overload or depleted battery (<15%).');
                     } else {
                         state.integrity = Math.min(100, state.integrity + 0.8);
                         state.stableSec = Math.min(state.targetStableSec, state.stableSec + 1);
@@ -1030,7 +1030,7 @@ function common(src, gameId, h1, badgeText) {
 
   s = replaceOnce(
     s,
-    `document.getElementById('btn-exit').addEventListener('click', () => showToast('VOLVIENDO A LA ESTACIÓN...'));`,
+    `document.getElementById('btn-exit').addEventListener('click', () => showToast('RETURNING TO STATION...'));`,
     `document.getElementById('btn-exit').addEventListener('click', () => { if (window.__closeFrameNow) window.__closeFrameNow(); });`,
     'eps exit button'
   )
@@ -1038,22 +1038,22 @@ function common(src, gameId, h1, badgeText) {
   s = common(
     s,
     'eps',
-    'DISTRIBUCIÓN ELÉCTRICA EPS · ALPACA-1 · POWER MGD',
-    'INGENIERÍA // ALPACA-1'
+    'EPS ELECTRICAL POWER DISTRIBUTION · ALPACA-1 · POWER MGD',
+    'ENGINEERING · ALPACA-1 (SOLAR/O2)'
   )
   fs.writeFileSync(path.join(OUT, 'distribucion_electrica.html'), s)
 }
 
-// 3) Soporte Vital ECLSS (ALPACA-1): rangos amplios + botón ESTABILIZAR AUTOMÁTICO ECLSS + sliders tiempo real
+// 3) ECLSS Life Support (ALPACA-1): wide tolerances + AUTO-STABILIZE ECLSS button + real-time sliders
 {
   let s = readFirstAvailable(['soporte_vital_2.html', 'soporte_vital.html'], 'soporte_vital.html')
   s = replaceOnce(
     s,
     `<button class="btn-ui" style="background:#0284c7; color:#fff; justify-content:center; padding:9px;" onclick="applySettings()">
-                    APLICAR PARÁMETROS
+                    APPLY PARAMETERS
                 </button>`,
     `<button class="btn-ui" id="btnAutoEclss" style="background:linear-gradient(180deg,#059669,#047857); border:1px solid #00ff88; color:#fff; font-weight:bold; justify-content:center; padding:8px;" onclick="autoStabilizeEclss()">
-                    ⚡ ESTABILIZAR AUTOMÁTICO ECLSS
+                    ⚡ AUTO-STABILIZE ECLSS
                 </button>`,
     'eclss auto stabilize button'
   )
@@ -1091,42 +1091,42 @@ function common(src, gameId, h1, badgeText) {
             setVent('auto');
             updatePreview();
             updateUI();
-            if (window.__showConsoleHudNotice) window.__showConsoleHudNotice('✔ ECLSS ESTABILIZADO (O2 21%, CO2 0.08%, Canister B) · LISTO PARA CONFIRMAR', 'ok');
+            if (window.__showConsoleHudNotice) window.__showConsoleHudNotice('✔ ECLSS STABILIZED (O2 21%, CO2 0.08%, Canister B) · READY TO CONFIRM', 'ok');
         }`,
     'eclss realtime oninput and auto stabilize'
   )
   s = replaceOnce(
     s,
-    `            if (o2Val < 16.0) { isEnded = true; showDebriefModal(false, "Hipoxia severa por caída de oxígeno."); }
-            else if (o2Val > 28.0) { isEnded = true; showDebriefModal(false, "Riesgo crítico de fuego por hiperoxia."); }
-            else if (co2Val > 1.2) { isEnded = true; showDebriefModal(false, "Intoxicación letal por hipercapnia."); }
-            else if (pressVal < 70) { isEnded = true; showDebriefModal(false, "Descompresión crítica de cabina."); }
+    `            if (o2Val < 16.0) { isEnded = true; showDebriefModal(false, "Severe hypoxia due to oxygen drop."); }
+            else if (o2Val > 28.0) { isEnded = true; showDebriefModal(false, "Critical fire hazard due to hyperoxia."); }
+            else if (co2Val > 1.2) { isEnded = true; showDebriefModal(false, "Lethal hypercapnia poisoning."); }
+            else if (pressVal < 70) { isEnded = true; showDebriefModal(false, "Critical cabin decompression."); }
 
             const targetTime = difficulty === 1 ? 25 : difficulty === 2 ? 35 : 45;`,
-    `            if (o2Val < 15.0) { isEnded = true; showDebriefModal(false, "Hipoxia severa por caída de oxígeno."); }
-            else if (o2Val > 29.0) { isEnded = true; showDebriefModal(false, "Riesgo crítico de fuego por hiperoxia."); }
-            else if (co2Val > 1.6) { isEnded = true; showDebriefModal(false, "Intoxicación letal por hipercapnia."); }
-            else if (pressVal < 70) { isEnded = true; showDebriefModal(false, "Descompresión crítica de cabina."); }
+    `            if (o2Val < 15.0) { isEnded = true; showDebriefModal(false, "Severe hypoxia due to oxygen drop."); }
+            else if (o2Val > 29.0) { isEnded = true; showDebriefModal(false, "Critical fire hazard due to hyperoxia."); }
+            else if (co2Val > 1.6) { isEnded = true; showDebriefModal(false, "Lethal hypercapnia poisoning."); }
+            else if (pressVal < 70) { isEnded = true; showDebriefModal(false, "Critical cabin decompression."); }
 
             const targetTime = difficulty === 1 ? 10 : difficulty === 2 ? 12 : 14;`,
     'eclss wide tolerances and fast timer'
   )
   s = replaceOnce(
     s,
-    `alert("¡Has completado todos los escenarios de Soporte Vital!");`,
-    `if (window.__showConsoleHudNotice) window.__showConsoleHudNotice("¡Todos los niveles de Soporte Vital estabilizados!", "ok");`,
+    `alert("All Life Support scenarios completed!");`,
+    `if (window.__showConsoleHudNotice) window.__showConsoleHudNotice("All Life Support levels stabilized!", "ok");`,
     'eclss no alert'
   )
   s = common(
     s,
     'eclss',
-    'SOPORTE VITAL ECLSS Y TANQUES O2 · ALPACA-1',
-    'INGENIERÍA // ALPACA-1'
+    'ECLSS LIFE SUPPORT & O2 TANKS · ALPACA-1',
+    'ENGINEERING · ALPACA-1 (SOLAR/O2)'
   )
   fs.writeFileSync(path.join(OUT, 'soporte_vital.html'), s)
 }
 
-// 4) Navegación Orbital Hohmann Dual (PUMA-3): tolerancia ±45 km y Δv recomendado en vivo
+// 4) Dual Hohmann Orbital Navigation (PUMA-3): ±45 km tolerance & live recommended Δv
 {
   let s = readFirstAvailable(['navegacion_orbital_2.html', 'navegacion_orbital.html'], 'navegacion_orbital.html')
   s = replaceOnce(s, `tolerance: 15.0,`, `tolerance: 45.0,`, 'nav wide tolerance 45km')
@@ -1139,18 +1139,18 @@ function common(src, gameId, h1, badgeText) {
   s = replaceOnce(
     s,
     `                <button class="btn-burn" id="btnExecuteBurn" onclick="executeBurn()">
-                    ▶ EJECUTAR MANIOBRA
+                    ▶ EXECUTE MANEUVER
                 </button>`,
-    `                <div id="recommendedDvHint" style="background:#022c22; border:1px solid #00ff88; color:#6ee7b7; padding:6px 8px; font-size:11px; font-weight:bold; text-align:center; border-radius:3px;">💡 Impulso recomendado: +145 m/s</div>
+    `                <div id="recommendedDvHint" style="background:#022c22; border:1px solid #00ff88; color:#6ee7b7; padding:6px 8px; font-size:11px; font-weight:bold; text-align:center; border-radius:3px;">💡 Recommended impulse: +145 m/s</div>
                 <button class="btn-burn" id="btnExecuteBurn" onclick="executeBurn()">
-                    ▶ EJECUTAR MANIOBRA
+                    ▶ EXECUTE MANEUVER
                 </button>`,
     'nav recommended dv hint ui'
   )
   s = replaceOnce(
     s,
-    `            burnDuration = 2.8; // 2.8s de maniobra dinámica`,
-    `            burnDuration = 0.8; // ignición rápida 0.8s`,
+    `            burnDuration = 2.8; // 2.8s dynamic burn`,
+    `            burnDuration = 0.8; // 0.8s rapid ignition`,
     'nav fast burn 0.8s'
   )
   s = replaceOnce(
@@ -1161,18 +1161,18 @@ function common(src, gameId, h1, badgeText) {
   )
   s = replaceOnce(
     s,
-    `alert("¡Has completado todos los escenarios de Navegación Orbital!");`,
-    `if (window.__showConsoleHudNotice) window.__showConsoleHudNotice("¡Todos los escenarios orbitales completados!", "ok");`,
+    `alert("All Orbital Navigation scenarios completed!");`,
+    `if (window.__showConsoleHudNotice) window.__showConsoleHudNotice("All orbital scenarios completed!", "ok");`,
     'nav no alert'
   )
   s = common(
     s,
     'nav',
-    'NAVEGACIÓN ORBITAL HOHMANN DUAL · SAT-01 AMARU-COMMS / SAT-02 INTI-SCIENCE',
-    'CIENCIA &amp; COMMS // SAT-02 INTI-SCIENCE &amp; SAT-01 AMARU'
+    'DUAL HOHMANN ORBITAL NAVIGATION · SAT-01 AMARU-COMMS / SAT-02 INTI-SCIENCE',
+    'SCIENCE · PUMA-3 (ORBIT/PROBE)'
   )
 
-  // CSS compacto para los dos monitores satelitales en la barra lateral
+  // Compact CSS for dual satellite monitors in sidebar
   s = replaceOnce(
     s,
     '</style>',
@@ -1191,28 +1191,28 @@ function common(src, gameId, h1, badgeText) {
     'nav css'
   )
 
-  // Selector dual arriba de telemetry-sidebar
+  // Dual selector above telemetry-sidebar
   s = replaceOnce(
     s,
     '<div class="telemetry-sidebar">',
     `<div class="telemetry-sidebar">
             <div class="card-panel">
                 <div class="card-header">
-                    <span>SATÉLITES EN ÓRBITA (180°)</span>
-                    <span id="dualSatTag" style="color:var(--crt-cyan)">0/2 ALINEADOS</span>
+                    <span>ORBITING SATELLITES (180°)</span>
+                    <span id="dualSatTag" style="color:var(--crt-cyan)">0/2 ALIGNED</span>
                 </div>
                 <div class="dual-monitors">
                     <div class="sat-mon active" id="mon1" onclick="selectSat(0)">
                         <div class="sat-mon-title">SAT-01 AMARU-COMMS</div>
                         <canvas id="satCanvas1" width="128" height="48"></canvas>
                         <div class="sat-mon-meta"><span id="alt1">412 km</span><span id="tgt1">550 km</span></div>
-                        <button type="button" class="btn-sel active" id="btnSel1" onclick="event.stopPropagation(); selectSat(0)">CONTROLAR SAT-01</button>
+                        <button type="button" class="btn-sel active" id="btnSel1" onclick="event.stopPropagation(); selectSat(0)">CONTROL SAT-01</button>
                     </div>
                     <div class="sat-mon s2" id="mon2" onclick="selectSat(1)">
                         <div class="sat-mon-title">SAT-02 INTI-SCIENCE</div>
                         <canvas id="satCanvas2" width="128" height="48"></canvas>
                         <div class="sat-mon-meta"><span id="alt2">436 km</span><span id="tgt2">495 km</span></div>
-                        <button type="button" class="btn-sel" id="btnSel2" onclick="event.stopPropagation(); selectSat(1)">CONTROLAR SAT-02</button>
+                        <button type="button" class="btn-sel" id="btnSel2" onclick="event.stopPropagation(); selectSat(1)">CONTROL SAT-02</button>
                     </div>
                 </div>
             </div>`,
@@ -1289,7 +1289,7 @@ function common(src, gameId, h1, badgeText) {
             });
             var mText = document.getElementById('missionText');
             if (mText && sats[selectedSat]) {
-                mText.textContent = 'MISIÓN: ' + sats[selectedSat].name + ' · MANIOBRA HOHMANN';
+                mText.textContent = 'MISSION: ' + sats[selectedSat].name + ' · HOHMANN MANEUVER';
             }
         }
 
@@ -1304,7 +1304,7 @@ function common(src, gameId, h1, badgeText) {
     'nav setupDifficulty dual'
   )
 
-  // Física: ambos satélites orbitan simultáneamente en el radar
+  // Physics: both satellites orbit simultaneously on the radar
   s = replaceOnce(
     s,
     `orbitState.angle += meanMotion * dt * 45;`,
@@ -1321,7 +1321,7 @@ function common(src, gameId, h1, badgeText) {
     'nav physics dual'
   )
 
-  // checkOutcome: al completar la maniobra del satélite asignado, muestra el informe con cierre fluido
+  // checkOutcome: upon completing assigned satellite maneuver, show debrief modal
   s = replaceOnce(
     s,
     `showDebriefModal(success, error);
@@ -1338,11 +1338,11 @@ function common(src, gameId, h1, badgeText) {
     'nav checkOutcome fluid'
   )
 
-  // Dibujo del satélite opuesto en drawOrbitScene + mini monitores pixel-art SAT-01 y SAT-02
+  // Draw opposing satellite in drawOrbitScene + pixel-art mini monitors SAT-01 and SAT-02
   s = replaceOnce(
     s,
-    `// Elemento Tobera proyectado en la esquina derecha del HUD`,
-    `// Satélite secundario (opuesto 180° en órbita)
+    `// Thruster nozzle projected in bottom-right HUD corner`,
+    `// Secondary satellite (opposite 180° in orbit)
             sats.forEach(function (sat) {
                 if (sat === orbitState) return;
                 const rO = scaleR + (sat.altitude / 850) * (scaleR * 0.95);
@@ -1365,7 +1365,7 @@ function common(src, gameId, h1, badgeText) {
             ctx.font = 'bold 10px Courier New';
             ctx.fillText((orbitState.short || 'SAT-02') + ' ▶', shipX + 8, shipY - 6);
 
-            // Elemento Tobera proyectado en la esquina derecha del HUD`,
+            // Thruster nozzle projected in bottom-right HUD corner`,
     'nav drawOrbitScene other sat'
   )
 
@@ -1435,15 +1435,15 @@ function common(src, gameId, h1, badgeText) {
                 var dtTag = document.getElementById('dualSatTag');
                 if (dtTag) {
                     var readyCount = (sats[0].done ? 1 : 0) + (sats[1].done ? 1 : 0);
-                    dtTag.textContent = readyCount + '/2 LISTOS';
+                    dtTag.textContent = readyCount + '/2 READY';
                     dtTag.style.color = readyCount >= 1 ? '#00ff88' : '#00e5ff';
                 }
             }
             var recHintEl = document.getElementById('recommendedDvHint');
             if (recHintEl && orbitState) {
                 var recSigned = Math.round((orbitState.targetAlt - orbitState.altitude) / 0.95);
-                var dirStr = recSigned >= 0 ? 'PROGRADO +' : 'RETRÓGRADO -';
-                recHintEl.textContent = '💡 Impulso recomendado: ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (' + dirStr.replace(/[+-]/g, '').trim() + ')';
+                var dirStr = recSigned >= 0 ? 'PROGRADE +' : 'RETROGRADE -';
+                recHintEl.textContent = '💡 Recommended impulse: ' + (recSigned >= 0 ? '+' : '-') + Math.abs(recSigned) + ' m/s (' + dirStr.replace(/[+-]/g, '').trim() + ')';
             }`,
     'nav updateUI dual'
   )
@@ -1451,13 +1451,13 @@ function common(src, gameId, h1, badgeText) {
   fs.writeFileSync(path.join(OUT, 'navegacion_orbital.html'), s)
 }
 
-// 5) Aterrizaje Planetario (PUMA-3): altitud inicial 180m + gravedad suave + v < 12 m/s segura
+// 5) Planetary Landing (PUMA-3): initial altitude 180m + gentle gravity + safe v < 12 m/s
 {
   let s = readFirstAvailable(['aterrizaje_planetario.html'], 'aterrizaje_planetario.html')
   s = replaceOnce(
     s,
-    /(?:La Alpaca Astronauta logró posar el módulo en la superficie del planeta extraño sin daños estructurales\.|La sonda científica del Escuadrón Andino logró posarse en la superficie planetaria sin daños estructurales\.|El Oficial Científico PUMA-3 logró posar la Sonda de Exploración en la superficie planetaria y recolectar las muestras geológicas\.)/,
-    'El Oficial Científico PUMA-3 logró posar la Sonda de Exploración en la superficie planetaria y recolectar las muestras geológicas.',
+    /(?:La Alpaca Astronauta logró posar el módulo en la superficie del planeta extraño sin daños estructurales\.|La sonda científica del Escuadrón Andino logró posarse en la superficie planetaria sin daños estructurales\.|El Oficial Científico PUMA-3 logró posar la Sonda de Exploración en la superficie planetaria y recolectar las muestras geológicas\.|Science Officer PUMA-3 successfully landed the Exploration Probe on the planetary surface and collected geological samples\.)/,
+    'Science Officer PUMA-3 successfully landed the Exploration Probe on the planetary surface and collected geological samples.',
     'lander squad text'
   )
   s = replaceOnce(s, /let altitude = [\d.]+;/, `let altitude = 180.0;`, 'lander init alt 180')
@@ -1499,25 +1499,25 @@ function common(src, gameId, h1, badgeText) {
   s = common(
     s,
     'lander',
-    'ATERRIZAJE PLANETARIO DE SONDA CIENTÍFICA · PUMA-3',
-    'CIENCIA // SONDA PLANETARIA (PUMA-3)'
+    'PLANETARY SCIENCE PROBE LANDING · PUMA-3',
+    'SCIENCE · PUMA-3 (ORBIT/PROBE)'
   )
   fs.writeFileSync(path.join(OUT, 'aterrizaje_planetario.html'), s)
 }
 
-// 6) Sintonización de Telecomunicaciones (SERPIENTE-2): margen ±25 Hz / ±20% + objetivo exacto junto a sliders
+// 6) Telecom Tuning (SERPIENTE-2): ±25 Hz / ±20% tolerance + exact target readout next to sliders
 {
   let s = readFirstAvailable(['reparacion_telecom.html'], 'reparacion_telecom.html')
   s = replaceOnce(
     s,
     `<b id="freqVal" style="color:var(--crt-cyan)">50 Hz</b>`,
-    `<span><b id="freqVal" style="color:var(--crt-cyan)">50 Hz</b> <small id="freqTargetHint" style="color:var(--crt-green);margin-left:4px;">(Objetivo: 50 Hz)</small></span>`,
+    `<span><b id="freqVal" style="color:var(--crt-cyan)">50 Hz</b> <small id="freqTargetHint" style="color:var(--crt-green);margin-left:4px;">(Target: 50 Hz)</small></span>`,
     'telecom freq target hint'
   )
   s = replaceOnce(
     s,
     `<b id="gainVal" style="color:var(--crt-green)">50 %</b>`,
-    `<span><b id="gainVal" style="color:var(--crt-green)">50 %</b> <small id="gainTargetHint" style="color:var(--crt-green);margin-left:4px;">(Objetivo: 50%)</small></span>`,
+    `<span><b id="gainVal" style="color:var(--crt-green)">50 %</b> <small id="gainTargetHint" style="color:var(--crt-green);margin-left:4px;">(Target: 50%)</small></span>`,
     'telecom gain target hint'
   )
   s = replaceOnce(
@@ -1528,8 +1528,8 @@ function common(src, gameId, h1, badgeText) {
             document.getElementById('gainVal').textContent = \`\${userGain} %\`;
             var fHint = document.getElementById('freqTargetHint');
             var gHint = document.getElementById('gainTargetHint');
-            if (fHint) fHint.textContent = \`(Objetivo: \${targetFreq} Hz)\`;
-            if (gHint) gHint.textContent = \`(Objetivo: \${targetGain}%)\`;`,
+            if (fHint) fHint.textContent = \`(Target: \${targetFreq} Hz)\`;
+            if (gHint) gHint.textContent = \`(Target: \${targetGain}%)\`;`,
     'telecom updateSliders show exact target'
   )
   s = replaceOnce(
@@ -1540,14 +1540,14 @@ function common(src, gameId, h1, badgeText) {
                 completeMission(freqDiff, gainDiff);
             } else {
                 playBeep(150, 0.3);
-                alert("¡Señal desalineada! La onda no coincide con el objetivo satelital.");
+                alert("Signal misaligned! Waveform does not match the satellite target.");
             }`,
     `            if (freqDiff <= 25 && gainDiff <= 20) {
                 completeMission(freqDiff, gainDiff);
             } else {
                 playBeep(180, 0.2);
                 if (window.__showConsoleHudNotice) {
-                    window.__showConsoleHudNotice('Ajusta cerca de Objetivo ' + targetFreq + ' Hz (±25) y ' + targetGain + '% (±20)', 'warn');
+                    window.__showConsoleHudNotice('Tune near Target ' + targetFreq + ' Hz (±25) and ' + targetGain + '% (±20)', 'warn');
                 }
             }`,
     'telecom wide tolerance 25Hz 20pct and single banner'
@@ -1555,13 +1555,13 @@ function common(src, gameId, h1, badgeText) {
   s = common(
     s,
     'telecom',
-    'SINTONIZACIÓN DE TELECOMUNICACIONES DSN · SERPIENTE-2',
-    'COMUNICACIONES // SERPIENTE-2 (ENLACE SAT-01 AMARU)'
+    'DSN TELECOMMUNICATIONS TUNING · SERPIENTE-2',
+    'COMMS · SERPIENTE-2 (SAT-01 AMARU)'
   )
   fs.writeFileSync(path.join(OUT, 'reparacion_telecom.html'), s)
 }
 
-// 7) Defensa Orbital contra Meteoritos (CÓNDOR-4): meta 5/7/9, meteoritos grandes y lentos (radius*1.6, speed*0.6, hitbox +28)
+// 7) Orbital Meteorite Defense (CONDOR-4): target 5/7/9, large slow meteors (radius*1.6, speed*0.6, hitbox +28)
 {
   let s = readFirstAvailable(['reencuentro_cometa.html'], 'reencuentro_cometa.html')
   s = replaceOnce(
@@ -1574,11 +1574,11 @@ function common(src, gameId, h1, badgeText) {
   )
   s = replaceOnce(
     s,
-    `            // Ajustar la meta según la dificultad seleccionada
+    `            // Adjust target score based on selected difficulty
             if (difficulty === 1) targetScore = 10;
             else if (difficulty === 2) targetScore = 15;
             else if (difficulty === 3) targetScore = 20;`,
-    `            // Meta accesible según dificultad
+    `            // Accessible target score by difficulty
             if (difficulty === 1) targetScore = 5;
             else if (difficulty === 2) targetScore = 7;
             else if (difficulty === 3) targetScore = 9;`,
@@ -1611,7 +1611,7 @@ function common(src, gameId, h1, badgeText) {
     s,
     `playLaserSound();
 
-            // Comprobar si el clic impactó algún meteorito
+            // Check if click hit any meteorite
             for (let i = meteorites.length - 1; i >= 0; i--) {
                 const m = meteorites[i];
                 const dist = Math.hypot(m.x - clickX, m.y - clickY);
@@ -1621,7 +1621,7 @@ function common(src, gameId, h1, badgeText) {
     `playLaserSound();
             lasers.push({ x: clickX, y: clickY, life: 1.0 });
 
-            // Hitbox amplio (m.radius + 28)
+            // Wide hitbox (m.radius + 28)
             for (let i = meteorites.length - 1; i >= 0; i--) {
                 const m = meteorites[i];
                 const dist = Math.hypot(m.x - clickX, m.y - clickY);
@@ -1682,8 +1682,8 @@ function common(src, gameId, h1, badgeText) {
   )
   s = replaceOnce(
     s,
-    `// Dibujar la base/nave en el centro`,
-    `// Anillos concéntricos verdes del radar orbital y haz de barrido
+    `// Draw base/ship at center`,
+    `// Concentric green orbital radar rings and sweep beam
             const maxR = Math.max(120, Math.min(canvas.width, canvas.height) * 0.46);
             ctx.strokeStyle = 'rgba(0, 255, 136, 0.18)';
             ctx.lineWidth = 1;
@@ -1705,13 +1705,13 @@ function common(src, gameId, h1, badgeText) {
             ctx.lineTo(cx + Math.cos(sweepAngle) * maxR, cy + Math.sin(sweepAngle) * maxR);
             ctx.stroke();
 
-            // Dibujar la base/nave en el centro`,
+            // Draw base/ship at center`,
     'comet concentric radar rings'
   )
   s = replaceOnce(
     s,
-    `// Dibujar meteoritos acercándose`,
-    `// Rayos láser cian desde la estación al objetivo clicado
+    `// Draw approaching meteorites`,
+    `// Cyan laser beams from station to clicked target
             for (let i = lasers.length - 1; i >= 0; i--) {
                 const l = lasers[i];
                 ctx.save();
@@ -1730,7 +1730,7 @@ function common(src, gameId, h1, badgeText) {
                 if (l.life <= 0) lasers.splice(i, 1);
             }
 
-            // Partículas de explosión
+            // Explosion particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 ctx.save();
@@ -1744,29 +1744,29 @@ function common(src, gameId, h1, badgeText) {
                 if (p.life <= 0) particles.splice(i, 1);
             }
 
-            // Dibujar meteoritos acercándose`,
+            // Draw approaching meteorites`,
     'comet render laser and particles'
   )
   s = common(
     s,
     'comet',
-    'DEFENSA ORBITAL CONTRA METEORITOS · CÓNDOR-4',
-    'DIRECTOR // DEFENSA ORBITAL (CÓNDOR-4)'
+    'ORBITAL METEORITE DEFENSE · CONDOR-4',
+    'COMMAND · CONDOR-4 (DIRECTOR)'
   )
   fs.writeFileSync(path.join(OUT, 'reencuentro_cometa.html'), s)
 }
 
-// 8) Ciberdefensa Satelital (SERPIENTE-2): cuota 4/5/6 + badge visual [ SEGURO -> PERMITIR ] / [ ATAQUE -> BLOQUEAR ]
+// 8) Satellite Cyberdefense (SERPIENTE-2): quota 4/5/6 + visual badge [ SAFE -> ALLOW ] / [ THREAT -> BLOCK ]
 {
   let s = readFirstAvailable(['ciberdefensa_satelital.html'], 'ciberdefensa_satelital.html')
   s = replaceOnce(
     s,
     `        function nextPacket() {
             const payloadEl = document.getElementById('packetPayload');
-            payloadEl.textContent = "📡 [Centro de Control Tierra]: Recibiendo paquete...";
+            payloadEl.textContent = "📡 [Earth Control Center]: Receiving packet...";
             payloadEl.style.color = "var(--crt-amber)";
 
-            // Simula un breve retardo de llegada de la señal espacial (1 segundo)
+            // Simulate brief space signal arrival delay (1 second)
             setTimeout(() => {
                 currentPacket = mockPayloads[Math.floor(Math.random() * mockPayloads.length)];
                 payloadEl.textContent = currentPacket.text;
@@ -1777,8 +1777,8 @@ function common(src, gameId, h1, badgeText) {
             const payloadEl = document.getElementById('packetPayload');
             currentPacket = mockPayloads[Math.floor(Math.random() * mockPayloads.length)];
             const badgeHtml = currentPacket.malicious
-                ? '<div style="margin-top:6px;padding:3px 8px;display:inline-block;background:rgba(127,29,29,0.9);border:1px solid #f87171;color:#fecaca;font-weight:bold;border-radius:3px;">[ ATAQUE -> BLOQUEAR ]</div>'
-                : '<div style="margin-top:6px;padding:3px 8px;display:inline-block;background:rgba(6,78,59,0.9);border:1px solid #00ff88;color:#6ee7b7;font-weight:bold;border-radius:3px;">[ SEGURO -> PERMITIR ]</div>';
+                ? '<div style="margin-top:6px;padding:3px 8px;display:inline-block;background:rgba(127,29,29,0.9);border:1px solid #f87171;color:#fecaca;font-weight:bold;border-radius:3px;">[ THREAT -> BLOCK ]</div>'
+                : '<div style="margin-top:6px;padding:3px 8px;display:inline-block;background:rgba(6,78,59,0.9);border:1px solid #00ff88;color:#6ee7b7;font-weight:bold;border-radius:3px;">[ SAFE -> ALLOW ]</div>';
             payloadEl.innerHTML = '<div>' + currentPacket.text + '</div>' + badgeHtml;
             payloadEl.style.color = currentPacket.malicious ? '#fca5a5' : '#6ee7b7';
         }`,
@@ -1823,9 +1823,9 @@ function common(src, gameId, h1, badgeText) {
     `function completeMission() {
             isMissionEnded = true;
             document.getElementById('debriefModal').style.display = 'flex';
-            document.getElementById('debTitle').textContent = "¡FIREWALL SATELITAL SELLADO!";
-            document.getElementById('debBadge').textContent = "ÉXITO";
-            document.getElementById('debDesc').textContent = "El perímetro de seguridad resistió el intento de exfiltración de telemetría.";`,
+            document.getElementById('debTitle').textContent = "SATELLITE FIREWALL SEALED!";
+            document.getElementById('debBadge').textContent = "SUCCESS";
+            document.getElementById('debDesc').textContent = "Security perimeter repelled the telemetry exfiltration attempt.";`,
     'cyber complete reset labels'
   )
   s = replaceOnce(
@@ -1837,26 +1837,26 @@ function common(src, gameId, h1, badgeText) {
   )
   s = replaceOnce(
     s,
-    "document.getElementById('shieldStatus').textContent = `ESCUDO INTACTO: ${shieldIntegrity}%`;",
-    "const _tq = difficulty <= 1 ? 4 : (difficulty === 2 ? 5 : 6);\n            document.getElementById('shieldStatus').textContent = `ESCUDO INTACTO: ${shieldIntegrity}% · PAQUETES: ${packetsChecked}/${_tq}`;",
+    "document.getElementById('shieldStatus').textContent = `SHIELD INTACT: ${shieldIntegrity}%`;",
+    "const _tq = difficulty <= 1 ? 4 : (difficulty === 2 ? 5 : 6);\n            document.getElementById('shieldStatus').textContent = `SHIELD INTACT: ${shieldIntegrity}% · PACKETS: ${packetsChecked}/${_tq}`;",
     'cyber hud quota display'
   )
   s = common(
     s,
     'cyber',
-    'CIBERDEFENSA SATELITAL Y FIREWALL · SERPIENTE-2',
-    'COMUNICACIONES // SERPIENTE-2 (ENLACE SAT-01 AMARU)'
+    'SATELLITE CYBERDEFENSE & FIREWALL · SERPIENTE-2',
+    'COMMS · SERPIENTE-2 (SAT-01 AMARU)'
   )
   fs.writeFileSync(path.join(OUT, 'ciberdefensa_satelital.html'), s)
 }
 
-// 9..16) 8 minijuegos nuevos (2 adicionales por rol -> 16 en total)
+// 9..16) 8 new minigames (2 additional per role -> 16 total)
 for (const mg of getNewMinigames()) {
   const built = common(mg.html, mg.id, mg.h1, mg.badge)
   fs.writeFileSync(path.join(OUT, mg.filename), built)
 }
 
-// 16b) Cinemática de Victoria 1: Transmisión Láser Exitosa 32x32
+// 16b) Victory Cinematic 1: Laser Transmission Successful 32x32
 {
   let s = fs.readFileSync(
     path.join(SRC, 'cinem_tica_orbital_transmisi_n_l_ser_exitosa_32x32.html'),
@@ -1881,11 +1881,11 @@ for (const mg of getNewMinigames()) {
 
   s = replaceOnce(
     s,
-    `        <!-- Botones discretos flotantes en esquina superior derecha -->
+    `        <!-- Floating controls in top-right corner -->
         <div class="absolute top-3 right-3 flex items-center gap-2 z-20 opacity-85 hover:opacity-100 transition-opacity">
-            <button id="btn-export" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-emerald-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer" title="Descargar archivo HTML autónomo">
+            <button id="btn-export" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-emerald-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer" title="Download standalone HTML file">
                 <span>⬇</span>
-                <span>EXPORTAR HTML</span>
+                <span>EXPORT HTML</span>
             </button>
             <button id="btn-audio" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-amber-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span id="audio-icon">🔇</span>
@@ -1893,20 +1893,20 @@ for (const mg of getNewMinigames()) {
             </button>
             <button id="btn-restart" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span>↻</span>
-                <span>REPETIR</span>
+                <span>REPLAY</span>
             </button>
         </div>`,
-    `        <!-- Badge superior izquierdo con telemetría real de la misión -->
+    `        <!-- Top-left badge with live mission telemetry -->
         <div id="mission-param-badge" class="absolute top-3 left-3 z-20 px-3 py-1.5 rounded bg-slate-950/85 border border-cyan-500/60 backdrop-blur-sm pointer-events-none">
-            <div id="param-badge-title" class="font-pixel text-[9px] sm:text-[10px] text-cyan-300">ETAPA 1/3 · ANDES-CRYO-01</div>
-            <div id="param-badge-sub" class="text-[10px] sm:text-xs text-emerald-300 font-bold mt-0.5">CIENCIA BASE: 0 PTS · INTEGRIDAD: 100%</div>
+            <div id="param-badge-title" class="font-pixel text-[9px] sm:text-[10px] text-cyan-300">STAGE 1/3 · ANDES-CRYO-01</div>
+            <div id="param-badge-sub" class="text-[10px] sm:text-xs text-emerald-300 font-bold mt-0.5">BASE SCIENCE: 0 PTS · INTEGRITY: 100%</div>
         </div>
 
-        <!-- Botones discretos flotantes en esquina superior derecha -->
+        <!-- Floating controls in top-right corner -->
         <div class="absolute top-3 right-3 flex items-center gap-2 z-20 opacity-90 hover:opacity-100 transition-opacity">
-            <button id="btn-export" class="hidden sm:flex px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-emerald-300 font-bold text-[10px] sm:text-xs items-center gap-1.5 backdrop-blur-sm transition cursor-pointer" title="Descargar archivo HTML autónomo">
+            <button id="btn-export" class="hidden sm:flex px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-emerald-300 font-bold text-[10px] sm:text-xs items-center gap-1.5 backdrop-blur-sm transition cursor-pointer" title="Download standalone HTML file">
                 <span>⬇</span>
-                <span>EXPORTAR HTML</span>
+                <span>EXPORT HTML</span>
             </button>
             <button id="btn-audio" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-amber-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span id="audio-icon">🔊</span>
@@ -1914,11 +1914,11 @@ for (const mg of getNewMinigames()) {
             </button>
             <button id="btn-restart" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span>↻</span>
-                <span>REPETIR</span>
+                <span>REPLAY</span>
             </button>
             <button id="btn-skip-top" class="px-2.5 py-1.5 rounded bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-400/80 text-emerald-200 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span>⏭</span>
-                <span>CONTINUAR</span>
+                <span>CONTINUE</span>
             </button>
         </div>`,
     'victory laser top controls & telemetry badge'
@@ -1926,61 +1926,61 @@ for (const mg of getNewMinigames()) {
 
   s = replaceOnce(
     s,
-    `        <!-- Overlay Final de Misión Cumplida -->
+    `        <!-- Mission Accomplished End Overlay -->
         <div id="end-overlay" class="hidden absolute inset-0 bg-slate-950/45 flex flex-col items-center justify-center p-4 z-20">
             <div class="hud-panel border-2 border-emerald-400/90 rounded-xl p-5 sm:p-6 max-w-sm w-full text-center space-y-4">
                 <div class="inline-block px-3 py-1 rounded bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-bold tracking-widest">
-                    TRANSMISIÓN COMPLETADA • 100% INTEGRIDAD
+                    TRANSMISSION COMPLETE • 100% INTEGRITY
                 </div>
                 <h2 class="font-pixel text-xs sm:text-sm text-white leading-relaxed">
-                    ENLACE ORBITAL EXITOSO
+                    ORBITAL LINK SUCCESSFUL
                 </h2>
                 <p class="text-xs text-slate-300 leading-relaxed">
-                    <span class="text-cyan-300 font-bold">SAT-01</span> y <span class="text-purple-300 font-bold">SAT-02</span> sincronizaron sus sensores y enviaron los paquetes científicos a la red terrestre sin pérdida de señal.
+                    <span class="text-cyan-300 font-bold">SAT-01</span> and <span class="text-purple-300 font-bold">SAT-02</span> synchronized their sensors and transmitted the scientific packets to the ground network with zero signal loss.
                 </p>
                 <div class="pt-1 flex justify-center gap-2">
                     <button id="btn-replay-modal" class="px-4 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/30 border border-cyan-300/60 transition cursor-pointer flex items-center gap-1.5">
-                        <span>↻</span> REPETIR
+                        <span>↻</span> REPLAY
                     </button>
                     <button id="btn-export-modal" class="px-4 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-emerald-300 font-bold text-xs border border-emerald-500/50 transition cursor-pointer flex items-center gap-1.5">
-                        <span>⬇</span> EXPORTAR HTML
+                        <span>⬇</span> EXPORT HTML
                     </button>
                 </div>
             </div>
         </div>`,
-    `        <!-- Overlay Final de Misión Cumplida -->
+    `        <!-- Mission Accomplished End Overlay -->
         <div id="end-overlay" class="hidden absolute inset-0 bg-slate-950/55 flex flex-col items-center justify-center p-4 z-20">
             <div class="hud-panel border-2 border-emerald-400/90 rounded-xl p-5 sm:p-6 max-w-md w-full text-center space-y-3.5">
                 <div id="modal-stage-badge" class="inline-block px-3 py-1 rounded bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-bold tracking-widest">
-                    TRANSMISIÓN COMPLETADA • 100% INTEGRIDAD
+                    TRANSMISSION COMPLETE • 100% INTEGRITY
                 </div>
                 <h2 id="modal-title" class="font-pixel text-xs sm:text-sm text-white leading-relaxed">
-                    ENLACE ORBITAL EXITOSO
+                    ORBITAL LINK SUCCESSFUL
                 </h2>
                 <p id="modal-mission-packet" class="text-xs text-emerald-200 font-bold leading-relaxed bg-emerald-950/55 border border-emerald-500/40 rounded px-3 py-2">
-                    SAT-01 y SAT-02 sincronizaron sus sensores y enviaron los paquetes científicos a la red terrestre sin pérdida de señal.
+                    SAT-01 and SAT-02 synchronized their sensors and transmitted the scientific packets to the ground network with zero signal loss.
                 </p>
                 <div id="modal-mission-stats" class="grid grid-cols-3 gap-2 text-left">
                     <div class="bg-slate-950/80 border border-slate-700 rounded p-2">
-                        <div class="text-[9px] text-cyan-300 font-bold">MISIÓN</div>
+                        <div class="text-[9px] text-cyan-300 font-bold">MISSION</div>
                         <div id="stat-mission-code" class="text-[11px] font-bold text-white truncate mt-0.5">ANDES-CRYO-01</div>
                     </div>
                     <div class="bg-slate-950/80 border border-slate-700 rounded p-2">
-                        <div class="text-[9px] text-amber-300 font-bold">CIENCIA BASE</div>
+                        <div class="text-[9px] text-amber-300 font-bold">BASE SCIENCE</div>
                         <div id="stat-mission-points" class="text-[11px] font-bold text-emerald-300 mt-0.5">0 PTS</div>
                     </div>
                     <div class="bg-slate-950/80 border border-slate-700 rounded p-2">
-                        <div class="text-[9px] text-emerald-300 font-bold">INTEGRIDAD</div>
+                        <div class="text-[9px] text-emerald-300 font-bold">INTEGRITY</div>
                         <div id="stat-mission-health" class="text-[11px] font-bold text-cyan-200 mt-0.5">100%</div>
                     </div>
                 </div>
                 <div id="modal-auto-note" class="text-[10px] text-cyan-300 font-bold"></div>
                 <div class="pt-1 flex flex-col sm:flex-row justify-center gap-2">
                     <button id="btn-next-stage" class="px-4 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-pixel text-[9px] sm:text-[10px] shadow-lg shadow-emerald-500/35 border border-emerald-200 transition cursor-pointer flex items-center justify-center gap-1.5">
-                        ✔ CONTINUAR AL RESUMEN DE MISIÓN
+                        ✔ CONTINUE TO MISSION SUMMARY
                     </button>
                     <button id="btn-replay-modal" class="px-3.5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 font-bold text-xs border border-cyan-500/50 transition cursor-pointer flex items-center justify-center gap-1.5">
-                        <span>↻</span> REPETIR
+                        <span>↻</span> REPLAY
                     </button>
                     <button id="btn-export-modal" class="hidden">⬇</button>
                 </div>
@@ -2070,7 +2070,7 @@ for (const mg of getNewMinigames()) {
   s = replaceOnce(
     s,
     `        const END_MODAL_TIME = 12.2;     // Aparece panel final de misión cumplida`,
-    `        const END_MODAL_TIME = 12.0;     // Aparece panel final de misión cumplida
+    `        const END_MODAL_TIME = 12.0;     // Mission accomplished panel appears
         const urlParams = new URLSearchParams(window.location.search);
         const paramMissionNum = urlParams.get('mission') || '1';
         const paramMissionCode = urlParams.get('code') || 'ANDES-CRYO-01';
@@ -2080,10 +2080,10 @@ for (const mg of getNewMinigames()) {
         const isReplayMode = urlParams.get('replay') === '1';
         const missionPacketMsg =
             paramMissionNum === '1'
-                ? '✔ 4.8 TB de Cartografía Térmica Glaciar enviados a CENEPRED / NASA'
+                ? '✔ 4.8 TB of Glacial Thermal Mapping sent to CENEPRED / NASA'
                 : paramMissionNum === '2'
-                    ? '✔ 12.4 TB de Espectrometría de Hielo Lunar enviados a Base Artemis'
-                    : '✔ Alerta Geomagnética L1 transmitida a tiempo — Red Eléctrica Global Protegida';
+                    ? '✔ 12.4 TB of Lunar Ice Spectrometry sent to Artemis Base'
+                    : '✔ L1 Geomagnetic Alert transmitted on time — Global Power Grid Protected';
 
         let endModalOpenedAt = null;
         let nextCinematicSent = false;
@@ -2107,23 +2107,23 @@ for (const mg of getNewMinigames()) {
             const sHp = document.getElementById('stat-mission-health');
             const btnNext = document.getElementById('btn-next-stage');
             const btnSkip = document.getElementById('btn-skip-top');
-            if (bTitle) bTitle.textContent = \`ETAPA \${paramMissionNum}/3 · \${paramMissionCode}\`;
-            if (bSub) bSub.textContent = \`CIENCIA: \${paramPoints} PTS · INTEGRIDAD: \${paramHealth}%\`;
-            if (mBadge) mBadge.textContent = \`MISIÓN \${paramMissionNum}/3 • \${paramMissionCode} • 100% ENLACE\`;
-            if (mTitle) mTitle.textContent = isFinalMission ? 'ALERTA SOLAR L1 TRANSMITIDA CON ÉXITO' : 'ENLACE ORBITAL EXITOSO';
+            if (bTitle) bTitle.textContent = \`STAGE \${paramMissionNum}/3 · \${paramMissionCode}\`;
+            if (bSub) bSub.textContent = \`BASE SCIENCE: \${paramPoints} PTS · INTEGRITY: \${paramHealth}%\`;
+            if (mBadge) mBadge.textContent = \`MISSION \${paramMissionNum}/3 • \${paramMissionCode} • 100% LINK\`;
+            if (mTitle) mTitle.textContent = isFinalMission ? 'L1 SOLAR ALERT TRANSMITTED SUCCESSFULLY' : 'ORBITAL LINK SUCCESSFUL';
             if (mPacket) mPacket.textContent = missionPacketMsg;
             if (sCode) sCode.textContent = paramMissionCode;
             if (sPts) sPts.textContent = \`\${paramPoints} PTS\`;
             if (sHp) sHp.textContent = \`\${paramHealth}%\`;
             if (btnNext) {
                 btnNext.textContent = isReplayMode
-                    ? '✔ VOLVER AL CUADRO DE HONOR NASA'
+                    ? '[ ✔ RETURN TO NASA HONOR ROLL ]'
                     : isFinalMission
-                        ? '🚀 INICIAR REGRESO A LA TIERRA (MISIÓN ÁGUILA)'
-                        : '✔ VER RESUMEN Y BONOS NASA';
+                        ? '[ 🚀 LAUNCH RETURN HOME (EAGLE MISSION) ]'
+                        : '[ ✔ VIEW MISSION SUMMARY & NASA BONUSES ]';
             }
             if (btnSkip && isReplayMode) {
-                btnSkip.innerHTML = '<span>✔</span><span>VOLVER</span>';
+                btnSkip.innerHTML = '<span>✔</span><span>RETURN</span>';
             }
         }`,
     'victory laser url params & parent postMessage'
@@ -2133,16 +2133,16 @@ for (const mg of getNewMinigames()) {
     s,
     `            } else if (t >= DOWNLINK_START_TIME && t < COMPLETE_TIME) {
                 banner.classList.remove('hidden');
-                bannerMain.textContent = '📡 TRANSMITIENDO DATOS A LA TIERRA 📡';
-                bannerSub.textContent = 'FLUJO CUÁNTICO DE ALTA VELOCIDAD • SEÑAL ÓPTIMA';`,
+                bannerMain.textContent = '📡 TRANSMITTING DATA TO EARTH 📡';
+                bannerSub.textContent = 'HIGH-SPEED QUANTUM STREAM • OPTIMAL SIGNAL';`,
     `            } else if (t >= DOWNLINK_START_TIME && t < COMPLETE_TIME) {
                 banner.classList.remove('hidden');
                 bannerMain.textContent = isFinalMission
-                    ? '🌞 TRANSMITIENDO ALERTA SOLAR L1 A LA TIERRA 📡'
-                    : \`📡 TRANSMITIENDO MISIÓN \${paramMissionNum}: \${paramMissionCode} 📡\`;
+                    ? '🌞 TRANSMITTING L1 SOLAR ALERT TO EARTH 📡'
+                    : \`📡 TRANSMITTING MISSION \${paramMissionNum}: \${paramMissionCode} 📡\`;
                 bannerSub.textContent = isFinalMission
-                    ? 'SAT-01 AMARU & SAT-02 INTI PROTEGIENDO LA RED ELÉCTRICA GLOBAL'
-                    : 'FLUJO CUÁNTICO DE ALTA VELOCIDAD • CENEPRED / ARTEMIS / NASA';`,
+                    ? 'SAT-01 AMARU & SAT-02 INTI PROTECTING THE GLOBAL POWER GRID'
+                    : 'HIGH-SPEED QUANTUM STREAM • CENEPRED / ARTEMIS / NASA';`,
     'victory laser mission-aware banner'
   )
 
@@ -2155,7 +2155,7 @@ for (const mg of getNewMinigames()) {
                     endOverlay.classList.remove('hidden');
                 }
             }`,
-    `            // 7. Mostrar panel final al concluir la secuencia y auto-avanzar suavemente si aplica
+    `            // 7. Show final modal upon sequence completion and gently auto-advance if applicable
             if (t >= END_MODAL_TIME) {
                 const endOverlay = document.getElementById('end-overlay');
                 if (endOverlay && endOverlay.classList.contains('hidden')) {
@@ -2168,8 +2168,8 @@ for (const mg of getNewMinigames()) {
                     const remMs = Math.max(0, waitMs - (performance.now() - endModalOpenedAt));
                     if (noteEl) {
                         noteEl.textContent = isFinalMission
-                            ? \`Iniciando Misión Águila · Regreso a casa en \${(remMs / 1000).toFixed(1)}s...\`
-                            : \`Abriendo resumen oficial NASA en \${(remMs / 1000).toFixed(1)}s...\`;
+                            ? \`Launching Eagle Mission · Return Home in \${(remMs / 1000).toFixed(1)}s...\`
+                            : \`Opening official NASA summary in \${(remMs / 1000).toFixed(1)}s...\`;
                     }
                     if (remMs <= 0) {
                         sendVictoryNextToParent(true);
@@ -2219,7 +2219,7 @@ for (const mg of getNewMinigames()) {
   fs.writeFileSync(path.join(OUT, 'victory_laser_transmission.html'), s)
 }
 
-// 16c) Cinemática de Victoria Final: Misión Águila · Regreso a casa
+// 16c) Final Victory Cinematic: Eagle Mission · Return Home
 {
   let s = fs.readFileSync(
     path.join(SRC, 'Misión Águila · Regreso a casa.html'),
@@ -2228,22 +2228,22 @@ for (const mg of getNewMinigames()) {
 
   s = replaceOnce(
     s,
-    `<div class="bar" id="tb"><span>MISIÓN ÁGUILA</span><span id="ck">T+00:00</span></div>`,
-    `<div class="bar" id="tb"><span>MISIÓN ÁGUILA · REGRESO A CASA</span><span id="ck">T+00:00</span></div>
-<button id="skipBtn" type="button" style="position:absolute;top:10.5%;right:2%;z-index:6;font-size:calc(var(--u)*.013);padding:.7% 1.4%;background:rgba(8,15,35,.85);color:#7dd3fc;border:1px solid rgba(56,189,248,.7);box-shadow:2px 2px 0 #000">⏭ SALTAR AL CUADRO DE HONOR</button>`,
+    `<div class="bar" id="tb"><span>EAGLE MISSION</span><span id="ck">T+00:00</span></div>`,
+    `<div class="bar" id="tb"><span>EAGLE MISSION · RETURN HOME</span><span id="ck">T+00:00</span></div>
+<button id="skipBtn" type="button" style="position:absolute;top:10.5%;right:2%;z-index:6;font-size:calc(var(--u)*.013);padding:.7% 1.4%;background:rgba(8,15,35,.85);color:#7dd3fc;border:1px solid rgba(56,189,248,.7);box-shadow:2px 2px 0 #000">⏭ SKIP TO HONOR ROLL</button>`,
     'victory return home skip button'
   )
 
   s = replaceOnce(
     s,
-    `<div id="s"><h1>MISIÓN ÁGUILA<br>REGRESO A CASA</h1><button id="b">▶ INICIAR (con sonido)</button></div>`,
-    `<div id="s" style="display:none"><h1>MISIÓN ÁGUILA<br>REGRESO A CASA</h1><button id="b">↻ REPETIR</button></div>`,
+    `<div id="s"><h1>EAGLE MISSION<br>RETURN HOME</h1><button id="b">▶ LAUNCH (with audio)</button></div>`,
+    `<div id="s" style="display:none"><h1>EAGLE MISSION<br>RETURN HOME</h1><button id="b">↻ REPLAY</button></div>`,
     'victory return home hide initial splash'
   )
 
   s = replaceOnce(
     s,
-    ` if(d>38&&!ended){ended=1;const s=$('s');s.style.display='flex';s.className='end';$('b').textContent='↻ REPETIR'}`,
+    ` if(d>38&&!ended){ended=1;const s=$('s');s.style.display='flex';s.className='end';$('b').textContent='↻ REPLAY'}`,
     ` if(d>=38&&!ended){ended=1;const sk=$('skipBtn');if(sk)sk.style.display='none';notifyReturnHomeFinished(false)}`,
     'victory return home 38s end postMessage'
   )
@@ -2280,7 +2280,7 @@ requestAnimationFrame(frame);`,
   fs.writeFileSync(path.join(OUT, 'victory_return_home.html'), s)
 }
 
-// 17) Validación automática de sintaxis JS de los 16 minijuegos y cinemáticas en public/minigames/*.html
+// 17) Automatic JS syntax validation of all 16 minigames and cinematics in public/minigames/*.html
 const htmlFiles = fs.readdirSync(OUT).filter((f) => f.endsWith('.html')).sort()
 const CINEMATIC_FILES = new Set([
   'game_over_explosion.html',
@@ -2301,13 +2301,13 @@ for (const file of htmlFiles) {
       new Function(code)
       validatedScripts++
     } catch (err) {
-      console.error(`ERROR DE SINTAXIS JS en ${file} (script #${i}):`, err.message)
+      console.error(`JS SYNTAX ERROR in ${file} (script #${i}):`, err.message)
       process.exit(1)
     }
   }
 }
 
 console.log(
-  `OK ${minigameFiles.length} minijuegos generados (+${htmlFiles.length - minigameFiles.length} cinemática) y ${validatedScripts} bloques <script> validados sin errores en`,
+  `OK ${minigameFiles.length} minigames generated (+${htmlFiles.length - minigameFiles.length} cinematics) and ${validatedScripts} <script> blocks validated without errors in`,
   OUT
 )

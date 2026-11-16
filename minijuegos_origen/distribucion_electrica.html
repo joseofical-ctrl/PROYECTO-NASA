@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPS // ALPACA-1 - Distribución Eléctrica</title>
+    <title>EPS // ALPACA-1 - Electrical Power Distribution</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -175,35 +175,35 @@
 <body class="min-h-screen lg:h-screen flex flex-col justify-between p-2 select-none gap-1.5">
     <div class="scanlines"></div>
 
-    <!-- BARRA SUPERIOR COMPACTA (1 SOLA LÍNEA INTEGRADA) -->
+    <!-- COMPACT TOP BAR (SINGLE INTEGRATED ROW) -->
     <header class="w-full max-w-[1680px] mx-auto shrink-0 flex flex-col gap-1.5">
         <div class="sci-panel rounded-md px-3 py-1.5 flex flex-wrap items-center justify-between gap-2">
-            <!-- Identidad y Misión -->
+            <!-- Identity & Mission -->
             <div class="flex items-center gap-2.5">
                 <div class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></div>
                 <div class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-400/50 text-cyan-300 text-[11px] font-bold">
-                    EPS // ALPACA-1
+                    ENGINEERING // ALPACA-1 (EPS)
                 </div>
                 <div class="hidden sm:block h-4 w-[1px] bg-slate-700"></div>
                 <div class="text-xs">
                     <span class="font-display font-bold text-amber-400 tracking-wider">PMAD</span>
                     <span class="text-slate-400 mx-1">&bull;</span>
-                    <span id="mission-name" class="text-slate-200 font-semibold">Tránsito por Sombra de Eclipse Solar</span>
+                    <span id="mission-name" class="text-slate-200 font-semibold">Solar Eclipse Shadow Transit</span>
                 </div>
             </div>
 
-            <!-- Controles Centrales y Estado -->
+            <!-- Center Controls & Status -->
             <div class="flex flex-wrap items-center gap-1.5">
                 <span id="network-status-badge" class="px-2.5 py-0.5 rounded font-bold text-[11px] bg-emerald-500/20 border border-emerald-400 text-emerald-300 glow-text-green">
-                    RED NOMINAL
+                    GRID NOMINAL
                 </span>
 
                 <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700 rounded px-2 py-1">
-                    <label for="difficulty-select" class="text-[10px] text-slate-400 font-bold">NIVEL:</label>
+                    <label for="difficulty-select" class="text-[10px] text-slate-400 font-bold">LEVEL:</label>
                     <select id="difficulty-select" class="bg-transparent text-cyan-300 text-[11px] font-bold focus:outline-none cursor-pointer">
-                        <option value="1" class="bg-slate-900">1 - Órbita Diurna</option>
-                        <option value="2" selected class="bg-slate-900">2 - Eclipse Solar</option>
-                        <option value="3" class="bg-slate-900">3 - Tormenta + Fallo</option>
+                        <option value="1" class="bg-slate-900">1 - Sunlit Orbit</option>
+                        <option value="2" selected class="bg-slate-900">2 - Solar Eclipse</option>
+                        <option value="3" class="bg-slate-900">3 - Solar Storm + Fault</option>
                     </select>
                 </div>
 
@@ -212,43 +212,43 @@
                 </button>
 
                 <button id="btn-guide" class="btn-tactical px-2.5 py-1 rounded text-[11px] font-bold text-slate-200">
-                    ? GUÍA
+                    ? GUIDE
                 </button>
 
                 <button id="btn-reset" class="btn-tactical px-2.5 py-1 rounded text-[11px] font-bold text-emerald-300">
-                    ↻ REINICIAR
+                    ↻ RESET
                 </button>
 
                 <button id="btn-exit" class="px-2.5 py-1 rounded bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/60 text-amber-300 text-[11px] font-bold">
-                    ✕ SALIR [ESC]
+                    ✕ EXIT [ESC]
                 </button>
             </div>
         </div>
 
-        <!-- Barra de Objetivo Ultra-Compacta -->
+        <!-- Ultra-Compact Objective Bar -->
         <div class="bg-slate-900/85 border-l-4 border-cyan-400 px-3 py-1 rounded-r flex items-center justify-between text-[11px]">
             <div class="truncate">
-                <span class="text-cyan-400 font-bold">OBJETIVO TÁCTICO: </span>
+                <span class="text-cyan-400 font-bold">TACTICAL OBJECTIVE: </span>
                 <span id="mission-objective" class="text-slate-200">
-                    Mantén Sop. Vital &ge; 60 MW, evita que ningún BUS supere 135 MW (sobrecarga) y conserva la batería &gt; 15%.
+                    Keep Life Support &ge; 60 MW, prevent any BUS from exceeding 135 MW (overload), and maintain battery &gt; 15%.
                 </span>
             </div>
             <div class="shrink-0 ml-3 flex items-center gap-2 font-bold">
-                <span class="text-slate-400">INTEGRIDAD:</span>
+                <span class="text-slate-400">INTEGRITY:</span>
                 <span id="stability-timer" class="text-cyan-300">100%</span>
             </div>
         </div>
     </header>
 
-    <!-- ÁREA CENTRAL FLEXIBLE (OCUPA EL RESTO DEL ALTO DISPONIBLE) -->
+    <!-- FLEXIBLE CENTRAL AREA -->
     <main class="w-full max-w-[1680px] mx-auto flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2">
         
-        <!-- COLUMNA IZQUIERDA: GENERADORES Y TELEMETRÍA (3 cols) -->
+        <!-- LEFT COLUMN: GENERATORS & TELEMETRY (3 cols) -->
         <section class="lg:col-span-3 sci-panel rounded-md p-2.5 flex flex-col justify-between min-h-0">
             <div class="space-y-2 overflow-y-auto pr-0.5">
                 <div class="flex items-center justify-between border-b border-slate-700/80 pb-1">
-                    <h2 class="font-display text-[11px] font-bold tracking-wider text-cyan-400">MATRIZ DE GENERACIÓN</h2>
-                    <span id="active-gens-count" class="text-[10px] font-bold text-emerald-400">3 EN LÍNEA</span>
+                    <h2 class="font-display text-[11px] font-bold tracking-wider text-cyan-400">GENERATION MATRIX</h2>
+                    <span id="active-gens-count" class="text-[10px] font-bold text-emerald-400">3 ONLINE</span>
                 </div>
 
                 <!-- G1 -->
@@ -259,14 +259,14 @@
                             <span class="text-[11px] font-bold text-cyan-300">G1 REACTOR</span>
                         </div>
                         <button onclick="toggleGenerator('g1')" id="btn-g1" class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300">
-                            ACTIVO
+                            ACTIVE
                         </button>
                     </div>
                     <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden my-1">
                         <div id="bar-g1" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all" style="width: 82%"></div>
                     </div>
                     <div class="flex justify-between text-[10px]">
-                        <span class="text-slate-400">Salida: <strong id="val-g1" class="text-emerald-300">98 MW</strong></span>
+                        <span class="text-slate-400">Output: <strong id="val-g1" class="text-emerald-300">98 MW</strong></span>
                         <span id="temp-g1" class="text-amber-300">420°C</span>
                     </div>
                 </div>
@@ -279,14 +279,14 @@
                             <span class="text-[11px] font-bold text-amber-300">G2 SOLAR PV</span>
                         </div>
                         <button onclick="toggleGenerator('g2')" id="btn-g2" class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300">
-                            ACTIVO
+                            ACTIVE
                         </button>
                     </div>
                     <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden my-1">
                         <div id="bar-g2" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 transition-all" style="width: 70%"></div>
                     </div>
                     <div class="flex justify-between text-[10px]">
-                        <span class="text-slate-400">Salida: <strong id="val-g2" class="text-amber-300">85 MW</strong></span>
+                        <span class="text-slate-400">Output: <strong id="val-g2" class="text-amber-300">85 MW</strong></span>
                         <span id="eclipse-timer" class="text-amber-400 font-bold">ECLIPSE (18s)</span>
                     </div>
                 </div>
@@ -296,31 +296,31 @@
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-status" id="dot-g3"></span>
-                            <span class="text-[11px] font-bold text-cyan-300">G3 CELDA RTG</span>
+                            <span class="text-[11px] font-bold text-cyan-300">G3 RTG CELL</span>
                         </div>
                         <button onclick="toggleGenerator('g3')" id="btn-g3" class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300">
-                            ACTIVO
+                            ACTIVE
                         </button>
                     </div>
                     <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden my-1">
                         <div id="bar-g3" class="h-full bg-gradient-to-r from-emerald-500 to-teal-300 transition-all" style="width: 60%"></div>
                     </div>
                     <div class="flex justify-between text-[10px]">
-                        <span class="text-slate-400">Salida: <strong id="val-g3" class="text-emerald-300">72 MW</strong></span>
-                        <span class="text-slate-400">Efic: <span class="text-cyan-300">94%</span></span>
+                        <span class="text-slate-400">Output: <strong id="val-g3" class="text-emerald-300">72 MW</strong></span>
+                        <span class="text-slate-400">Eff: <span class="text-cyan-300">94%</span></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Resumen y Botón Auto-Balance -->
+            <!-- Summary & Auto-Balance Button -->
             <div class="pt-2 border-t border-slate-700/80 space-y-1.5 shrink-0">
                 <div class="bg-slate-950/90 rounded p-2 border border-slate-800 space-y-1 text-[11px]">
                     <div class="flex justify-between">
-                        <span class="text-slate-400">GENERACIÓN:</span>
+                        <span class="text-slate-400">GENERATION:</span>
                         <span id="total-gen" class="font-bold text-emerald-400">255 MW</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-400">DEMANDA:</span>
+                        <span class="text-slate-400">DEMAND:</span>
                         <span id="total-demand" class="font-bold text-cyan-300">224 MW</span>
                     </div>
                     <div class="flex justify-between">
@@ -329,7 +329,7 @@
                     </div>
                     <div>
                         <div class="flex justify-between text-[10px] mb-0.5">
-                            <span class="text-slate-400">BATERÍA:</span>
+                            <span class="text-slate-400">BATTERY:</span>
                             <span id="battery-text" class="font-bold text-emerald-300">94% (46.8 MWh)</span>
                         </div>
                         <div class="w-full h-2 bg-slate-900 rounded-sm overflow-hidden border border-slate-700">
@@ -340,22 +340,22 @@
 
                 <button id="btn-autobalance" class="w-full py-1.5 px-2 rounded font-display text-[11px] font-bold tracking-wider text-cyan-100 bg-gradient-to-r from-cyan-600/40 via-blue-600/40 to-cyan-600/40 hover:from-cyan-500/60 hover:to-blue-500/60 border border-cyan-400/70 transition-all flex items-center justify-center gap-1.5">
                     <span>⚡</span>
-                    <span>ESTABILIZACIÓN DE EMERGENCIA</span>
+                    <span>EMERGENCY STABILIZATION</span>
                 </button>
             </div>
         </section>
 
-        <!-- COLUMNA CENTRAL: ESQUEMA INTERACTIVO DE BUSES Y NODOS (8 cols) -->
+        <!-- CENTER COLUMN: INTERACTIVE BUS & NODE SCHEMATIC (8 cols) -->
         <section class="lg:col-span-8 sci-panel rounded-md p-2 flex flex-col relative min-h-[260px]">
             <div class="flex flex-wrap items-center justify-between px-2 py-0.5 text-[10px] text-slate-400 border-b border-slate-800/80 shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="text-cyan-400 font-bold">TOPOLOGÍA DE BUSES (MÁX 135 MW / BUS)</span>
+                    <span class="text-cyan-400 font-bold">BUS TOPOLOGY (MAX 135 MW / BUS)</span>
                     <span class="hidden sm:inline text-slate-500">|</span>
-                    <span class="hidden sm:inline text-slate-300">Clic en <strong class="text-cyan-300">Disyuntores</strong> para conmutar &bull; Clic en <strong class="text-amber-300">LOAD</strong> para cambiar de Bus</span>
+                    <span class="hidden sm:inline text-slate-300">Click <strong class="text-cyan-300">Breakers</strong> to toggle &bull; Click <strong class="text-amber-300">LOAD</strong> to switch Bus</span>
                 </div>
                 <div class="flex items-center gap-2.5">
                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Nominal</span>
-                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Sobrecarga/Fallo</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Overload/Fault</span>
                 </div>
             </div>
 
@@ -364,19 +364,19 @@
                 
                 <div id="canvas-alert-banner" class="hidden absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-rose-950/95 border border-rose-500 text-rose-200 text-[11px] font-bold tracking-wider shadow-lg flex items-center gap-1.5 shake-alert">
                     <span>⚠️</span>
-                    <span id="canvas-alert-text">ALERTA DE RED</span>
+                    <span id="canvas-alert-text">GRID ALERT</span>
                 </div>
             </div>
         </section>
 
-        <!-- COLUMNA DERECHA: MEDIDOR DE RESERVA COMPACTO (1 col) -->
+        <!-- RIGHT COLUMN: COMPACT RESERVE METER (1 col) -->
         <section class="lg:col-span-1 sci-panel rounded-md p-2 flex lg:flex-col items-center justify-between gap-1.5">
             <div class="font-display text-[10px] font-bold tracking-widest text-cyan-400 uppercase">
                 PWR
             </div>
 
             <div id="vertical-meter" class="flex-1 w-full lg:w-6 flex lg:flex-col-reverse gap-0.5 bg-slate-950 p-1 rounded border border-slate-800 min-h-[24px]">
-                <!-- Segmentos -->
+                <!-- Segments -->
             </div>
 
             <div id="vertical-meter-val" class="font-bold text-xs text-emerald-400 glow-text-green">
@@ -385,16 +385,16 @@
         </section>
     </main>
 
-    <!-- PANEL INFERIOR COMPACTO: CONTROLES DE DISTRIBUCIÓN DE CARGAS -->
+    <!-- COMPACT BOTTOM PANEL: LOAD DISTRIBUTION CONTROLS -->
     <footer class="w-full max-w-[1680px] mx-auto shrink-0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             
-            <!-- LOAD 1: SOPORTE VITAL -->
+            <!-- LOAD 1: LIFE SUPPORT -->
             <div id="load-card-0" class="sci-panel rounded-md p-2 border-l-4 border-l-emerald-400">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5">
                         <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-1</span>
-                        <span class="font-display text-[11px] font-bold text-white">SOP. VITAL</span>
+                        <span class="font-display text-[11px] font-bold text-white">LIFE SUP.</span>
                     </div>
                     <span id="status-load-0" class="text-[10px] font-bold text-emerald-400">OK</span>
                 </div>
@@ -406,17 +406,17 @@
                 </div>
                 <input type="range" id="slider-load-0" min="0" max="120" value="72" class="cyber-slider my-1">
                 <div class="flex justify-between text-[9px] text-slate-400">
-                    <span>Mín: <strong class="text-rose-300">60 MW</strong></span>
-                    <span class="text-rose-400 font-bold">★ CRÍTICO</span>
+                    <span>Min: <strong class="text-rose-300">60 MW</strong></span>
+                    <span class="text-rose-400 font-bold">★ CRITICAL</span>
                 </div>
             </div>
 
-            <!-- LOAD 2: PROPULSIÓN -->
+            <!-- LOAD 2: PROPULSION -->
             <div id="load-card-1" class="sci-panel rounded-md p-2 border-l-4 border-l-cyan-400">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5">
                         <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-2</span>
-                        <span class="font-display text-[11px] font-bold text-white">PROPULSIÓN</span>
+                        <span class="font-display text-[11px] font-bold text-white">PROPULSION</span>
                     </div>
                     <span id="status-load-1" class="text-[10px] font-bold text-emerald-400">NOMINAL</span>
                 </div>
@@ -428,17 +428,17 @@
                 </div>
                 <input type="range" id="slider-load-1" min="0" max="120" value="68" class="cyber-slider my-1">
                 <div class="flex justify-between text-[9px] text-slate-400">
-                    <span>Mín: <strong class="text-slate-200">40 MW</strong></span>
+                    <span>Min: <strong class="text-slate-200">40 MW</strong></span>
                     <span>ORBITAL</span>
                 </div>
             </div>
 
-            <!-- LOAD 3: LABORATORIO -->
+            <!-- LOAD 3: LABORATORY -->
             <div id="load-card-2" class="sci-panel rounded-md p-2 border-l-4 border-l-cyan-400">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5">
                         <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-3</span>
-                        <span class="font-display text-[11px] font-bold text-white">LABORATORIO</span>
+                        <span class="font-display text-[11px] font-bold text-white">LABORATORY</span>
                     </div>
                     <span id="status-load-2" class="text-[10px] font-bold text-emerald-400">NOMINAL</span>
                 </div>
@@ -450,17 +450,17 @@
                 </div>
                 <input type="range" id="slider-load-2" min="0" max="110" value="54" class="cyber-slider my-1">
                 <div class="flex justify-between text-[9px] text-slate-400">
-                    <span>Mín: <strong class="text-slate-200">10 MW</strong></span>
-                    <span>SECUNDARIO</span>
+                    <span>Min: <strong class="text-slate-200">10 MW</strong></span>
+                    <span>SECONDARY</span>
                 </div>
             </div>
 
-            <!-- LOAD 4: AVIÓNICA -->
+            <!-- LOAD 4: AVIONICS -->
             <div id="load-card-3" class="sci-panel rounded-md p-2 border-l-4 border-l-cyan-400">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5">
                         <span class="px-1 py-0.5 text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 rounded">LOAD-4</span>
-                        <span class="font-display text-[11px] font-bold text-white">AVIÓNICA</span>
+                        <span class="font-display text-[11px] font-bold text-white">AVIONICS</span>
                     </div>
                     <span id="status-load-3" class="text-[10px] font-bold text-emerald-400">NOMINAL</span>
                 </div>
@@ -472,39 +472,39 @@
                 </div>
                 <input type="range" id="slider-load-3" min="0" max="100" value="30" class="cyber-slider my-1">
                 <div class="flex justify-between text-[9px] text-slate-400">
-                    <span>Mín: <strong class="text-rose-300">25 MW</strong></span>
-                    <span>TELEMETRÍA</span>
+                    <span>Min: <strong class="text-rose-300">25 MW</strong></span>
+                    <span>TELEMETRY</span>
                 </div>
             </div>
 
         </div>
     </footer>
 
-    <!-- MODAL DE GUÍA / MANUAL TÁCTICO -->
+    <!-- GUIDE / TACTICAL MANUAL MODAL -->
     <div id="guide-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="sci-panel max-w-lg w-full rounded-lg p-5 border border-cyan-400/50 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
-                <h3 class="font-display text-base font-bold text-cyan-400">MANUAL TÁCTICO EPS // ALPACA-1</h3>
+                <h3 class="font-display text-base font-bold text-cyan-400">EPS TACTICAL MANUAL // ALPACA-1</h3>
                 <button id="close-guide" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
             </div>
             <div class="space-y-2.5 text-xs text-slate-300 leading-relaxed">
-                <p><strong class="text-cyan-300">1. Límite Térmico por Bus (135 MW):</strong> Cada bus vertical (BUS-A, BUS-B, BUS-C) soporta un máximo de <strong>135 MW</strong>. Si conectas demasiada carga a un mismo bus, entrará en <strong>SOBRECARGA</strong> y dañará la integridad del sistema.</p>
-                <p><strong class="text-amber-300">2. Enrutamiento Dinámico:</strong> Usa el botón <span class="text-cyan-300 font-bold">[BUS-X ⇄]</span> en cada carga (o haz clic en las cajas LOAD del esquema) para redirigir esa carga a otro bus menos saturado.</p>
-                <p><strong class="text-rose-400">3. Eclipses y Picos de Demanda:</strong> Durante un eclipse solar (G2), la potencia cae bruscamente. Raciona Propulsión y Laboratorio para proteger Soporte Vital (&ge; 60 MW) y Aviónica (&ge; 25 MW).</p>
+                <p><strong class="text-cyan-300">1. Thermal Bus Limit (135 MW):</strong> Each vertical bus (BUS-A, BUS-B, BUS-C) supports a maximum of <strong>135 MW</strong>. Connecting excessive load to a single bus triggers an <strong>OVERLOAD</strong> and degrades system integrity.</p>
+                <p><strong class="text-amber-300">2. Dynamic Routing:</strong> Use the <span class="text-cyan-300 font-bold">[BUS-X ⇄]</span> button on each load (or click the LOAD boxes on the schematic) to reroute that load to a less saturated bus.</p>
+                <p><strong class="text-rose-400">3. Eclipses &amp; Demand Spikes:</strong> During a solar eclipse (G2), solar output drops sharply. Throttle Propulsion and Laboratory to protect Life Support (&ge; 60 MW) and Avionics (&ge; 25 MW).</p>
             </div>
             <div class="mt-5 flex justify-end">
                 <button id="btn-understood" class="btn-tactical px-4 py-2 rounded text-xs font-bold text-cyan-300">
-                    ENTENDIDO // VOLVER A CONSOLA
+                    UNDERSTOOD // RETURN TO CONSOLE
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- TOAST DE NOTIFICACIÓN -->
+    <!-- NOTIFICATION TOAST -->
     <div id="toast-box" class="fixed bottom-20 right-4 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
         <div class="bg-slate-900/95 border border-cyan-400 text-cyan-200 px-3 py-2 rounded shadow-lg text-xs font-bold flex items-center gap-2">
             <span class="text-cyan-400">◈</span>
-            <span id="toast-msg">Sistema sincronizado</span>
+            <span id="toast-msg">System synchronized</span>
         </div>
     </div>
 
@@ -530,10 +530,10 @@
                 { id: 'g3', name: 'G3', label: 'RTG',     basePower: 72, currentPower: 72, maxPower: 90,  active: true, bus: 2, temp: 310 }
             ],
             loads: [
-                { id: 0, name: 'LOAD-1', label: 'SOP. VITAL',  power: 72, min: 60, max: 120, active: true, bus: 0, critical: true },
-                { id: 1, name: 'LOAD-2', label: 'PROPULSIÓN',  power: 68, min: 40, max: 120, active: true, bus: 1, critical: false },
-                { id: 2, name: 'LOAD-3', label: 'LABORATORIO', power: 54, min: 10, max: 110, active: true, bus: 2, critical: false },
-                { id: 3, name: 'LOAD-4', label: 'AVIÓNICA',    power: 35, min: 25, max: 100, active: true, bus: 0, critical: false }
+                { id: 0, name: 'LOAD-1', label: 'LIFE SUP.',   power: 72, min: 60, max: 120, active: true, bus: 0, critical: true },
+                { id: 1, name: 'LOAD-2', label: 'PROPULSION',  power: 68, min: 40, max: 120, active: true, bus: 1, critical: false },
+                { id: 2, name: 'LOAD-3', label: 'LABORATORY',  power: 54, min: 10, max: 110, active: true, bus: 2, critical: false },
+                { id: 3, name: 'LOAD-4', label: 'AVIONICS',    power: 35, min: 25, max: 100, active: true, bus: 0, critical: false }
             ],
             busLoads: [0, 0, 0],
             busOverloaded: [false, false, false],
@@ -616,34 +616,34 @@
             if (!gen) return;
             gen.active = !gen.active;
             playUiSound('toggle');
-            showToast(`${gen.name}: ${gen.active ? 'EN LÍNEA' : 'AISLADO'}`);
+            showToast(`${gen.name}: ${gen.active ? 'ONLINE' : 'ISOLATED'}`);
             updateUI();
         }
 
-        // Cambiar a qué Bus está conectada una carga (Para evitar sobrecargas de 135 MW)
+        // Switch which Bus a load is connected to (to avoid 135 MW overloads)
         function cycleLoadBus(loadIdx) {
             const load = state.loads[loadIdx];
             load.bus = (load.bus + 1) % 3;
             document.getElementById(`bus-btn-${loadIdx}`).textContent = `${BUS_NAMES[load.bus]} ⇄`;
             playUiSound('toggle');
-            showToast(`${load.name} enrutado a ${BUS_NAMES[load.bus]}`);
+            showToast(`${load.name} routed to ${BUS_NAMES[load.bus]}`);
             updateUI();
         }
 
         function emergencyStabilize() {
             playUiSound('auto');
-            // Redistribuir cargas entre los 3 buses para eliminar sobrecargas
+            // Redistribute loads across the 3 buses to eliminate overloads
             state.loads[0].bus = 0; // Bus A
             state.loads[1].bus = 1; // Bus B
             state.loads[2].bus = 2; // Bus C
-            state.loads[3].bus = 2; // Bus C (junto con Lab que consume poco)
+            state.loads[3].bus = 2; // Bus C
 
             state.loads.forEach((l, i) => {
                 l.active = true;
                 document.getElementById(`bus-btn-${i}`).textContent = `${BUS_NAMES[l.bus]} ⇄`;
             });
 
-            // Ajustar potencias al mínimo seguro + reparto óptimo
+            // Adjust power levels to safe minimums + optimal split
             const totalGen = state.generators.reduce((acc, g) => acc + (g.active ? g.currentPower : 0), 0);
             let budget = Math.max(135, totalGen - 10);
 
@@ -656,7 +656,7 @@
                 document.getElementById(`slider-load-${i}`).value = l.power;
             });
 
-            showToast('ENRUTAMIENTO Y CARGAS ESTABILIZADAS');
+            showToast('ROUTING AND LOADS STABILIZED');
             updateUI();
         }
 
@@ -666,32 +666,32 @@
             const alertBanner = document.getElementById('canvas-alert-banner');
 
             if (state.level === 1) {
-                missionName.textContent = 'Órbita Diurna (Calibración de Buses)';
+                missionName.textContent = 'Sunlit Orbit (Bus Calibration)';
                 state.generators[0].basePower = 100;
                 state.generators[1].basePower = 95;
                 state.generators[2].basePower = 75;
                 state.isEclipseActive = false;
                 alertBanner.classList.add('hidden');
             } else if (state.level === 2) {
-                missionName.textContent = 'Tránsito por Sombra de Eclipse Solar';
+                missionName.textContent = 'Solar Eclipse Shadow Transit';
                 state.generators[0].basePower = 98;
                 state.generators[1].basePower = 85;
                 state.generators[2].basePower = 72;
                 state.eclipsePhase = 10;
             } else {
-                missionName.textContent = 'Tormenta Geomagnética + Picos de Demanda';
+                missionName.textContent = 'Geomagnetic Storm + Demand Spikes';
                 state.generators[0].basePower = 86;
                 state.generators[1].basePower = 35;
                 state.generators[2].basePower = 70;
                 state.isEclipseActive = true;
                 alertBanner.classList.remove('hidden');
-                document.getElementById('canvas-alert-text').textContent = 'TORMENTA SOLAR: FLUCTUACIÓN SEVERA EN RED';
+                document.getElementById('canvas-alert-text').textContent = 'SOLAR STORM: SEVERE GRID FLUCTUATION';
             }
             updateUI();
         }
 
         // ==========================================
-        // ACTUALIZACIÓN DE TELEMETRÍA Y ESTADO
+        // TELEMETRY & STATUS UPDATE
         // ==========================================
         function updateUI() {
             let totalGen = 0;
@@ -712,7 +712,7 @@
                 bar.style.width = `${(power / g.maxPower) * 100}%`;
 
                 if (g.active) {
-                    btn.textContent = 'ACTIVO';
+                    btn.textContent = 'ACTIVE';
                     btn.className = 'px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300';
                     dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-status';
                     card.classList.remove('opacity-50');
@@ -724,9 +724,9 @@
                 }
             });
 
-            document.getElementById('active-gens-count').textContent = `${activeGens} EN LÍNEA`;
+            document.getElementById('active-gens-count').textContent = `${activeGens} ONLINE`;
 
-            // Calcular carga por Bus y detectar sobrecargas (> 135 MW)
+            // Calculate load per Bus and detect overloads (> 135 MW)
             state.busLoads = [0, 0, 0];
             let totalDemand = 0;
             let anyCriticalFail = false;
@@ -744,7 +744,7 @@
                 valEl.textContent = `${effectivePower} MW`;
 
                 if (!l.active) {
-                    statusEl.textContent = 'CORTE';
+                    statusEl.textContent = 'TRIPPED';
                     statusEl.className = 'text-[10px] font-bold text-slate-500';
                     cardEl.style.borderLeftColor = '#475569';
                     if (l.min >= 25) anyCriticalFail = true;
@@ -776,7 +776,7 @@
             netEl.textContent = `${net >= 0 ? '+' : ''}${net} MW`;
             netEl.className = net >= 0 ? 'font-bold text-emerald-400' : 'font-bold text-rose-400';
 
-            // Batería e Integridad
+            // Battery & Integrity
             const mwh = ((state.battery / 100) * 50).toFixed(1);
             document.getElementById('battery-text').textContent = `${Math.round(state.battery)}% (${mwh} MWh)`;
             document.getElementById('battery-bar').style.width = `${state.battery}%`;
@@ -786,32 +786,32 @@
             intEl.textContent = `${Math.round(state.integrity)}%`;
             intEl.className = state.integrity < 50 ? 'text-rose-400 animate-pulse' : 'text-cyan-300';
 
-            // Banner de Alerta y Badge Global
+            // Alert Banner & Global Badge
             const badge = document.getElementById('network-status-badge');
             const alertBanner = document.getElementById('canvas-alert-banner');
             const alertText = document.getElementById('canvas-alert-text');
 
             if (anyBusOverload) {
-                badge.textContent = 'SOBRECARGA DE BUS';
+                badge.textContent = 'BUS OVERLOAD';
                 badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-rose-500/25 border border-rose-500 text-rose-300 animate-pulse';
                 alertBanner.classList.remove('hidden');
-                alertText.textContent = '¡SOBRECARGA TÉRMICA (>135 MW)! REENRUTA UNA CARGA A OTRO BUS';
+                alertText.textContent = 'THERMAL OVERLOAD (>135 MW)! REROUTE A LOAD TO ANOTHER BUS';
             } else if (anyCriticalFail || state.battery < 15) {
-                badge.textContent = 'FALLO CRÍTICO';
+                badge.textContent = 'CRITICAL FAULT';
                 badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-rose-500/25 border border-rose-500 text-rose-300 animate-pulse';
                 alertBanner.classList.remove('hidden');
-                alertText.textContent = '¡SUMINISTRO INSUFICIENTE EN MÓDULOS VITALES!';
+                alertText.textContent = 'INSUFFICIENT POWER TO VITAL MODULES!';
             } else if (state.isEclipseActive || net < 0) {
-                badge.textContent = 'DRENAJE / ECLIPSE';
+                badge.textContent = 'DRAIN / ECLIPSE';
                 badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-amber-500/20 border border-amber-400 text-amber-300';
                 if (state.isEclipseActive) {
                     alertBanner.classList.remove('hidden');
-                    alertText.textContent = 'TRÁNSITO DE ECLIPSE: PANEL SOLAR G2 REDUCIDO';
+                    alertText.textContent = 'ECLIPSE TRANSIT: SOLAR ARRAY G2 REDUCED';
                 } else {
                     alertBanner.classList.add('hidden');
                 }
             } else {
-                badge.textContent = 'RED NOMINAL';
+                badge.textContent = 'GRID NOMINAL';
                 badge.className = 'px-2.5 py-0.5 rounded font-bold text-[11px] bg-emerald-500/20 border border-emerald-400 text-emerald-300 glow-text-green';
                 alertBanner.classList.add('hidden');
             }
@@ -1061,11 +1061,11 @@
                         if (state.isEclipseActive) playUiSound('warn');
                     }
                     const timerEl = document.getElementById('eclipse-timer');
-                    timerEl.textContent = state.isEclipseActive ? `SOMBRA (${state.eclipsePhase}s)` : `ECLIPSE (${state.eclipsePhase}s)`;
+                    timerEl.textContent = state.isEclipseActive ? `SHADOW (${state.eclipsePhase}s)` : `ECLIPSE (${state.eclipsePhase}s)`;
                     timerEl.className = state.isEclipseActive ? 'text-rose-400 font-bold animate-pulse' : 'text-amber-400 font-bold';
                 }
 
-                // Evento dinámico: Pico de demanda en Propulsión o Laboratorio cada 16s
+                // Dynamic event: demand spike in Propulsion or Laboratory every 16s
                 state.surgeTimer--;
                 if (state.surgeTimer <= 0) {
                     state.surgeTimer = 18;
@@ -1073,7 +1073,7 @@
                     const spike = 18;
                     state.loads[targetIdx].power = Math.min(state.loads[targetIdx].max, state.loads[targetIdx].power + spike);
                     document.getElementById(`slider-load-${targetIdx}`).value = state.loads[targetIdx].power;
-                    showToast(`PICO DE CONSUMO EN ${state.loads[targetIdx].name} (+${spike} MW)`);
+                    showToast(`DEMAND SPIKE ON ${state.loads[targetIdx].name} (+${spike} MW)`);
                     playUiSound('warn');
                 }
 
@@ -1179,7 +1179,7 @@
                     document.getElementById(`bus-btn-${i}`).textContent = `${BUS_NAMES[l.bus]} ⇄`;
                 });
                 applyDifficulty(state.level);
-                showToast('SISTEMA REINICIADO');
+                showToast('SYSTEM RESET');
             });
 
             const modal = document.getElementById('guide-modal');
@@ -1187,11 +1187,11 @@
             document.getElementById('close-guide').addEventListener('click', () => modal.classList.add('hidden'));
             document.getElementById('btn-understood').addEventListener('click', () => modal.classList.add('hidden'));
 
-            document.getElementById('btn-exit').addEventListener('click', () => showToast('VOLVIENDO A LA ESTACIÓN...'));
+            document.getElementById('btn-exit').addEventListener('click', () => showToast('RETURNING TO STATION...'));
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     if (!modal.classList.contains('hidden')) modal.classList.add('hidden');
-                    else showToast('VOLVIENDO A LA ESTACIÓN...');
+                    else showToast('RETURNING TO STATION...');
                 }
             });
 

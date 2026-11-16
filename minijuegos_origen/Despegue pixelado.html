@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Misión Águila · Despegue</title>
+<title>Eagle Mission · Liftoff</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 <style>
 :root{color-scheme:dark;--u:min(100vw,calc(100vh*16/9));box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -27,10 +27,10 @@ button{font:inherit;font-size:calc(var(--u)*.022);background:#ffb347;color:#2a14
 <div id="w">
 <canvas id="c" width="240" height="135"></canvas>
 <div class="v"></div>
-<div class="bar" id="tb"><span>MISIÓN ÁGUILA</span><span id="ck">T-00:00</span></div>
+<div class="bar" id="tb"><span>EAGLE MISSION</span><span id="ck">T-00:00</span></div>
 <div class="bar" id="bb"><span id="alt">ALT 0 km</span><span id="vel">VEL 0 m/s</span></div>
 <div id="big"></div><div id="sub"></div>
-<div id="s"><h1>MISIÓN<br>ÁGUILA</h1><button id="b">▶ INICIAR (con sonido)</button></div>
+<div id="s"><h1>EAGLE<br>MISSION</h1><button id="b">▶ LAUNCH (with audio)</button></div>
 </div>
 <script>
 const W=240,H=135,G=122,CX=120,TOP0=G-69,IGN=4.5,LIFT=7,SEP=260;
@@ -110,17 +110,17 @@ function frame(now){
  // texto
  let big='',sub='',col='#fff',sc=1;
  if(t0!=null){
-  if(t<1.5){big='MISIÓN ÁGUILA';sub='LANZAMIENTO ORBITAL';col='#ffb347'}
+  if(t<1.5){big='EAGLE MISSION';sub='ORBITAL LAUNCH';col='#ffb347'}
   else if(t<IGN){const n=3-Math.floor(t-1.5);sc=1+(1-(t-1.5)%1)*.8;big=n;col='#ff5a3c'}
-  else if(t<LIFT){big='IGNICIÓN';col='#ffb347'}
-  else if(lt<3){big='¡DESPEGUE!';col='#ffd966'}
-  else if(sepT!=null&&t-sepT<2.2){big='SEPARACIÓN';sub='PROPULSORES LIBERADOS'}
-  else if(lt>15){big='EN ÓRBITA';sub='MISIÓN CUMPLIDA';col='#8fdcff'}}
+  else if(t<LIFT){big='IGNITION';col='#ffb347'}
+  else if(lt<3){big='LIFTOFF!';col='#ffd966'}
+  else if(sepT!=null&&t-sepT<2.2){big='SEPARATION';sub='BOOSTERS JETTISONED'}
+  else if(lt>15){big='IN ORBIT';sub='MISSION ACCOMPLISHED';col='#8fdcff'}}
  const B=$('big');B.textContent=big;B.style.color=col;B.style.transform='scale('+sc+')';$('sub').textContent=sub;
  const ct=t-LIFT;$('ck').textContent=t0==null?'T-00:07':(ct<0?'T-':'T+')+'00:'+String(Math.abs(Math.floor(ct))).padStart(2,'0');
  $('alt').textContent='ALT '+Math.min(408,Math.floor(lift*.6))+' km';
  $('vel').textContent='VEL '+(lt?Math.floor((4.4*lt+8)*45):0)+' m/s';
- if(lt>17&&!ended){ended=1;const s=$('s');s.style.display='flex';s.className='end';$('b').textContent='↻ REPETIR'}
+ if(lt>17&&!ended){ended=1;const s=$('s');s.style.display='flex';s.className='end';$('b').textContent='↻ REPLAY'}
  else if(!ended&&t0!=null)$('s').className='';
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);

@@ -7,7 +7,7 @@ export default function ReparacionTelecomModal(props: MinigameModalProps) {
       {...props}
       game="telecom"
       file="reparacion_telecom.html"
-      title="SINTONIZACIÓN DE TELECOMUNICACIONES DSN · SERPIENTE-2"
+      title="DSN TELECOMMUNICATIONS TUNING · SERPIENTE-2"
       accent="#67e8f9"
     />
   )

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reencuentro Cometa - Defensa contra Meteoritos</title>
+    <title>Comet Rendezvous - Meteorite Defense</title>
     <style>
         :root {
             --bg-hull: #0f141c;
@@ -223,20 +223,20 @@
 
     <header>
         <div class="title-block">
-            <span class="badge-system">PILOTO // DEFENSA</span>
-            <h1>DEFENSA ORBITAL CONTRA METEORITOS</h1>
+            <span class="badge-system">PILOT // DEFENSE</span>
+            <h1>ORBITAL METEORITE DEFENSE</h1>
         </div>
         <div class="top-controls">
             <button class="btn-header" onclick="location.href='index.html'">⌂ HUB</button>
-            <label for="diffSelect" style="color: #94a3b8;">DIFICULTAD:</label>
+            <label for="diffSelect" style="color: #94a3b8;">DIFFICULTY:</label>
             <select id="diffSelect" class="select-diff" onchange="changeDifficulty(this.value)">
-                <option value="1">Nivel 1 - Tranquilo</option>
-                <option value="2" selected>Nivel 2 - Moderado</option>
-                <option value="3">Nivel 3 - Intenso</option>
+                <option value="1">Level 1 - Calm</option>
+                <option value="2" selected>Level 2 - Moderate</option>
+                <option value="3">Level 3 - Intense</option>
             </select>
             <button class="btn-header" onclick="toggleAudio()" id="btnAudio">🔊 AUDIO: ON</button>
-            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSA</button>
-            <button class="btn-header" onclick="resetMission()">↻ REINICIAR</button>
+            <button class="btn-header" onclick="togglePause()" id="btnPause">⏸ PAUSE</button>
+            <button class="btn-header" onclick="resetMission()">↻ RESET</button>
         </div>
     </header>
 
@@ -247,8 +247,8 @@
             <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
             <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>RADAR DE INTERCEPCIÓN TÁCTICA</span>
-                <span id="threatStatus" style="color:var(--crt-green)">ESTADO: PERÍMETRO SEGURO</span>
+                <span>TACTICAL INTERCEPTION RADAR</span>
+                <span id="threatStatus" style="color:var(--crt-green)">STATUS: PERIMETER SECURE</span>
             </div>
             <div class="panel-body" style="padding:0;">
                 <div class="canvas-container">
@@ -263,27 +263,27 @@
             <div class="rivet rivet-tl"></div><div class="rivet rivet-tr"></div>
             <div class="rivet rivet-bl"></div><div class="rivet rivet-br"></div>
             <div class="panel-header">
-                <span>ESTADO DEL CASCO Y MISIÓN</span>
+                <span>HULL &amp; MISSION STATUS</span>
                 <span id="clockDisplay">00:00</span>
             </div>
             <div class="panel-body">
                 <div class="telemetry-block">
                     <div class="tele-row">
-                        <span style="color:#94a3b8">INTEGRIDAD DEL CASCO:</span>
+                        <span style="color:#94a3b8">HULL INTEGRITY:</span>
                         <span class="tele-val" id="teleHull">100%</span>
                     </div>
                     <div class="bar-container">
                         <div class="bar-fill" id="barHull" style="width: 100%;"></div>
                     </div>
                     <div class="tele-row" style="margin-top:8px;">
-                        <span style="color:#94a3b8">METEORITOS DESTRUIDOS:</span>
+                        <span style="color:#94a3b8">METEORITES DESTROYED:</span>
                         <span class="tele-val" id="teleScore" style="color:var(--crt-cyan)">0 / 15</span>
                     </div>
                 </div>
 
                 <div style="background:rgba(0,0,0,0.3); border:1px solid #263342; padding:12px; font-size:11px; line-height:1.5;">
-                    <b style="color:var(--crt-cyan)">INSTRUCCIONES DE DEFENSA:</b>
-                    <p style="color:#94a3b8; margin-top:6px;">Haz <b>clic izquierdo</b> sobre los meteoritos que vengan desde el espacio hacia la estación central para destruirlos con el cañón láser antes de que impacten.</p>
+                    <b style="color:var(--crt-cyan)">DEFENSE INSTRUCTIONS:</b>
+                    <p style="color:#94a3b8; margin-top:6px;"><b>Left-click</b> on incoming meteorites approaching the central station from deep space to destroy them with the laser turret before impact.</p>
                 </div>
             </div>
         </div>
@@ -293,27 +293,27 @@
     <div class="modal-overlay" id="debriefModal">
         <div class="modal-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-highlight); padding-bottom:8px;">
-                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">INFORME TÉCNICO DE DEFENSA</span>
-                <span class="badge-system" id="debBadge">ÉXITO</span>
+                <span style="font-size:16px; color:var(--crt-green);" id="debTitle">DEFENSE TECHNICAL REPORT</span>
+                <span class="badge-system" id="debBadge">SUCCESS</span>
             </div>
             <div style="font-size:12px; line-height:1.6; display:flex; flex-direction:column; gap:10px;">
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-cyan)">1. RESULTADO DE INTERCEPCIÓN:</b>
-                    <p id="debDesc">La estación repelió con éxito la amenaza meteórica.</p>
+                    <b style="color:var(--crt-cyan)">1. INTERCEPTION RESULT:</b>
+                    <p id="debDesc">The station successfully repelled the meteoric threat.</p>
                 </div>
                 <div style="background:#1f2937; padding:10px; border:1px solid #374151;">
-                    <b style="color:var(--crt-amber)">2. MÉTRICAS DE COMBATE:</b>
+                    <b style="color:var(--crt-amber)">2. COMBAT METRICS:</b>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
-                        <div>Meteoritos Destruidos: <b id="debScore">-</b></div>
-                        <div>Casco Restante: <b id="debHullFinal">-</b></div>
-                        <div>Tiempo Transcurrido: <b id="debTime">-</b></div>
-                        <div>Calificación: <b id="debGrade">-</b></div>
+                        <div>Meteorites Destroyed: <b id="debScore">-</b></div>
+                        <div>Remaining Hull: <b id="debHullFinal">-</b></div>
+                        <div>Elapsed Time: <b id="debTime">-</b></div>
+                        <div>Grade: <b id="debGrade">-</b></div>
                     </div>
                 </div>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-header" onclick="closeModalAndRetry()">REPETIR</button>
-                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">SIGUIENTE NIVEL</button>
+                <button class="btn-header" onclick="closeModalAndRetry()">REPLAY</button>
+                <button class="btn-header" style="background:#0284c7; color:#fff;" onclick="nextLevelOrFinish()">NEXT LEVEL</button>
             </div>
         </div>
     </div>
@@ -389,7 +389,7 @@
             meteorites = [];
             spawnTimer = 0;
 
-            // Ajustar la meta según la dificultad seleccionada
+            // Adjust target score based on selected difficulty
             if (difficulty === 1) targetScore = 10;
             else if (difficulty === 2) targetScore = 15;
             else if (difficulty === 3) targetScore = 20;
@@ -398,7 +398,7 @@
         }
 
         function changeDifficulty(val) { setupScenario(val); }
-        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ REANUDAR' : '⏸ PAUSA'; }
+        function togglePause() { isPaused = !isPaused; document.getElementById('btnPause').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE'; }
         function resetMission() { setupScenario(difficulty); }
 
         const canvas = document.getElementById('defenseCanvas');
@@ -406,7 +406,7 @@
         function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
         window.addEventListener('resize', resizeCanvas);
 
-        // Disparar al hacer clic en el canvas
+        // Fire on canvas click
         canvas.addEventListener('click', (e) => {
             if (isPaused || isMissionEnded) return;
             const rect = canvas.getBoundingClientRect();
@@ -415,7 +415,7 @@
 
             playLaserSound();
 
-            // Comprobar si el clic impactó algún meteorito
+            // Check if click hit any meteorite
             for (let i = meteorites.length - 1; i >= 0; i--) {
                 const m = meteorites[i];
                 const dist = Math.hypot(m.x - clickX, m.y - clickY);
@@ -436,26 +436,26 @@
         function completeMission() {
             isMissionEnded = true;
             document.getElementById('debriefModal').style.display = 'flex';
-            document.getElementById('debTitle').textContent = "¡DEFENSA EXITOSA!";
-            document.getElementById('debBadge').textContent = "SECTOR SEGURO";
-            document.getElementById('debDesc').textContent = "Todos los incoming meteorites fueron interceptados con éxito antes de dañar el casco.";
+            document.getElementById('debTitle').textContent = "DEFENSE SUCCESSFUL!";
+            document.getElementById('debBadge').textContent = "SECTOR SECURE";
+            document.getElementById('debDesc').textContent = "All incoming meteorites were successfully intercepted before damaging the hull.";
             document.getElementById('debScore').textContent = `${score} / ${targetScore}`;
             document.getElementById('debHullFinal').textContent = `${hull}%`;
             document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
-            document.getElementById('debGrade').textContent = hull === 100 ? "A+ PERFECTO" : "A BUENO";
+            document.getElementById('debGrade').textContent = hull === 100 ? "A+ PERFECT" : "A GOOD";
         }
 
         function failMission() {
             isMissionEnded = true;
             document.getElementById('debriefModal').style.display = 'flex';
-            document.getElementById('debTitle').textContent = "CASCO COLAPSADO";
-            document.getElementById('debBadge').textContent = "FALLO";
+            document.getElementById('debTitle').textContent = "HULL BREACHED";
+            document.getElementById('debBadge').textContent = "FAILED";
             document.getElementById('debBadge').style.background = "#7f1d1d";
-            document.getElementById('debDesc').textContent = "Demasiados impactos de meteoritos destruyeron los escudos de la estación.";
+            document.getElementById('debDesc').textContent = "Too many meteorite impacts destroyed the station shields.";
             document.getElementById('debScore').textContent = `${score} / ${targetScore}`;
             document.getElementById('debHullFinal').textContent = `0%`;
             document.getElementById('debTime').textContent = `${Math.round(missionTime)} s`;
-            document.getElementById('debGrade').textContent = "F - REPROBADO";
+            document.getElementById('debGrade').textContent = "F - FAILED";
         }
 
         function closeModalAndRetry() { document.getElementById('debriefModal').style.display = 'none'; resetMission(); }
@@ -542,7 +542,7 @@
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
 
-            // Dibujar la base/nave en el centro
+            // Draw base/ship at center
             ctx.strokeStyle = '#38bdf8';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -553,7 +553,7 @@
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(cx - 3, cy - 3, 6, 6);
 
-            // Dibujar meteoritos acercándose
+            // Draw approaching meteorites
             for (let m of meteorites) {
                 ctx.fillStyle = '#94a3b8';
                 ctx.beginPath();

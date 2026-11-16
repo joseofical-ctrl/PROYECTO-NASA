@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CubeSat Architect 2D-RPG — Transmisión Orbital Épica 32×32</title>
+    <title>CubeSat Architect 2D-RPG — Epic Orbital Transmission 32×32</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
@@ -54,17 +54,17 @@
         <!-- Capa Scanlines CRT -->
         <div class="scanlines absolute inset-0"></div>
 
-        <!-- Badge superior izquierdo con telemetría real de la misión -->
+        <!-- Top-left badge with live mission telemetry -->
         <div id="mission-param-badge" class="absolute top-3 left-3 z-20 px-3 py-1.5 rounded bg-slate-950/85 border border-cyan-500/60 backdrop-blur-sm pointer-events-none">
-            <div id="param-badge-title" class="font-pixel text-[9px] sm:text-[10px] text-cyan-300">ETAPA 1/3 · ANDES-CRYO-01</div>
-            <div id="param-badge-sub" class="text-[10px] sm:text-xs text-emerald-300 font-bold mt-0.5">CIENCIA BASE: 0 PTS · INTEGRIDAD: 100%</div>
+            <div id="param-badge-title" class="font-pixel text-[9px] sm:text-[10px] text-cyan-300">STAGE 1/3 · ANDES-CRYO-01</div>
+            <div id="param-badge-sub" class="text-[10px] sm:text-xs text-emerald-300 font-bold mt-0.5">BASE SCIENCE: 0 PTS · INTEGRITY: 100%</div>
         </div>
 
-        <!-- Botones discretos flotantes en esquina superior derecha -->
+        <!-- Floating controls in top-right corner -->
         <div class="absolute top-3 right-3 flex items-center gap-2 z-20 opacity-90 hover:opacity-100 transition-opacity">
-            <button id="btn-export" class="hidden sm:flex px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-emerald-300 font-bold text-[10px] sm:text-xs items-center gap-1.5 backdrop-blur-sm transition cursor-pointer" title="Descargar archivo HTML autónomo">
+            <button id="btn-export" class="hidden sm:flex px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-emerald-300 font-bold text-[10px] sm:text-xs items-center gap-1.5 backdrop-blur-sm transition cursor-pointer" title="Download standalone HTML file">
                 <span>⬇</span>
-                <span>EXPORTAR HTML</span>
+                <span>EXPORT HTML</span>
             </button>
             <button id="btn-audio" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-amber-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span id="audio-icon">🔊</span>
@@ -72,29 +72,29 @@
             </button>
             <button id="btn-restart" class="px-2.5 py-1.5 rounded bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span>↻</span>
-                <span>REPETIR</span>
+                <span>REPLAY</span>
             </button>
             <button id="btn-skip-top" class="px-2.5 py-1.5 rounded bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-400/80 text-emerald-200 font-bold text-[10px] sm:text-xs flex items-center gap-1.5 backdrop-blur-sm transition cursor-pointer">
                 <span>⏭</span>
-                <span>CONTINUAR</span>
+                <span>CONTINUE</span>
             </button>
         </div>
 
-        <!-- Cartel Cinematográfico Épico de Estado de Misión -->
+        <!-- Epic Mission Status Banner -->
         <div id="mission-banner" class="hidden absolute top-5 sm:top-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none w-full px-4">
             <div id="banner-main" class="px-4 sm:px-6 py-2 rounded bg-sky-950/90 border-2 border-cyan-400 text-cyan-100 font-pixel text-[10px] sm:text-sm tracking-widest shadow-[0_0_28px_rgba(34,211,238,0.65)] text-center">
-                ✦ SINCRONIZACIÓN ORBITAL ACTIVA ✦
+                ✦ ORBITAL SYNCHRONIZATION ACTIVE ✦
             </div>
             <div id="banner-sub" class="px-3 py-1 rounded bg-slate-950/85 border border-emerald-400/70 text-emerald-300 font-pixel text-[8px] sm:text-[10px] tracking-wider text-center">
-                ALINEANDO MATRICES DE COMUNICACIÓN LÁSER
+                ALIGNING LASER COMMUNICATION ARRAYS
             </div>
         </div>
 
-        <!-- Barra de Progreso de Transferencia de Paquetes (Solo visible durante la transmisión) -->
+        <!-- Packet Transfer Progress Bar -->
         <div id="transfer-hud" class="hidden absolute bottom-5 left-1/2 -translate-x-1/2 z-10 w-[88%] max-w-md pointer-events-none">
             <div class="bg-slate-950/85 border border-cyan-500/70 rounded-lg px-3.5 py-2.5 backdrop-blur-sm shadow-[0_0_20px_rgba(14,165,233,0.35)]">
                 <div class="flex justify-between items-center text-[9px] sm:text-[10px] font-pixel text-cyan-300 mb-1.5">
-                    <span id="transfer-status-text">ENVIANDO TELEMETRÍA</span>
+                    <span id="transfer-status-text">SENDING TELEMETRY</span>
                     <span id="transfer-percent" class="text-emerald-400">0%</span>
                 </div>
                 <div class="w-full h-2.5 bg-slate-900 rounded overflow-hidden border border-slate-700 p-0.5">
@@ -103,39 +103,39 @@
             </div>
         </div>
 
-        <!-- Overlay Final de Misión Cumplida -->
+        <!-- Mission Accomplished End Overlay -->
         <div id="end-overlay" class="hidden absolute inset-0 bg-slate-950/55 flex flex-col items-center justify-center p-4 z-20">
             <div class="hud-panel border-2 border-emerald-400/90 rounded-xl p-5 sm:p-6 max-w-md w-full text-center space-y-3.5">
                 <div id="modal-stage-badge" class="inline-block px-3 py-1 rounded bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 text-[10px] font-bold tracking-widest">
-                    TRANSMISIÓN COMPLETADA • 100% INTEGRIDAD
+                    TRANSMISSION COMPLETE • 100% INTEGRITY
                 </div>
                 <h2 id="modal-title" class="font-pixel text-xs sm:text-sm text-white leading-relaxed">
-                    ENLACE ORBITAL EXITOSO
+                    ORBITAL LINK SUCCESSFUL
                 </h2>
                 <p id="modal-mission-packet" class="text-xs text-emerald-200 font-bold leading-relaxed bg-emerald-950/55 border border-emerald-500/40 rounded px-3 py-2">
-                    SAT-01 y SAT-02 sincronizaron sus sensores y enviaron los paquetes científicos a la red terrestre sin pérdida de señal.
+                    SAT-01 and SAT-02 synchronized their sensors and transmitted the scientific packets to the ground network with zero signal loss.
                 </p>
                 <div id="modal-mission-stats" class="grid grid-cols-3 gap-2 text-left">
                     <div class="bg-slate-950/80 border border-slate-700 rounded p-2">
-                        <div class="text-[9px] text-cyan-300 font-bold">MISIÓN</div>
+                        <div class="text-[9px] text-cyan-300 font-bold">MISSION</div>
                         <div id="stat-mission-code" class="text-[11px] font-bold text-white truncate mt-0.5">ANDES-CRYO-01</div>
                     </div>
                     <div class="bg-slate-950/80 border border-slate-700 rounded p-2">
-                        <div class="text-[9px] text-amber-300 font-bold">CIENCIA BASE</div>
+                        <div class="text-[9px] text-amber-300 font-bold">BASE SCIENCE</div>
                         <div id="stat-mission-points" class="text-[11px] font-bold text-emerald-300 mt-0.5">0 PTS</div>
                     </div>
                     <div class="bg-slate-950/80 border border-slate-700 rounded p-2">
-                        <div class="text-[9px] text-emerald-300 font-bold">INTEGRIDAD</div>
+                        <div class="text-[9px] text-emerald-300 font-bold">INTEGRITY</div>
                         <div id="stat-mission-health" class="text-[11px] font-bold text-cyan-200 mt-0.5">100%</div>
                     </div>
                 </div>
                 <div id="modal-auto-note" class="text-[10px] text-cyan-300 font-bold"></div>
                 <div class="pt-1 flex flex-col sm:flex-row justify-center gap-2">
                     <button id="btn-next-stage" class="px-4 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-pixel text-[9px] sm:text-[10px] shadow-lg shadow-emerald-500/35 border border-emerald-200 transition cursor-pointer flex items-center justify-center gap-1.5">
-                        ✔ CONTINUAR AL RESUMEN DE MISIÓN
+                        ✔ CONTINUE TO MISSION SUMMARY
                     </button>
                     <button id="btn-replay-modal" class="px-3.5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 font-bold text-xs border border-cyan-500/50 transition cursor-pointer flex items-center justify-center gap-1.5">
-                        <span>↻</span> REPETIR
+                        <span>↻</span> REPLAY
                     </button>
                     <button id="btn-export-modal" class="hidden">⬇</button>
                 </div>
@@ -595,7 +595,7 @@
         const LINK_START_TIME = 3.2;     // Se establece el enlace cuántico entre satélites
         const DOWNLINK_START_TIME = 4.6; // Comienza el envío épico de datos hacia la Tierra
         const COMPLETE_TIME = 10.6;      // 100% de paquetes transmitidos
-        const END_MODAL_TIME = 12.0;     // Aparece panel final de misión cumplida
+        const END_MODAL_TIME = 12.0;     // Mission accomplished panel appears
         const urlParams = new URLSearchParams(window.location.search);
         const paramMissionNum = urlParams.get('mission') || '1';
         const paramMissionCode = urlParams.get('code') || 'ANDES-CRYO-01';
@@ -605,10 +605,10 @@
         const isReplayMode = urlParams.get('replay') === '1';
         const missionPacketMsg =
             paramMissionNum === '1'
-                ? '✔ 4.8 TB de Cartografía Térmica Glaciar enviados a CENEPRED / NASA'
+                ? '✔ 4.8 TB of Glacial Thermal Mapping sent to CENEPRED / NASA'
                 : paramMissionNum === '2'
-                    ? '✔ 12.4 TB de Espectrometría de Hielo Lunar enviados a Base Artemis'
-                    : '✔ Alerta Geomagnética L1 transmitida a tiempo — Red Eléctrica Global Protegida';
+                    ? '✔ 12.4 TB of Lunar Ice Spectrometry sent to Artemis Base'
+                    : '✔ L1 Geomagnetic Alert transmitted on time — Global Power Grid Protected';
 
         let endModalOpenedAt = null;
         let nextCinematicSent = false;
@@ -632,23 +632,23 @@
             const sHp = document.getElementById('stat-mission-health');
             const btnNext = document.getElementById('btn-next-stage');
             const btnSkip = document.getElementById('btn-skip-top');
-            if (bTitle) bTitle.textContent = `ETAPA ${paramMissionNum}/3 · ${paramMissionCode}`;
-            if (bSub) bSub.textContent = `CIENCIA: ${paramPoints} PTS · INTEGRIDAD: ${paramHealth}%`;
-            if (mBadge) mBadge.textContent = `MISIÓN ${paramMissionNum}/3 • ${paramMissionCode} • 100% ENLACE`;
-            if (mTitle) mTitle.textContent = isFinalMission ? 'ALERTA SOLAR L1 TRANSMITIDA CON ÉXITO' : 'ENLACE ORBITAL EXITOSO';
+            if (bTitle) bTitle.textContent = `STAGE ${paramMissionNum}/3 · ${paramMissionCode}`;
+            if (bSub) bSub.textContent = `BASE SCIENCE: ${paramPoints} PTS · INTEGRITY: ${paramHealth}%`;
+            if (mBadge) mBadge.textContent = `MISSION ${paramMissionNum}/3 • ${paramMissionCode} • 100% LINK`;
+            if (mTitle) mTitle.textContent = isFinalMission ? 'L1 SOLAR ALERT TRANSMITTED SUCCESSFULLY' : 'ORBITAL LINK SUCCESSFUL';
             if (mPacket) mPacket.textContent = missionPacketMsg;
             if (sCode) sCode.textContent = paramMissionCode;
             if (sPts) sPts.textContent = `${paramPoints} PTS`;
             if (sHp) sHp.textContent = `${paramHealth}%`;
             if (btnNext) {
                 btnNext.textContent = isReplayMode
-                    ? '✔ VOLVER AL CUADRO DE HONOR NASA'
+                    ? '[ ✔ RETURN TO NASA HONOR ROLL ]'
                     : isFinalMission
-                        ? '🚀 INICIAR REGRESO A LA TIERRA (MISIÓN ÁGUILA)'
-                        : '✔ VER RESUMEN Y BONOS NASA';
+                        ? '[ 🚀 LAUNCH RETURN HOME (EAGLE MISSION) ]'
+                        : '[ ✔ VIEW MISSION SUMMARY & NASA BONUSES ]';
             }
             if (btnSkip && isReplayMode) {
-                btnSkip.innerHTML = '<span>✔</span><span>VOLVER</span>';
+                btnSkip.innerHTML = '<span>✔</span><span>RETURN</span>';
             }
         }
 
@@ -715,24 +715,24 @@
 
             if (t >= 0.6 && t < LINK_START_TIME) {
                 banner.classList.remove('hidden');
-                bannerMain.textContent = '✦ SINCRONIZACIÓN ORBITAL ACTIVA ✦';
-                bannerSub.textContent = 'ESTABILIZANDO FORMACIÓN DE SATÉLITES 6U';
+                bannerMain.textContent = '✦ ORBITAL SYNCHRONIZATION ACTIVE ✦';
+                bannerSub.textContent = 'STABILIZING 6U SATELLITE FORMATION';
             } else if (t >= LINK_START_TIME && t < DOWNLINK_START_TIME) {
                 banner.classList.remove('hidden');
-                bannerMain.textContent = '⚡ ENLACE LÁSER ESTABLECIDO ⚡';
-                bannerSub.textContent = 'FUSIONANDO TELEMETRÍA ENTRE SAT-01 Y SAT-02';
+                bannerMain.textContent = '⚡ LASER LINK ESTABLISHED ⚡';
+                bannerSub.textContent = 'MERGING TELEMETRY BETWEEN SAT-01 AND SAT-02';
             } else if (t >= DOWNLINK_START_TIME && t < COMPLETE_TIME) {
                 banner.classList.remove('hidden');
                 bannerMain.textContent = isFinalMission
-                    ? '🌞 TRANSMITIENDO ALERTA SOLAR L1 A LA TIERRA 📡'
-                    : `📡 TRANSMITIENDO MISIÓN ${paramMissionNum}: ${paramMissionCode} 📡`;
+                    ? '🌞 TRANSMITTING L1 SOLAR ALERT TO EARTH 📡'
+                    : `📡 TRANSMITTING MISSION ${paramMissionNum}: ${paramMissionCode} 📡`;
                 bannerSub.textContent = isFinalMission
-                    ? 'SAT-01 AMARU & SAT-02 INTI PROTEGIENDO LA RED ELÉCTRICA GLOBAL'
-                    : 'FLUJO CUÁNTICO DE ALTA VELOCIDAD • CENEPRED / ARTEMIS / NASA';
+                    ? 'SAT-01 AMARU & SAT-02 INTI PROTECTING THE GLOBAL POWER GRID'
+                    : 'HIGH-SPEED QUANTUM STREAM • CENEPRED / ARTEMIS / NASA';
             } else if (t >= COMPLETE_TIME && t < END_MODAL_TIME) {
                 banner.classList.remove('hidden');
-                bannerMain.textContent = '✔ INFORMACIÓN RECIBIDA CON ÉXITO ✔';
-                bannerSub.textContent = 'PAQUETES CIENTÍFICOS VERIFICADOS EN ESTACIÓN TERRESTRE';
+                bannerMain.textContent = '✔ DATA RECEIVED SUCCESSFULLY ✔';
+                bannerSub.textContent = 'SCIENTIFIC PACKETS VERIFIED AT GROUND STATION';
             } else {
                 banner.classList.add('hidden');
             }
@@ -768,7 +768,7 @@
                 const pct = Math.floor(state.transferProgress);
                 transferBar.style.width = `${pct}%`;
                 transferPercent.textContent = `${pct}%`;
-                transferStatusText.textContent = pct >= 100 ? 'TRANSMISIÓN COMPLETADA' : 'ENVIANDO PAQUETES DE DATOS';
+                transferStatusText.textContent = pct >= 100 ? 'TRANSMISSION COMPLETE' : 'SENDING DATA PACKETS';
 
                 // Sonido rítmico de paquetes enviados
                 if (pct < 100 && t - state.lastBeepTime > 0.24) {
@@ -845,7 +845,7 @@
                 if (gw.alpha <= 0) state.groundWaves.splice(i, 1);
             }
 
-            // 7. Mostrar panel final al concluir la secuencia y auto-avanzar suavemente si aplica
+            // 7. Show final modal upon sequence completion and gently auto-advance if applicable
             if (t >= END_MODAL_TIME) {
                 const endOverlay = document.getElementById('end-overlay');
                 if (endOverlay && endOverlay.classList.contains('hidden')) {
@@ -858,8 +858,8 @@
                     const remMs = Math.max(0, waitMs - (performance.now() - endModalOpenedAt));
                     if (noteEl) {
                         noteEl.textContent = isFinalMission
-                            ? `Iniciando Misión Águila · Regreso a casa en ${(remMs / 1000).toFixed(1)}s...`
-                            : `Abriendo resumen oficial NASA en ${(remMs / 1000).toFixed(1)}s...`;
+                            ? `Launching Eagle Mission · Return Home in ${(remMs / 1000).toFixed(1)}s...`
+                            : `Opening official NASA summary in ${(remMs / 1000).toFixed(1)}s...`;
                     }
                     if (remMs <= 0) {
                         sendVictoryNextToParent(true);
@@ -1079,7 +1079,7 @@
 
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'cinematica_transmision_orbital.html';
+            a.download = 'orbital_transmission_cinematic.html';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
