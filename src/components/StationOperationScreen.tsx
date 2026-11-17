@@ -14,6 +14,12 @@ import type { VictoryPhase } from './VictoryCinematicModal'
 import MinigameFrame, { MINIGAME_META } from './minigames/MinigameFrame'
 import type { MinigameId } from './minigames/MinigameFrame'
 
+import {
+  getCachedRoomSnapshot,
+  postRolesSyncWithRehydrate,
+  postStationSyncWithRehydrate,
+  saveCachedRoomSnapshot,
+} from '../game/multiplayer'
 import type { RoleClaimsMap as SharedRoleClaimsMap, RoomSnapshot } from '../game/multiplayer'
 
 interface Props {
@@ -5954,20 +5960,48 @@ export default function StationOperationScreen({
       try {
         const res = await fetch(rolesGetUrl, { cache: 'no-store' })
         if (res.status === 404 && activeRoomCode) {
-          if (!cancelled) notifyRoomClosedOnce()
+          const data = (await res.json().catch(() => null)) as { explicitlyClosed?: boolean } | null
+          if (data?.explicitlyClosed) {
+            if (!cancelled) notifyRoomClosedOnce()
+            return
+          }
+          const rehydrated = await postRolesSyncWithRehydrate(activeRoomCode, {
+            action: 'heartbeat',
+            clientId,
+            roomCode: activeRoomCode,
+            playerName:
+              playerNameRef.current.trim() || `OPERATOR-${clientId.slice(-4).toUpperCase()}`,
+          })
+          if (rehydrated.deleted && rehydrated.explicitlyClosed) {
+            if (!cancelled) notifyRoomClosedOnce()
+            return
+          }
+          if (!cancelled && rehydrated.claims) {
+            applySyncedClaims(rehydrated.claims)
+          }
           return
         }
         if (!res.ok) return
-        const data = (await res.json()) as { claims?: RoleClaimsMap; deleted?: boolean }
-        if (data.deleted && activeRoomCode) {
+        const data = (await res.json()) as {
+          claims?: RoleClaimsMap
+          deleted?: boolean
+          explicitlyClosed?: boolean
+          room?: RoomSnapshot
+        }
+        if (data.deleted && data.explicitlyClosed && activeRoomCode) {
           if (!cancelled) notifyRoomClosedOnce()
           return
         }
+        if (data.room) saveCachedRoomSnapshot(data.room, false)
         if (!cancelled && data.claims) {
           applySyncedClaims(data.claims)
         }
       } catch {
-        if (!cancelled) setSyncConnected(false)
+        if (activeRoomCode && getCachedRoomSnapshot(activeRoomCode)) {
+          if (!cancelled) setSyncConnected(true)
+        } else if (!cancelled) {
+          setSyncConnected(false)
+        }
       }
     }
 
@@ -5982,11 +6016,17 @@ export default function StationOperationScreen({
         }
         es.onmessage = (ev) => {
           try {
-            const parsed = JSON.parse(ev.data) as { claims?: RoleClaimsMap; deleted?: boolean }
-            if (parsed.deleted && activeRoomCode) {
+            const parsed = JSON.parse(ev.data) as {
+              claims?: RoleClaimsMap
+              deleted?: boolean
+              explicitlyClosed?: boolean
+              room?: RoomSnapshot
+            }
+            if (parsed.deleted && parsed.explicitlyClosed && activeRoomCode) {
               if (!cancelled) notifyRoomClosedOnce()
               return
             }
+            if (parsed.room) saveCachedRoomSnapshot(parsed.room, false)
             if (!cancelled && parsed.claims) {
               applySyncedClaims(parsed.claims)
             }
@@ -5995,7 +6035,8 @@ export default function StationOperationScreen({
           }
         }
         es.onerror = () => {
-          if (!cancelled) setSyncConnected(false)
+          // On Vercel Serverless without persistent SSE, polling handles live sync smoothly
+          if (!activeRoomCode && !cancelled) setSyncConnected(false)
         }
       }
     } catch {
@@ -6029,34 +6070,23 @@ export default function StationOperationScreen({
       const ownsAny = ROLE_ORDER.some((r) => curClaims[r]?.clientId === clientId)
       if (!activeRoomCode && !ownsAny) return
       try {
-        const res = await fetch('/api/roles-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'heartbeat',
-            clientId,
-            ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
-            playerName:
-              playerNameRef.current.trim() || `OPERATOR-${clientId.slice(-4).toUpperCase()}`,
-          }),
+        const res = await postRolesSyncWithRehydrate(activeRoomCode, {
+          action: 'heartbeat',
+          clientId,
+          ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
+          playerName:
+            playerNameRef.current.trim() || `OPERATOR-${clientId.slice(-4).toUpperCase()}`,
         })
-        if (res.status === 404 && activeRoomCode) {
+        if (
+          ((res.deleted && res.explicitlyClosed) ||
+            (res.status === 400 && res.code === 'ROOM_FULL')) &&
+          activeRoomCode
+        ) {
           if (!cancelled) notifyRoomClosedOnce()
           return
         }
-        if (res.ok || res.status === 400) {
-          const data = (await res.json().catch(() => ({}))) as {
-            claims?: RoleClaimsMap
-            deleted?: boolean
-            code?: string
-          }
-          if ((data.deleted || (res.status === 400 && data.code === 'ROOM_FULL')) && activeRoomCode) {
-            if (!cancelled) notifyRoomClosedOnce()
-            return
-          }
-          if (!cancelled && data.claims) {
-            applySyncedClaims(data.claims)
-          }
+        if (!cancelled && res.claims) {
+          applySyncedClaims(res.claims)
         }
       } catch {
         // se reintenta en el siguiente ciclo
@@ -6107,30 +6137,26 @@ export default function StationOperationScreen({
       const cleanName =
         playerNameRef.current.trim() || `OPERATOR-${clientId.slice(-4).toUpperCase()}`
       try {
-        const res = await fetch('/api/roles-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'claim',
-            roleId: r,
-            clientId,
-            ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
-            playerName: cleanName,
-          }),
+        const data = await postRolesSyncWithRehydrate(activeRoomCode, {
+          action: 'claim',
+          roleId: r,
+          clientId,
+          ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
+          playerName: cleanName,
         })
-        const data = (await res.json()) as {
-          ok?: boolean
-          error?: string
-          ownerName?: string
-          claims?: RoleClaimsMap
-        }
         if (data.claims) {
           applySyncedClaims(data.claims)
           broadcastRolesUpdate(data.claims)
         }
-        if (res.status === 409 || !res.ok || data.ok === false) {
-          const owner = data.ownerName || data.claims?.[r]?.playerName || 'another operator'
-          setSyncErrorMsg(`Role ${ROLE_INFO[r].code} is already claimed by ${owner}.`)
+        if (data.status === 409 || !data.ok) {
+          if (data.status === 409) {
+            const owner = data.ownerName || data.claims?.[r]?.playerName || 'another operator'
+            setSyncErrorMsg(`Role ${ROLE_INFO[r].code} is already claimed by ${owner}.`)
+            return
+          }
+          setSyncErrorMsg(
+            'Unable to connect to multiplayer sync. You can enable Solo Practice Mode.'
+          )
           return
         }
         setVisitingQuadrant(null)
@@ -6139,13 +6165,13 @@ export default function StationOperationScreen({
         setRoleLobbyOpen(false)
       } catch {
         setSyncErrorMsg(
-          'Unable to connect to /api/roles-sync on the LAN network. You can enable Solo Practice Mode.'
+          'Unable to connect to /api/roles-sync on the network. You can enable Solo Practice Mode.'
         )
       } finally {
         setSyncBusyRole(null)
       }
     },
-    [applySyncedClaims, broadcastRolesUpdate, clientId, soloPracticeMode]
+    [applySyncedClaims, broadcastRolesUpdate, clientId, activeRoomCode, soloPracticeMode]
   )
 
   const releaseMyRoleRemote = useCallback(
@@ -6154,29 +6180,22 @@ export default function StationOperationScreen({
       setSyncErrorMsg(null)
       hadClaimedRoleRef.current = false
       try {
-        const res = await fetch('/api/roles-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'release',
-            clientId,
-            ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
-          }),
+        const data = await postRolesSyncWithRehydrate(activeRoomCode, {
+          action: 'release',
+          clientId,
+          ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
         })
-        if (res.ok) {
-          const data = (await res.json()) as { claims?: RoleClaimsMap }
-          if (data.claims) {
-            applySyncedClaims(data.claims)
-            broadcastRolesUpdate(data.claims)
-          }
+        if (data.ok && data.claims) {
+          applySyncedClaims(data.claims)
+          broadcastRolesUpdate(data.claims)
         }
       } catch {
-        // fallo silencioso si está desconectado
+        // silent fallback if offline
       } finally {
         if (keepLobbyOpen) setRoleLobbyOpen(true)
       }
     },
-    [applySyncedClaims, broadcastRolesUpdate, clientId]
+    [applySyncedClaims, broadcastRolesUpdate, clientId, activeRoomCode]
   )
 
   const resetRoomHostRemote = useCallback(async () => {
@@ -6187,16 +6206,11 @@ export default function StationOperationScreen({
     remoteRolesSigRef.current = ''
     setRemotePlayerRoles({})
     try {
-      const res = await fetch('/api/roles-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reset',
-          ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
-        }),
+      const data = await postRolesSyncWithRehydrate(activeRoomCode, {
+        action: 'reset',
+        ...(activeRoomCode ? { roomCode: activeRoomCode } : {}),
       })
-      if (res.ok) {
-        const data = (await res.json()) as { claims?: RoleClaimsMap }
+      if (data.ok) {
         if (data.claims) {
           applySyncedClaims(data.claims)
           broadcastRolesUpdate(data.claims)
@@ -6208,7 +6222,7 @@ export default function StationOperationScreen({
     } catch {
       setSyncErrorMsg('No response from /api/roles-sync while resetting the room.')
     }
-  }, [applySyncedClaims, broadcastRolesUpdate, soloPracticeMode])
+  }, [applySyncedClaims, broadcastRolesUpdate, activeRoomCode, soloPracticeMode])
 
   // Problemas activos en tiempo real (coordinados con enfriamiento 120s-150s tras resolver)
   const [activeThreats, setActiveThreats] = useState<ActiveThreat[]>(() => {
@@ -6886,18 +6900,15 @@ export default function StationOperationScreen({
         ...(extra ?? {}),
       }
 
-      const res = await fetch('/api/station-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (res.status === 404 && activeRoomCode) {
+      const syncRes = await postStationSyncWithRehydrate(activeRoomCode, body)
+      if (syncRes.deleted && syncRes.explicitlyClosed && activeRoomCode) {
         notifyRoomClosedOnce()
         return
       }
-      if (!res.ok) return
-      const data = (await res.json()) as {
+      if (!syncRes.ok || !syncRes.data) return
+      const data = syncRes.data as {
         deleted?: boolean
+        explicitlyClosed?: boolean
         missionId?: string
         phase?: string
         serverTime?: number
@@ -6906,7 +6917,7 @@ export default function StationOperationScreen({
         players?: Record<string, RemotePlayerState>
         sharedStation?: SharedStationSnapshot
       }
-      if (data.deleted && activeRoomCode) {
+      if (data.deleted && data.explicitlyClosed && activeRoomCode) {
         notifyRoomClosedOnce()
         return
       }
@@ -7012,17 +7023,13 @@ export default function StationOperationScreen({
       return
     }
     try {
-      const res = await fetch('/api/station-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'retry_mission',
-          roomCode: activeRoomCode,
-          clientId,
-        }),
+      const syncRes = await postStationSyncWithRehydrate(activeRoomCode, {
+        action: 'retry_mission',
+        roomCode: activeRoomCode,
+        clientId,
       })
-      if (res.ok) {
-        const data = (await res.json()) as { sharedStation?: SharedStationSnapshot }
+      if (syncRes.ok && syncRes.data) {
+        const data = syncRes.data as { sharedStation?: SharedStationSnapshot }
         const epoch = data.sharedStation?.retryEpoch ?? retryEpochRef.current + 1
         resetCurrentStageForRetry(epoch)
         pushLog(

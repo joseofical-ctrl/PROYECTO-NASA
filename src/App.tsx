@@ -246,7 +246,7 @@ export default function App() {
       )
         .then((res) => {
           if (cancelled || roomCodeRef.current !== roomCode) return
-          if (res.status === 404 || res.deleted || (res.status === 400 && res.code === 'ROOM_FULL')) {
+          if (res.deleted || (res.status === 400 && res.code === 'ROOM_FULL')) {
             handleRemoteRoomClosed(res.error || 'Room has been closed')
             return
           }
@@ -255,10 +255,29 @@ export default function App() {
         .catch(() => {})
     }, 1500)
 
+    let bc: BroadcastChannel | null = null
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('cubesat_multiplayer_sync')
+        bc.onmessage = (ev) => {
+          const d = ev.data as { type?: string; room?: RoomSnapshot; code?: string } | null
+          if (!d || typeof d !== 'object' || cancelled || roomCodeRef.current !== roomCode) return
+          if (d.type === 'room_update' && d.room?.code === roomCode) {
+            applyRoomSnapshot(d.room)
+          } else if (d.type === 'room_deleted' && d.code === roomCode) {
+            handleRemoteRoomClosed('Room has been closed')
+          }
+        }
+      }
+    } catch {
+      // optional BroadcastChannel
+    }
+
     return () => {
       cancelled = true
       window.clearInterval(pollTimer)
       window.clearInterval(hbTimer)
+      bc?.close()
     }
   }, [roomCode, stage, clientId, applyRoomSnapshot, handleRemoteRoomClosed])
 
